@@ -235,8 +235,6 @@ If you find CodeContext useful, please consider giving it a star! ⭐
 
 <div align="center">
 
-**Made with ❤️ by developers, for developers**
-
 [Website](https://codecontext.dev) • [Documentation](docs/) • [Contributing](CONTRIBUTING.md) • [Changelog](CHANGELOG.md)
 
 </div>
