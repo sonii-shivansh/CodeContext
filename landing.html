@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CodeContext - AI-powered codebase analysis tool that maps your code, detects hotspots, and generates learning paths for developers.">
+    <title>CodeContext - Understand Any Codebase in Minutes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="landing.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">
+                    <span class="logo-icon">🧠</span>
+                    <span class="logo-text">CodeContext</span>
+                </div>
+                <div class="nav-links">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#demo" class="nav-link">Demo</a>
+                    <a href="docs/API.md" class="nav-link">Docs</a>
+                    <a href="https://github.com/sonii-shivansh/CodeContext" class="nav-link">GitHub</a>
+                    <a href="#get-started" class="btn btn-primary">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-background">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-icon">✨</span>
+                    <span>AI-Powered Code Analysis</span>
+                </div>
+                <h1 class="hero-title">
+                    Understand Any Codebase
+                    <span class="gradient-text">in Minutes</span>
+                </h1>
+                <p class="hero-subtitle">
+                    CodeContext analyzes your code, detects hotspots, builds dependency graphs, 
+                    and generates personalized learning paths. Stop drowning in unfamiliar code.
+                </p>
+                <div class="hero-cta">
+                    <a href="#get-started" class="btn btn-large btn-primary">
+                        <span>Start Analyzing</span>
+                        <span class="btn-icon">→</span>
+                    </a>
+                    <a href="#demo" class="btn btn-large btn-secondary">
+                        <span class="btn-icon">▶</span>
+                        <span>Watch Demo</span>
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-value">10,000+</div>
+                        <div class="stat-label">Files Analyzed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">5 Languages</div>
+                        <div class="stat-label">Supported</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">AI-Powered</div>
+                        <div class="stat-label">Insights</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="code-window">
+                    <div class="window-header">
+                        <div class="window-dots">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-yellow"></span>
+                            <span class="dot dot-green"></span>
+                        </div>
+                        <div class="window-title">codecontext analyze .</div>
+                    </div>
+                    <div class="window-content">
+                        <div class="terminal-line">
+                            <span class="prompt">$</span>
+                            <span class="command">codecontext analyze .</span>
+                        </div>
+                        <div class="terminal-line output">🚀 Starting CodeContext analysis...</div>
+                        <div class="terminal-line output">📂 Scanning repository...</div>
+                        <div class="terminal-line output">   Found <span class="highlight">247 files</span></div>
+                        <div class="terminal-line output">🧠 Parsing code...</div>
+                        <div class="terminal-line output">🕸️ Building dependency graph...</div>
+                        <div class="terminal-line output">🔥 Hot Zones (Top 5):</div>
+                        <div class="terminal-line output indent">├─ UserService.kt <span class="score">(0.8542)</span></div>
+                        <div class="terminal-line output indent">├─ DatabaseConfig.kt <span class="score">(0.7234)</span></div>
+                        <div class="terminal-line output indent">└─ ApiController.kt <span class="score">(0.6891)</span></div>
+                        <div class="terminal-line output">✅ Report: <span class="path">output/index.html</span></div>
+                        <div class="terminal-line output">✨ Complete in <span class="highlight">3.2s</span></div>
+                        <div class="terminal-line">
+                            <span class="prompt">$</span>
+                            <span class="cursor">_</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Powerful Features</h2>
+                <p class="section-subtitle">Everything you need to understand complex codebases</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔥</div>
+                    <h3 class="feature-title">Hotspot Detection</h3>
+                    <p class="feature-description">
+                        Automatically identify the most critical files based on complexity, 
+                        change frequency, and dependencies.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">Git Analysis</span>
+                        <span class="tag">Metrics</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🕸️</div>
+                    <h3 class="feature-title">Dependency Graph</h3>
+                    <p class="feature-description">
+                        Visualize how your code connects with interactive D3.js graphs. 
+                        Detect cycles and understand relationships.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">Visualization</span>
+                        <span class="tag">Cycle Detection</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎓</div>
+                    <h3 class="feature-title">Learning Paths</h3>
+                    <p class="feature-description">
+                        Get a personalized roadmap for understanding the codebase, 
+                        starting from foundational files to complex modules.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">Onboarding</span>
+                        <span class="tag">Smart Ordering</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3 class="feature-title">AI Insights</h3>
+                    <p class="feature-description">
+                        Powered by Gemini AI to provide code explanations, refactoring tips, 
+                        and complexity analysis.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">Gemini</span>
+                        <span class="tag">Smart Analysis</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="feature-title">Lightning Fast</h3>
+                    <p class="feature-description">
+                        Parallel parsing with intelligent caching. Analyze 10,000+ files 
+                        in seconds, not minutes.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">Parallel</span>
+                        <span class="tag">Cached</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3 class="feature-title">REST API</h3>
+                    <p class="feature-description">
+                        Integrate with your CI/CD pipeline or IDE. Full REST API 
+                        for programmatic access.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">Server Mode</span>
+                        <span class="tag">Integration</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="demo">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">See It In Action</h2>
+                <p class="section-subtitle">Watch CodeContext analyze a real repository</p>
+            </div>
+            <div class="demo-content">
+                <div class="demo-visual">
+                    <div class="browser-window">
+                        <div class="browser-header">
+                            <div class="browser-dots">
+                                <span class="dot dot-red"></span>
+                                <span class="dot dot-yellow"></span>
+                                <span class="dot dot-green"></span>
+                            </div>
+                            <div class="browser-url">
+                                <span class="lock-icon">🔒</span>
+                                <span>localhost:8080/output/index.html</span>
+                            </div>
+                        </div>
+                        <div class="browser-content">
+                            <div class="report-preview">
+                                <div class="report-header">
+                                    <h3>📊 CodeContext Analysis Report</h3>
+                                    <div class="report-meta">
+                                        <span>247 files analyzed</span>
+                                        <span>•</span>
+                                        <span>3.2s execution time</span>
+                                    </div>
+                                </div>
+                                <div class="report-section">
+                                    <h4>🔥 Top Hotspots</h4>
+                                    <div class="hotspot-list">
+                                        <div class="hotspot-item">
+                                            <div class="hotspot-bar" style="width: 85%"></div>
+                                            <span class="hotspot-name">UserService.kt</span>
+                                            <span class="hotspot-score">0.8542</span>
+                                        </div>
+                                        <div class="hotspot-item">
+                                            <div class="hotspot-bar" style="width: 72%"></div>
+                                            <span class="hotspot-name">DatabaseConfig.kt</span>
+                                            <span class="hotspot-score">0.7234</span>
+                                        </div>
+                                        <div class="hotspot-item">
+                                            <div class="hotspot-bar" style="width: 69%"></div>
+                                            <span class="hotspot-name">ApiController.kt</span>
+                                            <span class="hotspot-score">0.6891</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="report-section">
+                                    <h4>🎓 Learning Path</h4>
+                                    <div class="learning-path">
+                                        <div class="path-step">
+                                            <div class="step-number">1</div>
+                                            <div class="step-content">
+                                                <div class="step-title">Utils.kt</div>
+                                                <div class="step-desc">Foundation utilities</div>
+                                            </div>
+                                        </div>
+                                        <div class="path-step">
+                                            <div class="step-number">2</div>
+                                            <div class="step-content">
+                                                <div class="step-title">Models.kt</div>
+                                                <div class="step-desc">Core data models</div>
+                                            </div>
+                                        </div>
+                                        <div class="path-step">
+                                            <div class="step-number">3</div>
+                                            <div class="step-content">
+                                                <div class="step-title">UserService.kt</div>
+                                                <div class="step-desc">Main business logic</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Get Started Section -->
+    <section id="get-started" class="get-started">
+        <div class="container">
+            <div class="get-started-content">
+                <h2 class="section-title">Ready to Get Started?</h2>
+                <p class="section-subtitle">Install CodeContext and analyze your first codebase in under a minute</p>
+                
+                <div class="install-steps">
+                    <div class="install-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Clone & Build</h3>
+                            <div class="code-block">
+                                <code>git clone https://github.com/sonii-shivansh/CodeContext.git
+cd CodeContext
+./gradlew installDist</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="install-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Analyze Your Code</h3>
+                            <div class="code-block">
+                                <code>./build/install/codecontext/bin/codecontext analyze .</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="install-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>View Report</h3>
+                            <div class="code-block">
+                                <code>open output/index.html</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cta-buttons">
+                    <a href="https://github.com/sonii-shivansh/CodeContext" class="btn btn-large btn-primary">
+                        <span>View on GitHub</span>
+                        <span class="btn-icon">→</span>
+                    </a>
+                    <a href="docs/API.md" class="btn btn-large btn-secondary">
+                        <span>Read Documentation</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="logo">
+                        <span class="logo-icon">🧠</span>
+                        <span class="logo-text">CodeContext</span>
+                    </div>
+                    <p class="footer-description">
+                        AI-powered codebase analysis for developers who want to understand code faster.
+                    </p>
+                </div>
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#demo">Demo</a></li>
+                        <li><a href="docs/API.md">Documentation</a></li>
+                        <li><a href="CHANGELOG.md">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/sonii-shivansh/CodeContext">GitHub</a></li>
+                        <li><a href="https://github.com/sonii-shivansh/CodeContext/issues">Issues</a></li>
+                        <li><a href="CONTRIBUTING.md">Contributing</a></li>
+                        <li><a href="LICENSE">License</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="mailto:shivanshsoni568@gmail.com">Email</a></li>
+                        <li><a href="https://github.com/sonii-shivansh">GitHub Profile</a></li>
+                        <li><a href="https://github.com/sonii-shivansh/CodeContext/discussions">Discussions</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 CodeContext. MIT License.</p>
+                <p>Built with ❤️ by <a href="https://github.com/sonii-shivansh">Shivansh Soni</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="landing.js"></script>
+</body>
+</html>
