@@ -18,7 +18,13 @@ class JavaRealParser : LanguageParser {
                         it.nameAsString
                     }
 
-            return ParsedFile(file, packageName, imports)
+            // Extract Javadoc from the primary type
+            var description = ""
+            cu.primaryType.ifPresent { type ->
+                type.javadoc.ifPresent { javadoc -> description = javadoc.description.toText() }
+            }
+
+            return ParsedFile(file, packageName, imports, description = description)
         } catch (e: Exception) {
             // Fallback or log error. For now, return empty.
             // In a real tool we might want to log this.

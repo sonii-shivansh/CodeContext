@@ -19,22 +19,32 @@ class KotlinRegexParser : LanguageParser {
     override fun parse(file: File): ParsedFile {
         var packageName = ""
         val imports = mutableListOf<String>()
+        var description = ""
+
+        // Simple KDoc extraction: Capture the first /** ... */ block
+        val content = file.readText()
+
+        // Regex for KDoc: /** followed by content until */
+        val kdocRegex = Regex("/\\*\\*([\\s\\S]*?)\\*/")
+        val match = kdocRegex.find(content)
+        if (match != null) {
+            description =
+                    match.groupValues[1]
+                            .lines()
+                            .map { it.trim().removePrefix("*").trim() }
+                            .filter { it.isNotEmpty() }
+                            .joinToString(" ")
+        }
 
         file.forEachLine { line ->
             val trimmed = line.trim()
-
-            // Skip comments (basic)
-            if (trimmed.startsWith("//") || trimmed.startsWith("*")) return@forEachLine
-
             if (trimmed.startsWith("package ")) {
-                packageRegex.find(trimmed)?.let {
-                    packageName = it.groupValues[1].replace("`", "") // Remove backticks
-                }
+                packageRegex.find(trimmed)?.let { packageName = it.groupValues[1].replace("`", "") }
             } else if (trimmed.startsWith("import ")) {
                 importRegex.find(trimmed)?.let { imports.add(it.groupValues[1].replace("`", "")) }
             }
         }
 
-        return ParsedFile(file, packageName, imports)
+        return ParsedFile(file, packageName, imports, description = description)
     }
 }

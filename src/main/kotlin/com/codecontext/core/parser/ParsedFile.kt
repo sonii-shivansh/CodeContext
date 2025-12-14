@@ -1,7 +1,22 @@
 package com.codecontext.core.parser
 
 import java.io.File
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
+object FileAsStringSerializer : KSerializer<File> {
+    override val descriptor: SerialDescriptor =
+            PrimitiveSerialDescriptor("File", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: File) = encoder.encodeString(value.absolutePath)
+    override fun deserialize(decoder: Decoder): File = File(decoder.decodeString())
+}
+
+@Serializable
 data class GitMetadata(
         val lastModified: Long = 0,
         val changeFrequency: Int = 0,
@@ -9,11 +24,14 @@ data class GitMetadata(
         val recentMessages: List<String> = emptyList()
 )
 
+@Serializable
 data class ParsedFile(
-        val file: File,
+        @Serializable(with = FileAsStringSerializer::class)
+        val file: File, // Use a custom serializer for File if needed, or string path
         val packageName: String,
         val imports: List<String>,
-        var gitMetadata: GitMetadata = GitMetadata() // Mutable or default for now
+        var gitMetadata: GitMetadata = GitMetadata(),
+        val description: String = ""
 )
 
 interface LanguageParser {

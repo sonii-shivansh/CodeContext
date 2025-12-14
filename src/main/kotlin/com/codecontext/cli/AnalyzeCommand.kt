@@ -45,9 +45,11 @@ class AnalyzeCommand :
             graph.analyze()
 
             val hotspots = graph.getTopHotspots(5)
-            echo("🔥 Top Hotspots Identified:")
-            hotspots.forEach { (file, score) ->
-                echo("   - ${File(file).name} (Score: ${String.format("%.4f", score)})")
+            echo("🗺️ Your Codebase Map")
+            echo("├─ 🔥 Hot Zones (Critical Files):")
+            hotspots.forEachIndexed { index, (file, score) ->
+                val prefix = if (index == hotspots.lastIndex) "│   └─" else "│   ├─"
+                echo("$prefix ${File(file).name} (Score: ${String.format("%.4f", score)})")
             }
 
             // 3.5 Learning Path
@@ -55,9 +57,11 @@ class AnalyzeCommand :
             val pathGenerator = com.codecontext.core.generator.LearningPathGenerator()
             val learningPath = pathGenerator.generate(graph)
 
-            echo("   Recommended Reading Order (First 5):")
+            echo("├─ 🎯 Recommended Start (Entry Points):")
             learningPath.take(5).forEachIndexed { index, step ->
-                echo("   ${index + 1}. ${File(step.file).name} [${step.description}]")
+                val prefix =
+                        if (index == 4 || index == learningPath.lastIndex) "    └─" else "    ├─"
+                echo("$prefix ${File(step.file).name} [${step.description}]")
             }
 
             // 4. Report
