@@ -216,20 +216,12 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-## 🙏 Acknowledgments
-
-- Built with ❤️ to solve real developer onboarding problems
-- Inspired by the pain of joining new teams and codebases
-- Thanks to all [contributors](https://github.com/sonii-shivansh/CodeContext/graphs/contributors)
-
----
-
 ## 📞 Support
 
 - 🐛 **Bug Reports:** [Open an issue](https://github.com/sonii-shivansh/CodeContext/issues/new?template=bug_report.md)
 - 💡 **Feature Requests:** [Request a feature](https://github.com/sonii-shivansh/CodeContext/issues/new?template=feature_request.md)
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/sonii-shivansh/CodeContext/discussions)
-- 📧 **Email:** [your-email@example.com]
+- 📧 **Email:** shivanshsoni568@gmail.com
 
 ---
 
