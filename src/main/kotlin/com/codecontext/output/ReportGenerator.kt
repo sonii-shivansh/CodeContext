@@ -1,7 +1,7 @@
 package com.codecontext.output
 
 import com.codecontext.core.generator.LearningStep
-import com.codecontext.core.graph.DependencyGraph
+import com.codecontext.core.graph.RobustDependencyGraph
 import java.io.File
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
@@ -28,7 +28,7 @@ data class GraphNode(
 
 class ReportGenerator {
     fun generate(
-            graph: DependencyGraph,
+            graph: RobustDependencyGraph,
             outputPath: String,
             parsedFiles: List<com.codecontext.core.parser.ParsedFile>,
             learningPath: List<LearningStep>

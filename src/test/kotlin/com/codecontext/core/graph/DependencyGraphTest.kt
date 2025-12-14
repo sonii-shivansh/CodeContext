@@ -14,7 +14,7 @@ class DependencyGraphTest :
                 val parsedA = ParsedFile(fileA, "com", listOf("com.B"))
                 val parsedB = ParsedFile(fileB, "com", emptyList())
 
-                val graph = DependencyGraph()
+                val graph = RobustDependencyGraph()
                 graph.build(listOf(parsedA, parsedB))
 
                 graph.graph.containsEdge(fileA.absolutePath, fileB.absolutePath) shouldBe true
@@ -29,7 +29,7 @@ class DependencyGraphTest :
                 val parsedB = ParsedFile(fileB, "utils", emptyList())
                 val parsedC = ParsedFile(fileC, "utils", emptyList())
 
-                val graph = DependencyGraph()
+                val graph = RobustDependencyGraph()
                 graph.build(listOf(parsedA, parsedB, parsedC))
 
                 graph.graph.containsEdge(fileA.absolutePath, fileB.absolutePath) shouldBe true

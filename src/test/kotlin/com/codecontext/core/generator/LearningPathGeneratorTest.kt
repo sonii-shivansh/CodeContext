@@ -1,6 +1,6 @@
 package com.codecontext.core.generator
 
-import com.codecontext.core.graph.DependencyGraph
+import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.parser.ParsedFile
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -15,7 +15,7 @@ class LearningPathGeneratorTest :
                 val fileB = ParsedFile(File("B.kt"), "", listOf("C"))
                 val fileC = ParsedFile(File("C.kt"), "", emptyList())
 
-                val graph = DependencyGraph()
+                val graph = RobustDependencyGraph()
                 graph.build(listOf(fileA, fileB, fileC))
 
                 val generator = LearningPathGenerator()
@@ -38,7 +38,7 @@ class LearningPathGeneratorTest :
                 val core = ParsedFile(File("Core.kt"), "", listOf("Utils"))
                 val utils = ParsedFile(File("Utils.kt"), "", emptyList())
 
-                val graph = DependencyGraph()
+                val graph = RobustDependencyGraph()
                 graph.build(listOf(main, core, utils))
 
                 val generator = LearningPathGenerator()
@@ -55,7 +55,7 @@ class LearningPathGeneratorTest :
                 val fileA = ParsedFile(File("A.kt"), "", listOf("B"))
                 val fileB = ParsedFile(File("B.kt"), "", listOf("A"))
 
-                val graph = DependencyGraph()
+                val graph = RobustDependencyGraph()
                 graph.build(listOf(fileA, fileB))
 
                 val generator = LearningPathGenerator()

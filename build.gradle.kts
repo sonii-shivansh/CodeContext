@@ -14,7 +14,7 @@ repositories {
 dependencies {
     // Kotlin Standard Library
     implementation(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     
     // ===== CLI Framework =====
     implementation("com.github.ajalt.clikt:clikt:4.2.2")
@@ -38,6 +38,13 @@ dependencies {
     
     // ===== HTML Generation (for reports) =====
     implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.11.0")
+
+    // ===== Ktor Server (SaaS API) =====
+    implementation("io.ktor:ktor-server-core-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-netty-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.12")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-cors-jvm:2.3.12")
     
     // ===== Testing =====
     testImplementation(kotlin("test"))

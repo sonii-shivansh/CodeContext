@@ -1,7 +1,7 @@
 package com.codecontext.core
 
 import com.codecontext.core.generator.LearningPathGenerator
-import com.codecontext.core.graph.DependencyGraph
+import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.parser.ParsedFile
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -14,7 +14,8 @@ import java.io.File
 class PropertyTest :
         StringSpec({
             "LearningPathGenerator should always include all files in the output" {
-                checkAll(Arb.list(Arb.stringPattern("[a-zA-Z0-9]{3,10}"), 1..20)) { fileNames ->
+                checkAll(1000, Arb.list(Arb.stringPattern("[a-zA-Z0-9]{3,10}"), 1..20)) { fileNames
+                    ->
                     // Create unique files
                     val uniqueFiles = fileNames.distinct()
                     if (uniqueFiles.isNotEmpty()) {
@@ -33,7 +34,7 @@ class PropertyTest :
                         // Effectively building a random graph
                         // But simplified: here files have 0 deps.
 
-                        val graph = DependencyGraph()
+                        val graph = RobustDependencyGraph()
                         graph.build(parsedFiles)
 
                         val generator = LearningPathGenerator()
@@ -49,7 +50,7 @@ class PropertyTest :
                 // other
                 val fileGen = Arb.list(Arb.stringPattern("[a-z]{5}"), 5..20)
 
-                checkAll(fileGen) { names ->
+                checkAll(1000, fileGen) { names ->
                     val uniqueNames = names.distinct()
                     val parsedFiles =
                             uniqueNames.map { name ->
@@ -68,7 +69,7 @@ class PropertyTest :
                                 )
                             }
 
-                    val graph = DependencyGraph()
+                    val graph = RobustDependencyGraph()
                     graph.build(parsedFiles)
 
                     val generator = LearningPathGenerator()
