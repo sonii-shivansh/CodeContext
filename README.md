@@ -44,9 +44,11 @@
 
 ## 📸 Demo
 
-![CodeContext Demo](docs/images/demo.gif)
+![CodeContext Demo](docs/images/demo.png)
 
-*Interactive dependency graph with hotspot highlighting*
+*Interactive dependency graph with knowledge hotspot highlighting and learning path generation*
+
+**Live Example:** Run `./gradlew run --args="analyze ."` on this repository to see CodeContext analyze itself!
 
 ---
 
