@@ -1,6 +1,6 @@
 package com.codecontext.core.generator
 
-import com.codecontext.core.graph.DependencyGraph
+import com.codecontext.core.graph.RobustDependencyGraph
 import org.jgrapht.alg.cycle.CycleDetector
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -8,7 +8,7 @@ data class LearningStep(val file: String, val description: String, val reason: S
 
 class LearningPathGenerator {
 
-    fun generate(graph: DependencyGraph): List<LearningStep> {
+    fun generate(graph: RobustDependencyGraph): List<LearningStep> {
         val jGraph = graph.graph
 
         // 1. Detect and (conceptually) handle cycles

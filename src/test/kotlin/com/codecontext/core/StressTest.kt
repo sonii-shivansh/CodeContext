@@ -7,13 +7,13 @@ import kotlin.io.path.createTempDirectory
 
 class StressTest :
         FunSpec({
-            test("Stress Test: Analyze 100 files with complex dependencies") {
+            test("Stress Test: Analyze 1000 files with complex dependencies") {
                 val tempDir = createTempDirectory("codecontext-stress").toFile()
                 tempDir.deleteOnExit()
 
-                // Generate 100 Kotlin files
+                // Generate 1000 Kotlin files
                 val files =
-                        (1..100).map { i ->
+                        (1..1000).map { i ->
                             val name = "Class$i"
                             val file = File(tempDir, "$name.kt")
 
@@ -60,20 +60,20 @@ class StressTest :
 
                 val scanner = com.codecontext.core.scanner.RepositoryScanner()
                 val scannedFiles = scanner.scan(tempDir.absolutePath)
-                assert(scannedFiles.size == 100)
+                assert(scannedFiles.size == 1000)
 
                 val parsedFiles =
                         scannedFiles.map {
                             com.codecontext.core.parser.ParserFactory.getParser(it).parse(it)
                         }
 
-                val graph = com.codecontext.core.graph.DependencyGraph()
+                val graph = com.codecontext.core.graph.RobustDependencyGraph()
                 graph.build(parsedFiles)
                 graph.analyze()
 
                 val pathGen = com.codecontext.core.generator.LearningPathGenerator()
                 val path = pathGen.generate(graph)
-                assert(path.size == 100)
+                assert(path.size == 1000)
 
                 val reportFile = File(tempDir, "output/index.html")
                 reportFile.parentFile.mkdirs()
