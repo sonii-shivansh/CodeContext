@@ -30,6 +30,24 @@ data class AIConversationResponse(
         val confidence: Double
 )
 
+@Serializable
+data class PRReview(
+        val summary: String,
+        val impactAnalysis: String,
+        val securityRisks: List<String>,
+        val breakingChanges: List<String>,
+        val suggestions: List<CodeSuggestion>,
+        val hotspotImpact: String?
+)
+
+@Serializable
+data class CodeSuggestion(
+        val file: String,
+        val line: Int,
+        val suggestion: String,
+        val severity: String // "critical", "major", "minor"
+)
+
 class AICodeAnalyzer(
         private val apiKey: String,
         private val model: String = "claude-sonnet-4-20250514"
@@ -136,6 +154,31 @@ class AICodeAnalyzer(
                         val response = callClaude(prompt)
 
                         return@withContext parseConversation(response)
+                }
+
+        /** Review a Pull Request / Diff with context awareness of hotspots and dependencies. */
+        suspend fun reviewPullRequest(
+                files: List<String>,
+                diff: String,
+                graph: RobustDependencyGraph
+        ): PRReview =
+                withContext(Dispatchers.IO) {
+                        if (!isEnabled) {
+                                throw IllegalStateException(
+                                        "AI analysis is not configured. Please set a valid API key."
+                                )
+                        }
+
+                        val hotspots = graph.getTopHotspots(20).map { it.first }
+                        val affectedHotspots =
+                                files.filter { file ->
+                                        hotspots.any { file.endsWith(it) || it.endsWith(file) }
+                                }
+
+                        val prompt = buildPRReviewPrompt(files, diff, affectedHotspots)
+                        val response = callClaude(prompt)
+
+                        return@withContext parsePRReview(response)
                 }
 
         /** Generate "Why is this important?" explanations for hotspots */
@@ -299,6 +342,55 @@ class AICodeAnalyzer(
                         ?.removeSurrounding("\"")
                         ?.replace("\\n", "\n")
                         ?: throw Exception("Invalid response format")
+                                ?: throw Exception("Invalid response format")
+        }
+
+        private fun buildPRReviewPrompt(
+                files: List<String>,
+                diff: String,
+                affectedHotspots: List<String>
+        ): String {
+                return """
+        Review the following code changes (Pull Request) for a codebase.
+        
+        CHANGED FILES:
+        ${files.joinToString("\n") { "- $it" }}
+        
+        CRITICAL HOTSPOTS AFFECTED:
+        ${if (affectedHotspots.isEmpty()) "None" else affectedHotspots.joinToString(", ")}
+        
+        CONTEXT:
+        Hotspots are files with high centrality (PageRank) and frequent churn. Changes to these files carry higher risk of side effects.
+        
+        DIFF:
+        ```diff
+        ${diff.take(5000)} ${if (diff.length > 5000) "...(truncated)" else ""}
+        ```
+        
+        Analyze for:
+        1. Correctness and Logic Errors
+        2. Security Vulnerabilities
+        3. Potential Breaking Changes (API, Database, etc.)
+        4. Performance Implications
+        5. Impact on identified Hotspots
+        
+        Respond ONLY with JSON:
+        {
+          "summary": "Brief executive summary of changes",
+          "impactAnalysis": "Assessment of risk and impact",
+          "securityRisks": ["risk1", "risk2"] or [],
+          "breakingChanges": ["change1"] or [],
+          "hotspotImpact": "Analysis of impact on hotspots" or null,
+          "suggestions": [
+            {
+              "file": "path/to/file",
+              "line": 0 (approximate),
+              "suggestion": "Specific actionable advice",
+              "severity": "critical" | "major" | "minor"
+            }
+          ]
+        }
+        """
         }
 
         private fun parseInsight(response: String, filePath: String): AIInsight {
@@ -339,6 +431,23 @@ class AICodeAnalyzer(
                                 answer = response.take(200) + "...",
                                 suggestedFiles = emptyList(),
                                 confidence = 0.5
+                        )
+                }
+        }
+
+        private fun parsePRReview(response: String): PRReview {
+                val jsonText = response.substringAfter("{").substringBeforeLast("}").let { "{$it}" }
+                return try {
+                        json.decodeFromString<PRReview>(jsonText)
+                } catch (e: Exception) {
+                        println("Failed to parse PR Review JSON: ${e.message}\nResponse: $response")
+                        PRReview(
+                                summary = "Failed to parse AI response.",
+                                impactAnalysis = "Unknown",
+                                securityRisks = emptyList(),
+                                breakingChanges = emptyList(),
+                                suggestions = emptyList(),
+                                hotspotImpact = null
                         )
                 }
         }
