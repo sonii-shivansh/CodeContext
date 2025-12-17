@@ -19,8 +19,8 @@
     "learningPathLength": 20,
     "ai": {
         "enabled": true,
-        "provider": "anthropic",
-        "apiKey": "heuristic",
-        "model": "claude-sonnet-4-20250514"
+        "provider": "gemini",
+        "apiKey": "AIzaSyDTA0_VE2c6KtBcbQt-Ce8QFw6uVW9owEo",
+        "model": "gemini-2.5-flash"
     }
 }

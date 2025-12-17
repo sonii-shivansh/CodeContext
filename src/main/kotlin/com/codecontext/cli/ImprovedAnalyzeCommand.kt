@@ -79,7 +79,7 @@ class ImprovedAnalyzeCommand :
                             runBlocking { parser.parseFiles(files) }
                         } catch (e: Exception) {
                             echo("❌ Parsing failed: ${e.message}")
-                            if (verbose) e.printStackTrace()
+                            if (verbose) println(e.stackTraceToString())
                             return
                         }
 
@@ -99,7 +99,7 @@ class ImprovedAnalyzeCommand :
                             gitAnalyzer.analyze(File(path).absolutePath, parsedFiles)
                         } catch (e: Exception) {
                             echo("   ⚠️  Git analysis failed: ${e.message}")
-                            if (verbose) e.printStackTrace()
+                            if (verbose) println(e.stackTraceToString())
                             parsedFiles // Continue without git metadata
                         }
 
@@ -110,14 +110,18 @@ class ImprovedAnalyzeCommand :
                 val buildResult = graph.build(enrichedFiles)
                 if (buildResult.isFailure) {
                     echo("❌ Failed to build graph: ${buildResult.exceptionOrNull()?.message}")
-                    if (verbose) buildResult.exceptionOrNull()?.printStackTrace()
+                    if (verbose)
+                            buildResult.exceptionOrNull()?.let { println(it.stackTraceToString()) }
                     return
                 }
 
                 val analyzeResult = graph.analyze()
                 if (analyzeResult.isFailure) {
                     echo("❌ Failed to analyze graph: ${analyzeResult.exceptionOrNull()?.message}")
-                    if (verbose) analyzeResult.exceptionOrNull()?.printStackTrace()
+                    if (verbose)
+                            analyzeResult.exceptionOrNull()?.let {
+                                println(it.stackTraceToString())
+                            }
                     return
                 }
 
@@ -149,7 +153,8 @@ class ImprovedAnalyzeCommand :
                 if (config.ai.enabled && config.ai.apiKey.isNotBlank()) {
                     echo("🤖 Generating AI Insights...")
 
-                    val aiAnalyzer = AICodeAnalyzer(config.ai.apiKey, config.ai.model)
+                    val aiAnalyzer =
+                            AICodeAnalyzer(config.ai.apiKey, config.ai.model, config.ai.provider)
 
                     if (!aiAnalyzer.isConfigured()) {
                         echo("   ⚠️  AI is enabled but not properly configured")
@@ -178,13 +183,13 @@ class ImprovedAnalyzeCommand :
                             }
                         } catch (e: Exception) {
                             echo("   ⚠️  AI analysis failed: ${e.message}")
-                            if (verbose) e.printStackTrace()
+                            if (verbose) println(e.stackTraceToString())
                         }
                     }
                 }
             } catch (e: Exception) {
                 echo("❌ Analysis failed: ${e.message}")
-                if (verbose) e.printStackTrace()
+                if (verbose) println(e.stackTraceToString())
                 throw e // Re-throw for proper exit code
             }
         }

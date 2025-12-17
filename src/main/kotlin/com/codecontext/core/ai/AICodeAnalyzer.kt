@@ -15,12 +15,12 @@ import kotlinx.serialization.json.*
 data class AIInsight(
         val file: String,
         val purpose: String,
-        val complexity: Int, // 1-10
+        val complexity: Int,
         val keyComponents: List<String>,
         val refactoringTips: List<String>,
         val securityConcerns: List<String>,
         val businessImpact: String,
-        val readingTime: Int // minutes
+        val readingTime: Int
 )
 
 @Serializable
@@ -45,27 +45,25 @@ data class CodeSuggestion(
         val file: String,
         val line: Int,
         val suggestion: String,
-        val severity: String // "critical", "major", "minor"
+        val severity: String
 )
 
 class AICodeAnalyzer(
         private val apiKey: String,
-        private val model: String = "claude-sonnet-4-20250514"
+        private val model: String = "gemini-2.5-flash",
+        private val provider: String = "gemini"
 ) {
         private val client = HttpClient.newHttpClient()
         private val json = Json { ignoreUnknownKeys = true }
 
-        // FIX: Remove fake AI mode
         private val isEnabled: Boolean =
                 apiKey.isNotBlank() && apiKey != "heuristic" && !apiKey.startsWith("demo")
 
-        /** Check if AI analysis is properly configured */
         fun isConfigured(): Boolean = isEnabled
 
         /** Analyze a single file and generate comprehensive insights */
         suspend fun analyzeFile(file: ParsedFile, context: AnalysisContext): AIInsight =
                 withContext(Dispatchers.IO) {
-                        // FIX: Throw error instead of fake response
                         if (!isEnabled) {
                                 throw IllegalStateException(
                                         "AI analysis is not configured. Please set a valid API key in .codecontext.json"
@@ -73,7 +71,7 @@ class AICodeAnalyzer(
                         }
 
                         val prompt = buildFileAnalysisPrompt(file, context)
-                        val response = callClaude(prompt)
+                        val response = callAI(prompt)
 
                         return@withContext parseInsight(response, file.file.absolutePath)
                 }
@@ -84,8 +82,6 @@ class AICodeAnalyzer(
                 graph: RobustDependencyGraph,
                 limit: Int = 50
         ): Map<String, AIInsight> = coroutineScope {
-
-                // Prioritize high-impact files (high PageRank)
                 val prioritized =
                         files
                                 .sortedByDescending {
@@ -95,7 +91,6 @@ class AICodeAnalyzer(
 
                 println("🤖 AI analyzing top $limit files...")
 
-                // Process in chunks to respect rate limits
                 prioritized
                         .chunked(5)
                         .flatMap { chunk ->
@@ -151,12 +146,12 @@ class AICodeAnalyzer(
         ): AIConversationResponse =
                 withContext(Dispatchers.IO) {
                         val prompt = buildConversationPrompt(question, codebaseContext)
-                        val response = callClaude(prompt)
+                        val response = callAI(prompt)
 
                         return@withContext parseConversation(response)
                 }
 
-        /** Review a Pull Request / Diff with context awareness of hotspots and dependencies. */
+        /** Review a Pull Request / Diff */
         suspend fun reviewPullRequest(
                 files: List<String>,
                 diff: String,
@@ -176,7 +171,7 @@ class AICodeAnalyzer(
                                 }
 
                         val prompt = buildPRReviewPrompt(files, diff, affectedHotspots)
-                        val response = callClaude(prompt)
+                        val response = callAI(prompt)
 
                         return@withContext parsePRReview(response)
                 }
@@ -201,13 +196,13 @@ class AICodeAnalyzer(
         Write for a developer joining the team. Focus on impact and risks.
         """
 
-                        callClaude(prompt).trim()
+                        callAI(prompt).trim()
                 }
 
         /** Suggest learning order based on complexity and dependencies */
         suspend fun generateLearningStrategy(
                 files: List<ParsedFile>,
-                developerLevel: String // "junior", "mid", "senior"
+                developerLevel: String
         ): String =
                 withContext(Dispatchers.IO) {
                         val filesSummary =
@@ -230,15 +225,13 @@ class AICodeAnalyzer(
         Format as Markdown.
         """
 
-                        callClaude(prompt)
+                        callAI(prompt)
                 }
 
         private fun buildFileAnalysisPrompt(file: ParsedFile, context: AnalysisContext): String {
                 val fileContent =
                         try {
-                                // In real app, we should read file content.
-                                // But ParsedFile only has path? No, it has file object.
-                                file.file.readText().take(3000) // First 3000 chars
+                                file.file.readText().take(3000)
                         } catch (e: Exception) {
                                 "[File content unavailable]"
                         }
@@ -300,22 +293,123 @@ class AICodeAnalyzer(
         """
         }
 
-        private suspend fun callClaude(prompt: String): String {
-                // FIX: Removed fake AI fallback mode - now requires valid API key
-
-                val requestBody =
-                        """
+        private fun buildPRReviewPrompt(
+                files: List<String>,
+                diff: String,
+                affectedHotspots: List<String>
+        ): String {
+                return """
+        Review the following code changes (Pull Request) for a codebase.
+        
+        CHANGED FILES:
+        ${files.joinToString("\n") { "- $it" }}
+        
+        CRITICAL HOTSPOTS AFFECTED:
+        ${if (affectedHotspots.isEmpty()) "None" else affectedHotspots.joinToString(", ")}
+        
+        DIFF:
+        ```diff
+        ${diff.take(5000)} ${if (diff.length > 5000) "...(truncated)" else ""}
+        ```
+        
+        Analyze for:
+        1. Correctness and Logic Errors
+        2. Security Vulnerabilities
+        3. Potential Breaking Changes
+        4. Performance Implications
+        5. Impact on identified Hotspots
+        
+        Respond ONLY with JSON:
         {
-          "model": "$model",
-          "max_tokens": 1000,
-          "messages": [
+          "summary": "Brief executive summary",
+          "impactAnalysis": "Assessment of risk",
+          "securityRisks": ["risk1"] or [],
+          "breakingChanges": ["change1"] or [],
+          "hotspotImpact": "Analysis" or null,
+          "suggestions": [
             {
-              "role": "user",
-              "content": "${ prompt.replace("\"", "\\\"").replace("\n", "\\n").replace("\t", "\\t") }"
+              "file": "path/to/file",
+              "line": 0,
+              "suggestion": "Specific advice",
+              "severity": "critical" | "major" | "minor"
             }
           ]
         }
-        """.trimIndent()
+        """
+        }
+
+        /** Universal AI caller - supports both Gemini and Claude */
+        private suspend fun callAI(prompt: String): String {
+                return when (provider.lowercase()) {
+                        "gemini" -> callGemini(prompt)
+                        "anthropic", "claude" -> callClaude(prompt)
+                        else -> throw IllegalArgumentException("Unsupported AI provider: $provider")
+                }
+        }
+
+        /** Call Google Gemini API */
+        private suspend fun callGemini(prompt: String): String {
+                val requestBody =
+                        """
+                {
+                  "contents": [{
+                    "parts": [{
+                      "text": ${Json.encodeToString(prompt)}
+                    }]
+                  }],
+                  "generationConfig": {
+                    "temperature": 0.7,
+                    "topK": 40,
+                    "topP": 0.95,
+                    "maxOutputTokens": 2048
+                  }
+                }
+                """.trimIndent()
+
+                val url =
+                        "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
+
+                val request =
+                        HttpRequest.newBuilder()
+                                .uri(URI.create(url))
+                                .header("Content-Type", "application/json")
+                                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                                .build()
+
+                val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+
+                if (response.statusCode() != 200) {
+                        throw Exception(
+                                "Gemini API error: ${response.statusCode()} ${response.body()}"
+                        )
+                }
+
+                // Parse Gemini response
+                val responseJson = Json.parseToJsonElement(response.body()).jsonObject
+                val candidates = responseJson["candidates"]?.jsonArray
+                val firstCandidate = candidates?.firstOrNull()?.jsonObject
+                val content = firstCandidate?.get("content")?.jsonObject
+                val parts = content?.get("parts")?.jsonArray
+                val text = parts?.firstOrNull()?.jsonObject?.get("text")?.jsonPrimitive?.content
+
+                return text ?: throw Exception("Invalid Gemini response format: ${response.body()}")
+        }
+
+        /** Call Anthropic Claude API (original implementation) */
+        private suspend fun callClaude(prompt: String): String {
+                val requestBody =
+                        """
+                {
+                  "model": "$model",
+                  "max_tokens": 1000,
+                  "messages": [
+                    {
+                      "role": "user",
+                      "content": "${prompt.replace("\"", "\\\"").replace("\n", "\\n").replace("\t", "\\t")}"
+                    }
+                  ]
+                }
+                """.trimIndent()
 
                 val request =
                         HttpRequest.newBuilder()
@@ -334,7 +428,6 @@ class AICodeAnalyzer(
                         )
                 }
 
-                // Parse response
                 val responseJson = Json.parseToJsonElement(response.body()).jsonObject
                 val content = responseJson["content"]?.jsonArray?.firstOrNull()?.jsonObject
                 return content?.get("text")
@@ -342,72 +435,18 @@ class AICodeAnalyzer(
                         ?.removeSurrounding("\"")
                         ?.replace("\\n", "\n")
                         ?: throw Exception("Invalid response format")
-                                ?: throw Exception("Invalid response format")
-        }
-
-        private fun buildPRReviewPrompt(
-                files: List<String>,
-                diff: String,
-                affectedHotspots: List<String>
-        ): String {
-                return """
-        Review the following code changes (Pull Request) for a codebase.
-        
-        CHANGED FILES:
-        ${files.joinToString("\n") { "- $it" }}
-        
-        CRITICAL HOTSPOTS AFFECTED:
-        ${if (affectedHotspots.isEmpty()) "None" else affectedHotspots.joinToString(", ")}
-        
-        CONTEXT:
-        Hotspots are files with high centrality (PageRank) and frequent churn. Changes to these files carry higher risk of side effects.
-        
-        DIFF:
-        ```diff
-        ${diff.take(5000)} ${if (diff.length > 5000) "...(truncated)" else ""}
-        ```
-        
-        Analyze for:
-        1. Correctness and Logic Errors
-        2. Security Vulnerabilities
-        3. Potential Breaking Changes (API, Database, etc.)
-        4. Performance Implications
-        5. Impact on identified Hotspots
-        
-        Respond ONLY with JSON:
-        {
-          "summary": "Brief executive summary of changes",
-          "impactAnalysis": "Assessment of risk and impact",
-          "securityRisks": ["risk1", "risk2"] or [],
-          "breakingChanges": ["change1"] or [],
-          "hotspotImpact": "Analysis of impact on hotspots" or null,
-          "suggestions": [
-            {
-              "file": "path/to/file",
-              "line": 0 (approximate),
-              "suggestion": "Specific actionable advice",
-              "severity": "critical" | "major" | "minor"
-            }
-          ]
-        }
-        """
         }
 
         private fun parseInsight(response: String, filePath: String): AIInsight {
-                // Extract JSON from response (Claude might add markdown)
                 val jsonText =
                         response.substringAfter("{")
                                 .substringBeforeLast("}")
                                 .let { "{$it}" }
-                                .replace(
-                                        "\\\"",
-                                        "\""
-                                ) // Clean up escaped quotes if any double escaping happened
+                                .replace("\\\"", "\"")
 
                 return try {
                         json.decodeFromString<AIInsight>(jsonText).copy(file = filePath)
                 } catch (e: Exception) {
-                        // Fallback to basic insight
                         AIInsight(
                                 file = filePath,
                                 purpose = "Analysis unavailable (JSON error)",
@@ -440,7 +479,6 @@ class AICodeAnalyzer(
                 return try {
                         json.decodeFromString<PRReview>(jsonText)
                 } catch (e: Exception) {
-                        println("Failed to parse PR Review JSON: ${e.message}\nResponse: $response")
                         PRReview(
                                 summary = "Failed to parse AI response.",
                                 impactAnalysis = "Unknown",

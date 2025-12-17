@@ -81,7 +81,8 @@ class AIAssistantCommand :
                                 // context, usually slow
                                 )
 
-                val aiAnalyzer = AICodeAnalyzer(config.ai.apiKey, config.ai.model)
+                val aiAnalyzer =
+                        AICodeAnalyzer(config.ai.apiKey, config.ai.model, config.ai.provider)
                 val response = aiAnalyzer.askQuestion(question, context)
 
                 echo("\n💡 ${response.answer}\n")

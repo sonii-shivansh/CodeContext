@@ -183,7 +183,8 @@ fun Application.module() {
                                 recentChanges = emptyList()
                         )
 
-                val aiAnalyzer = AICodeAnalyzer(config.ai.apiKey, config.ai.model)
+                val aiAnalyzer =
+                        AICodeAnalyzer(config.ai.apiKey, config.ai.model, config.ai.provider)
                 val response = aiAnalyzer.askQuestion(request.question, context)
 
                 call.respond(response)
