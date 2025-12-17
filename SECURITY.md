@@ -18,7 +18,7 @@ Please do not create a public GitHub issue for security vulnerabilities.
 
 ### 2. Report Privately
 
-Send an email to: **[your-email@example.com]** with:
+Send an email to: **[shivanshsoni568@gmail.com]** with:
 
 - Description of the vulnerability
 - Steps to reproduce
@@ -59,6 +59,6 @@ When using CodeContext:
 
 ## Contact
 
-For security concerns: **[your-email@example.com]**
+For security concerns: **[shivanshsoni568@gmail.com]**
 
 Thank you for helping keep CodeContext and our users safe!
