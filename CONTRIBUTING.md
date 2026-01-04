@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to CodeContext! We welcome contributions from everyone.
 
-## 🛠️ How to Contribute
+## How to Contribute
 
 ### 1. Report Bugs
 - Check the [Issue Tracker](#) to see if the bug has already been reported.
@@ -19,7 +19,7 @@ Thank you for your interest in contributing to CodeContext! We welcome contribut
 5.  **Verify**: Run `./gradlew test` to ensure all tests pass.
 6.  Push to your fork and submit a **Pull Request**.
 
-## 🧪 Development Setup
+## Development Setup
 
 Prerequisites:
 - JDK 21+
@@ -35,7 +35,15 @@ Run locally:
 ./gradlew run --args="analyze ."
 ```
 
-## 📏 Coding Standards
+## Troubleshooting
+
+### Permission Denied Error
+If you see "permission denied: ./gradlew", run:
+```bash
+chmod +x gradlew
+```
+
+## Coding Standards
 - We use **Kotlin** (strictly typed).
 - Follow standard Kotlin coding conventions.
 - Ensure all new files have KDoc headers.
