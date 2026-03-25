@@ -97,6 +97,16 @@ Pre-built binaries will be available on the GitHub Releases page.
 ./build/install/codecontext/bin/codecontext analyze .
 ```
 
+### Useful Analyze Flags
+
+```bash
+# Skip git history (faster for large repos or non-git folders)
+./build/install/codecontext/bin/codecontext analyze . --skip-git
+
+# Customize hotspot count and report output location
+./build/install/codecontext/bin/codecontext analyze . --hotspots 25 --output reports/codecontext.html
+```
+
 ---
 
 ### View the Report

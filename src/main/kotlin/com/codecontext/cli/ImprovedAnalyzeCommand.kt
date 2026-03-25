@@ -13,6 +13,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
 import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.int
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 import kotlin.system.measureTimeMillis
@@ -23,6 +24,11 @@ class ImprovedAnalyzeCommand :
     private val path by argument("path", help = "Path to analyze").default(".")
     private val noCache by option("--no-cache", help = "Disable caching").flag()
     private val clearCache by option("--clear-cache", help = "Clear cache before analyzing").flag()
+    private val skipGit by option("--skip-git", help = "Skip git history analysis").flag()
+    private val hotspotLimitOverride by
+            option("--hotspots", help = "Override hotspot count shown in output").int()
+    private val outputOverride by
+            option("--output", help = "Output HTML report path (default: output/index.html)")
 
     // FIX: Add verbose mode for debugging
     private val verbose by option("--verbose", "-v", help = "Enable verbose logging").flag()
@@ -40,8 +46,17 @@ class ImprovedAnalyzeCommand :
             echo("❌ Error: Path is not a directory: $path")
             return
         }
+        if (hotspotLimitOverride != null && hotspotLimitOverride!! <= 0) {
+            echo("❌ Error: --hotspots must be greater than 0")
+            return
+        }
 
         val config = ConfigLoader.load()
+        val hotspotLimit = hotspotLimitOverride ?: config.hotspotCount
+        val reportFile =
+                outputOverride?.let { File(it) }
+                        ?: File(File("output").apply { if (!exists()) mkdirs() }, "index.html")
+
         val time = measureTimeMillis {
             try {
                 // Clear cache if requested
@@ -92,15 +107,20 @@ class ImprovedAnalyzeCommand :
                 }
 
                 // 3. Git Analysis (with error handling)
-                echo("📜 Analyzing Git history...")
                 val enrichedFiles =
-                        try {
-                            val gitAnalyzer = OptimizedGitAnalyzer()
-                            gitAnalyzer.analyze(File(path).absolutePath, parsedFiles)
-                        } catch (e: Exception) {
-                            echo("   ⚠️  Git analysis failed: ${e.message}")
-                            if (verbose) println(e.stackTraceToString())
-                            parsedFiles // Continue without git metadata
+                        if (skipGit) {
+                            echo("📜 Skipping Git history analysis")
+                            parsedFiles
+                        } else {
+                            echo("📜 Analyzing Git history...")
+                            try {
+                                val gitAnalyzer = OptimizedGitAnalyzer()
+                                gitAnalyzer.analyze(File(path).absolutePath, parsedFiles)
+                            } catch (e: Exception) {
+                                echo("   ⚠️  Git analysis failed: ${e.message}")
+                                if (verbose) println(e.stackTraceToString())
+                                parsedFiles // Continue without git metadata
+                            }
                         }
 
                 // 4. Build Graph (with validation)
@@ -126,7 +146,7 @@ class ImprovedAnalyzeCommand :
                 }
 
                 // Show hotspots
-                val hotspots = graph.getTopHotspots(config.hotspotCount)
+                val hotspots = graph.getTopHotspots(hotspotLimit)
                 echo("🗺️  Your Codebase Map")
                 echo("├─ 🔥 Hot Zones (Top ${minOf(5, hotspots.size)}):")
                 hotspots.take(5).forEachIndexed { index, (file, score) ->
@@ -137,9 +157,7 @@ class ImprovedAnalyzeCommand :
 
                 // 5. Generate Report
                 echo("📊 Generating report...")
-                val outputDir = File("output")
-                if (!outputDir.exists()) outputDir.mkdirs()
-                val reportFile = File(outputDir, "index.html")
+                reportFile.parentFile?.let { if (!it.exists()) it.mkdirs() }
 
                 val generator = ReportGenerator()
                 val learningPath =
@@ -165,7 +183,8 @@ class ImprovedAnalyzeCommand :
                                 val insights =
                                         aiAnalyzer.batchAnalyze(enrichedFiles, graph, limit = 10)
 
-                                val aiReportFile = File(outputDir, "ai-insights.md")
+                                val aiReportFile =
+                                        File(reportFile.parentFile ?: File("."), "ai-insights.md")
                                 aiReportFile.writeText("# AI Code Insights\n\n")
 
                                 insights.forEach { (path, insight) ->
