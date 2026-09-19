@@ -4,103 +4,78 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Thread-safe rate limiter using sliding window algorithm. Tracks requests per client (identified
- * by API key or IP) and enforces limits.
+ * Thread-safe rate limiter with per-minute and per-hour counters.
+ * Uses a per-window key strategy, which is stable and easy to test.
  */
 class RateLimiter(
-        private val maxRequestsPerMinute: Int = 60,
-        private val maxRequestsPerHour: Int = 1000
+    private val maxRequestsPerMinute: Int = 60,
+    private val maxRequestsPerHour: Int = 1000
 ) {
-    private val minuteCounters = ConcurrentHashMap<String, TimedCounter>()
-    private val hourCounters = ConcurrentHashMap<String, TimedCounter>()
+    private val minuteCounters = ConcurrentHashMap<String, WindowCounter>()
+    private val hourCounters = ConcurrentHashMap<String, WindowCounter>()
 
-    data class TimedCounter(
-            val counter: AtomicInteger = AtomicInteger(0),
-            val startTime: Long = System.currentTimeMillis()
+    data class WindowCounter(
+        val counter: AtomicInteger = AtomicInteger(0),
+        val startTime: Long = System.currentTimeMillis()
     )
 
-    /**
-     * Check if a client has exceeded their rate limit.
-     * @param clientId Unique identifier for the client (API key or IP address)
-     * @return true if request is allowed, false if rate limit exceeded
-     */
     fun checkLimit(clientId: String): Boolean {
         val now = System.currentTimeMillis()
-
-        // Check minute limit
         val minuteKey = "$clientId:${now / 60_000}"
-        val minuteCounter = minuteCounters.computeIfAbsent(minuteKey) { TimedCounter() }
+        val hourKey = "$clientId:${now / 3_600_000}"
+
+        val minuteCounter = minuteCounters.computeIfAbsent(minuteKey) { WindowCounter() }
+        val hourCounter = hourCounters.computeIfAbsent(hourKey) { WindowCounter() }
 
         if (minuteCounter.counter.incrementAndGet() > maxRequestsPerMinute) {
+            minuteCounter.counter.decrementAndGet()
             return false
         }
-
-        // Check hour limit
-        val hourKey = "$clientId:${now / 3_600_000}"
-        val hourCounter = hourCounters.computeIfAbsent(hourKey) { TimedCounter() }
 
         if (hourCounter.counter.incrementAndGet() > maxRequestsPerHour) {
+            hourCounter.counter.decrementAndGet()
+            minuteCounter.counter.decrementAndGet()
             return false
         }
 
-        // Cleanup old entries periodically (1% chance)
         if (Math.random() < 0.01) {
-            cleanup()
+            cleanup(now)
         }
 
         return true
     }
 
-    /** Get remaining requests for a client in the current minute. */
     fun getRemainingMinute(clientId: String): Int {
         val now = System.currentTimeMillis()
         val minuteKey = "$clientId:${now / 60_000}"
         val counter = minuteCounters[minuteKey]
-        return if (counter != null) {
-            maxOf(0, maxRequestsPerMinute - counter.counter.get())
-        } else {
-            maxRequestsPerMinute
-        }
+        return if (counter != null) maxOf(0, maxRequestsPerMinute - counter.counter.get()) else maxRequestsPerMinute
     }
 
-    /** Get remaining requests for a client in the current hour. */
     fun getRemainingHour(clientId: String): Int {
         val now = System.currentTimeMillis()
         val hourKey = "$clientId:${now / 3_600_000}"
         val counter = hourCounters[hourKey]
-        return if (counter != null) {
-            maxOf(0, maxRequestsPerHour - counter.counter.get())
-        } else {
-            maxRequestsPerHour
-        }
+        return if (counter != null) maxOf(0, maxRequestsPerHour - counter.counter.get()) else maxRequestsPerHour
     }
 
-    /** Get seconds until the rate limit resets. */
     fun getSecondsUntilReset(clientId: String): Long {
         val now = System.currentTimeMillis()
         val minuteKey = "$clientId:${now / 60_000}"
-        val counter = minuteCounters[minuteKey]
+        val counter = minuteCounters[minuteKey] ?: return 0L
 
-        return if (counter != null && counter.counter.get() > maxRequestsPerMinute) {
-            // Return seconds until next minute
-            60 - ((now / 1000) % 60)
+        return if (counter.counter.get() >= maxRequestsPerMinute) {
+            60L - ((now / 1000L) % 60L)
         } else {
-            0
+            0L
         }
     }
 
-    /** Remove expired entries to prevent memory leaks. */
-    private fun cleanup() {
-        val now = System.currentTimeMillis()
-
-        // Remove minute counters older than 1 minute
-        minuteCounters.entries.removeIf { (_, counter) -> now - counter.startTime > 60_000 }
-
-        // Remove hour counters older than 1 hour
-        hourCounters.entries.removeIf { (_, counter) -> now - counter.startTime > 3_600_000 }
+    private fun cleanup(now: Long) {
+        minuteCounters.entries.removeIf { (_, counter) -> now - counter.startTime > 60_000L }
+        hourCounters.entries.removeIf { (_, counter) -> now - counter.startTime > 3_600_000L }
     }
 
-    /** Clear all rate limit data (useful for testing). */
     fun clear() {
         minuteCounters.clear()
         hourCounters.clear()
