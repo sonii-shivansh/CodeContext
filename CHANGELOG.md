@@ -8,74 +8,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Backend verification test suite
-- Comprehensive testing coverage
+- Health endpoint verification workflow for CI smoke testing
+- Enhanced GitHub Actions validation for CLI startup and report generation
+- Improved server startup validation for local smoke tests
+- Better build and packaging validation in CI
 
 ### Changed
-- Improved graph building logic
-- Enhanced error handling
+- Updated verification workflow to run on Ubuntu 24.04
+- Switched Java setup to `actions/setup-java@v5`
+- Refined verification to validate the CLI, self-analysis report, and local server root endpoint
+- Simplified CI to focus on the key app-level smoke tests
 
 ### Fixed
-- Debug code cleanup
+- Verified the CLI app can build and run from `installDist`
+- Verified the CLI generates an HTML report successfully
+- Confirmed the root endpoint returns the expected API message
+- Reduced workflow noise and improved verification clarity
+
+---
+
+## [0.2.0] - 2026-09-19
+
+### Added
+- Production-oriented CLI release packaging via GitHub Releases
+- Automated verification workflow for build, test, packaging, report generation, and smoke testing
+- Server startup smoke validation in CI
+- Root endpoint validation for the local API
+- Improved release readiness for GitHub distribution publishing
+
+### Changed
+- Improved server startup configuration with host binding support
+- Improved parser concurrency safety for multi-file analysis
+- Hardened rate limiter logic to rollback counters when limits are exceeded
+- Refined server command configuration for local and CI execution
+- Improved project release posture for public distribution
+
+### Fixed
+- Fixed rate limiter counter rollback logic during rejected requests
+- Fixed thread-safety concern in parse progress tracking
+- Improved CLI execution flow for local server startup and verification
+- Corrected release validation path for local analysis and artifact generation
+
+### Security
+- Added explicit path validation patterns for remote/local repository analysis
+- Reduced risk of unsafe repository-path handling in server endpoints
+- Improved server-side validation for local analysis workflow
+
+### Notes
+- This release is intended as a public GitHub Release distribution for the CLI.
+- The project remains focused on developer tooling and onboarding analysis.
+- Maven Central publication is not yet part of this release scope.
+
+---
 
 ## [0.1.0] - 2025-12-14
 
 ### Added
-- 🎯 Initial release of CodeContext
-- 🗺️ Interactive dependency graph visualization
-- 🔥 Knowledge hotspot detection using PageRank algorithm
-- 🎓 Personalized learning path generation
-- 📊 HTML report generation with D3.js force graph
-- 🔍 Multi-language support (Java, Kotlin)
-- 📜 Git history analysis for file metadata
-- 👥 Team contribution mapping
-- ⚡ Parallel file parsing for performance
-- 💾 Caching system for faster re-analysis
-- 🧪 Comprehensive test suite (19+ tests)
-- 📚 CLI interface with multiple commands
-- 🤖 AI-powered code insights (optional)
-- 🌐 REST API server mode
-- 📈 Codebase evolution tracking
+- Initial public release of CodeContext
+- Interactive dependency graph visualization
+- Knowledge hotspot detection using PageRank
+- Personalized learning path generation
+- HTML report generation
+- Git history integration and file metadata analysis
+- Team contribution mapping
+- Parallel file parsing for improved speed
+- Caching layer for faster re-analysis
+- CLI-powered repository analysis
+- Optional AI-based code insights
+- Ktor-based REST API server mode
 
-### Core Components
-- Repository scanner with gitignore support
-- JavaParser for Java code analysis
-- Regex-based Kotlin parser
-- JGraphT for dependency graph management
-- JGit for Git history analysis
-- Ktor server for API mode
-- Clikt for CLI framework
+### Changed
+- Improved project structure and modular separation between CLI and core logic
+- Refined repository scanning and graph generation flow
 
-### Documentation
-- README with quick start guide
-- CONTRIBUTING guidelines
-- CODE_OF_CONDUCT
-- MIT License
+### Fixed
+- Initial bugfixes for graph generation and report generation
+- Stabilized analysis pipeline for basic repository onboarding use cases
 
-## Release Notes
-
-### v0.1.0 - "Foundation Release"
-
-This is the first public release of CodeContext, providing essential codebase analysis features for developer onboarding.
-
-**Highlights:**
-- Analyze Java and Kotlin projects
-- Generate interactive visual reports
-- Identify critical files automatically
-- Create personalized learning paths
-
-**Known Limitations:**
-- Limited to Java/Kotlin (more languages coming)
-- Large repositories (>10k files) may be slow
-- AI features require API key
-
-**Next Steps:**
-- Add support for TypeScript, Python, Go
-- Improve performance for large codebases
-- Add IDE plugins
-- Package manager distribution
+### Known Limitations
+- Limited support for Java and Kotlin
+- Regex-based Kotlin parsing may miss complex language constructs
+- Performance on very large repositories may require tuning
+- AI features require configuration and external API access
+- Server security and distributed deployment hardening are still in progress
 
 ---
 
-[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.2.0
 [0.1.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.1.0
