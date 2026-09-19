@@ -196,6 +196,24 @@ fun Application.module() {
             }
         }
 
+        get("/health") {
+            call.respond(
+                mapOf(
+                    "status" to "healthy",
+                    "version" to "0.1.0",
+                    "uptime" to System.currentTimeMillis() / 1000
+                ) 
+            )
+        }
+
+get("/health/live") {
+    call.respond(mapOf("status" to "live"))
+}
+
+get("/health/ready") {
+    call.respond(mapOf("status" to "ready"))
+}
+
         post("/analyze-org") {
             try {
                 val paths = call.receive<List<String>>()
