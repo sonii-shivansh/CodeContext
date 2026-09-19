@@ -1,0 +1,84 @@
+name: Verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Build, test, and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run tests
+        run: ./gradlew --no-daemon clean test
+
+      - name: Build application
+        run: ./gradlew --no-daemon build installDist
+
+      - name: Verify CLI help
+        run: ./build/install/codecontext/bin/codecontext --help
+
+      - name: Run self-analysis smoke test
+        run: |
+          rm -rf output
+          ./build/install/codecontext/bin/codecontext analyze .
+          test -s output/index.html
+
+      - name: Start server
+        run: |
+          ./build/install/codecontext/bin/codecontext server \
+            --host 127.0.0.1 \
+            --port 18080 > server.log 2>&1 &
+          echo $! > server.pid
+
+      - name: Verify server endpoint
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:18080/ > response.txt; then
+              grep -F "CodeContext API is running" response.txt
+              exit 0
+            fi
+            sleep 1
+          done
+
+          cat server.log
+          exit 1
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill "$(cat server.pid)" || true
+          fi
+
+      - name: Upload verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codecontext-verification
+          path: |
+            output/
+            server.log
+            response.txt
+          if-no-files-found: ignore
