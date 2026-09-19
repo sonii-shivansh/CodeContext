@@ -13,7 +13,7 @@ permissions:
 jobs:
   verify:
     name: Build, test, and smoke test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -21,23 +21,30 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: "21"
-          distribution: temurin
-          cache: gradle
+          distribution: "temurin"
+          cache: "gradle"
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
+      - name: Verify Java and Gradle versions
+        run: |
+          java -version
+          ./gradlew --version
+
       - name: Run tests
         run: ./gradlew --no-daemon clean test
 
-      - name: Build application
+      - name: Build application and distribution
         run: ./gradlew --no-daemon build installDist
 
       - name: Verify CLI help
-        run: ./build/install/codecontext/bin/codecontext --help
+        run: |
+          ./build/install/codecontext/bin/codecontext --help
+          ./build/install/codecontext/bin/codecontext --version || true
 
       - name: Run self-analysis smoke test
         run: |
@@ -45,28 +52,58 @@ jobs:
           ./build/install/codecontext/bin/codecontext analyze .
           test -s output/index.html
 
+      - name: Verify generated report
+        run: |
+          grep -q "CodeContext Analysis Report" output/index.html
+          grep -q "Knowledge Hotspots" output/index.html
+          grep -q "Personalized Learning Path" output/index.html
+
       - name: Start server
+        shell: bash
         run: |
           ./build/install/codecontext/bin/codecontext server \
             --host 127.0.0.1 \
             --port 18080 > server.log 2>&1 &
+
           echo $! > server.pid
 
-      - name: Verify server endpoint
+      - name: Wait for server
+        shell: bash
         run: |
           for attempt in {1..30}; do
             if curl --fail --silent http://127.0.0.1:18080/ > response.txt; then
-              grep -F "CodeContext API is running" response.txt
               exit 0
             fi
+
             sleep 1
           done
 
+          echo "Server did not become ready."
           cat server.log
           exit 1
 
+      - name: Verify root endpoint
+        run: |
+          grep -F "CodeContext API is running" response.txt
+
+      - name: Verify health endpoint
+        run: |
+          curl --fail --silent http://127.0.0.1:18080/health > health.json
+          grep -F '"status":"healthy"' health.json
+
+      - name: Verify live health endpoint
+        run: |
+          curl --fail --silent http://127.0.0.1:18080/health/live > live-health.json
+          grep -F '"status":"live"' live-health.json
+
+      - name: Verify ready health endpoint
+        run: |
+          curl --fail --silent http://127.0.0.1:18080/health/ready > ready-health.json
+          grep -F '"status":"ready"' ready-health.json
+
       - name: Stop server
         if: always()
+        shell: bash
         run: |
           if [ -f server.pid ]; then
             kill "$(cat server.pid)" || true
@@ -77,8 +114,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: codecontext-verification
+          if-no-files-found: ignore
           path: |
             output/
             server.log
             response.txt
-          if-no-files-found: ignore
+            health.json
+            live-health.json
+            ready-health.json
