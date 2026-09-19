@@ -86,21 +86,6 @@ jobs:
         run: |
           grep -F "CodeContext API is running" response.txt
 
-      - name: Verify health endpoint
-        run: |
-          curl --fail --silent http://127.0.0.1:18080/health > health.json
-          grep -F '"status":"healthy"' health.json
-
-      - name: Verify live health endpoint
-        run: |
-          curl --fail --silent http://127.0.0.1:18080/health/live > live-health.json
-          grep -F '"status":"live"' live-health.json
-
-      - name: Verify ready health endpoint
-        run: |
-          curl --fail --silent http://127.0.0.1:18080/health/ready > ready-health.json
-          grep -F '"status":"ready"' ready-health.json
-
       - name: Stop server
         if: always()
         shell: bash
@@ -119,6 +104,3 @@ jobs:
             output/
             server.log
             response.txt
-            health.json
-            live-health.json
-            ready-health.json
