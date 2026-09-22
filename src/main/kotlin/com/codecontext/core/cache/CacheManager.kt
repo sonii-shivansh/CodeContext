@@ -55,8 +55,11 @@ class CacheManager(private val cacheDir: File = File(".codecontext/cache")) {
                 read = input.read(buffer)
             }
         }
-        val metadata = "${file.canonicalPath}:$${digest.digest().joinToString("") { "%02x".format(it) }}"
-        return MessageDigest.getInstance("SHA-256").digest(metadata.toByteArray()).joinToString("") { "%02x".format(it) }
+        val contentHash = digest.digest().joinToString("") { "%02x".format(it) }
+        val metadata = "${file.canonicalPath}:$contentHash"
+        return MessageDigest.getInstance("SHA-256")
+            .digest(metadata.toByteArray())
+            .joinToString("") { "%02x".format(it) }
     }
 
     fun clear() {
