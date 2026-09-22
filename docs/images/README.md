@@ -1,50 +1,25 @@
-# CodeContext Demo
+# CodeContext demo assets
 
-This directory contains demo assets for the CodeContext project.
+This directory contains screenshots and other non-runtime assets used by the project documentation.
 
-## Demo Screenshot
+## Recreate the report
 
-![CodeContext Demo](codecontext_demo.png)
-
-*Interactive dependency graph showing knowledge hotspots and file relationships*
-
-## What the Demo Shows
-
-1. **Interactive Force Graph** - D3.js visualization of codebase dependencies
-2. **Knowledge Hotspots** - Files ranked by importance using PageRank algorithm
-3. **Learning Path** - Recommended reading order for new developers
-4. **Team Contribution Map** - Developer activity and ownership
-5. **Smart Context** - Git metadata (authors, changes, last modified)
-
-## Running the Demo Yourself
+From the repository root:
 
 ```bash
-# Clone the repository
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
-
-# Build and run
-./gradlew run --args="analyze ."
-
-# Open the generated report
-open output/index.html  # macOS
-xdg-open output/index.html  # Linux
-start output/index.html  # Windows
+./gradlew installDist
+./build/install/codecontext/bin/codecontext analyze .
 ```
 
-## Sample Output
+Open the generated report at `output/index.html`.
 
-When you run CodeContext on itself, you'll see:
-- ~80 Kotlin files analyzed
-- ~100 dependency edges
-- Top hotspots: ParsedFile.kt, RobustDependencyGraph.kt, ReportGenerator.kt
-- Learning path ordered from simple utilities to complex analyzers
+## Demonstrated capabilities
 
-## Features Demonstrated
+- Java and Kotlin source discovery
+- Dependency graph construction
+- PageRank hotspot ranking
+- Learning-path generation
+- Git metadata enrichment
+- Interactive HTML visualization
 
-- ✅ Multi-language parsing (Java, Kotlin)
-- ✅ Dependency graph construction
-- ✅ PageRank hotspot detection
-- ✅ Topological learning path generation
-- ✅ Git history integration
-- ✅ Interactive HTML reports
+The screenshot is illustrative. File counts, dependency counts, and hotspot ordering depend on the current repository state and configuration.

@@ -1,51 +1,76 @@
 # Contributing to CodeContext
 
-Thank you for your interest in contributing to CodeContext! We welcome contributions from everyone.
+Thank you for contributing to CodeContext. Contributions should improve analysis accuracy, developer experience, reliability, or security without weakening the project's local-first safety model.
 
-## How to Contribute
+## Before you start
 
-### 1. Report Bugs
-- Check the [Issue Tracker](#) to see if the bug has already been reported.
-- If not, create a new issue with a clear description, reproduction steps, and environment details.
+1. Search existing issues and pull requests.
+2. For significant behavior or API changes, open an issue or discussion first.
+3. Never include credentials, private source code, generated reports, `.codecontext/`, or build output in a contribution.
 
-### 2. Suggest Features
-- We love new ideas! Open an issue with the label `enhancement` to discuss your proposal.
+## Development setup
 
-### 3. Submit Pull Requests
-1.  **Fork** the repository and clone it locally.
-2.  Create a **new branch** for your feature or fix: `git checkout -b feature/amazing-feature`.
-3.  **Commit** your changes with descriptive messages.
-4.  **Add Tests**: Ensure your changes are covered by tests (`PropertyTest` or `EdgeCaseTest` where applicable).
-5.  **Verify**: Run `./gradlew test` to ensure all tests pass.
-6.  Push to your fork and submit a **Pull Request**.
+Requirements:
 
-## Development Setup
-
-Prerequisites:
-- JDK 21+
+- JDK 21 or newer
 - Git
+- Kotlin-capable editor
 
-Build command:
 ```bash
-./gradlew build
+git clone https://github.com/sonii-shivansh/CodeContext.git
+cd CodeContext
+./gradlew --no-daemon clean test
 ```
 
-Run locally:
+## Workflow
+
+1. Create a focused branch from `main`.
+2. Implement the smallest coherent change.
+3. Add or update tests, especially for public APIs and security boundaries.
+4. Update documentation when behavior, configuration, or output changes.
+5. Run the local validation commands.
+6. Push the branch and open a pull request.
+
 ```bash
-./gradlew run --args="analyze ."
+./gradlew --no-daemon clean test
+./gradlew --no-daemon build installDist
 ```
 
-## Troubleshooting
+The Verification workflow must pass before merging.
 
-### Permission Denied Error
-If you see "permission denied: ./gradlew", run:
-```bash
-chmod +x gradlew
-```
+## Coding expectations
 
-## Coding Standards
-- We use **Kotlin** (strictly typed).
-- Follow standard Kotlin coding conventions.
-- Ensure all new files have KDoc headers.
+- Follow Kotlin coding conventions and existing formatting.
+- Prefer structured concurrency; do not introduce `runBlocking` inside suspend code paths.
+- Validate input at system boundaries.
+- Keep errors stable and sanitized for API consumers.
+- Do not expose absolute server filesystem paths, stack traces, provider response bodies, or credentials.
+- Use configuration rather than duplicating operational limits.
+- Preserve cancellation, bounded concurrency, and deterministic tests.
+- Add KDoc for public APIs where useful.
 
-Thank you for helping us make codebases easier to understand! 🚀
+## Tests
+
+Tests are grouped under `src/test/kotlin/com/codecontext`:
+
+- `core/`: parser, graph, cache, property, edge-case, and stress tests;
+- `server/`: path-security and rate-limit tests;
+- `verification/`: backend verification coverage;
+- `E2ETest.kt`: end-to-end behavior.
+
+Security-sensitive changes should include tests for traversal, sibling-prefix paths, symlinks where applicable, malformed input, and error sanitization.
+
+## Pull request checklist
+
+- [ ] The change is focused and documented.
+- [ ] Tests cover the changed behavior.
+- [ ] `./gradlew --no-daemon clean test` passes.
+- [ ] `./gradlew --no-daemon build installDist` passes.
+- [ ] The Verification workflow passes.
+- [ ] No secrets or generated files are included.
+- [ ] API, architecture, changelog, and security documentation are updated when applicable.
+- [ ] The complete diff against `main` has been reviewed.
+
+## Reporting bugs and requesting features
+
+Use the GitHub issue templates where available. Include the CodeContext version, JDK version, operating system, command, sanitized logs, and a minimal reproduction. Do not publish sensitive source code or security vulnerabilities in a public issue.

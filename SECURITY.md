@@ -1,64 +1,50 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-We release patches for security vulnerabilities. Currently supported versions:
+| Version | Supported |
+| --- | --- |
+| `0.2.x` | Yes |
+| `0.1.x` | Limited; upgrade recommended |
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Do not disclose security vulnerabilities in a public issue. Report them privately to **shivanshsoni568@gmail.com** with:
 
-We take security seriously. If you discover a security vulnerability, please follow these steps:
+- a concise description;
+- affected version, commit, or deployment mode;
+- reproduction steps or a proof of concept;
+- security impact and possible mitigations;
+- any relevant logs with secrets removed.
 
-### 1. **Do Not** Open a Public Issue
+Please do not include API keys, credentials, private source code, or personal data unless absolutely necessary.
 
-Please do not create a public GitHub issue for security vulnerabilities.
+The project aims to acknowledge reports within 48 hours and provide an initial assessment within seven days. Fix and disclosure timelines depend on severity, reproducibility, and release risk.
 
-### 2. Report Privately
+## Security model
 
-Send an email to: **[shivanshsoni568@gmail.com]** with:
+CodeContext is designed primarily for local analysis:
 
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Suggested fix (if any)
+- analyzed source files are parsed and never executed;
+- Git operations are read-only from the application's perspective;
+- server paths are canonicalized and restricted to allowed roots;
+- configurable file limits and rate limiting reduce resource abuse;
+- generated reports use random identifiers rather than source directory names;
+- provider credentials are sent in headers and are not intentionally logged;
+- AI features are disabled by default and may send repository-derived context to an external provider when enabled.
 
-### 3. Response Timeline
+The REST server does **not** provide authentication, tenant isolation, report authorization, TLS termination, report expiration, or a complete public-internet deployment boundary. Add those controls before exposing it outside a trusted local or internal network.
 
-- **Initial Response:** Within 48 hours
-- **Status Update:** Within 7 days
-- **Fix Timeline:** Depends on severity
-  - Critical: 1-7 days
-  - High: 7-30 days
-  - Medium/Low: 30-90 days
+## Deployment guidance
 
-### 4. Disclosure Policy
-
-- We will acknowledge your report within 48 hours
-- We will provide a more detailed response within 7 days
-- We will work with you to understand and resolve the issue
-- Once fixed, we will publicly disclose the vulnerability (with credit to you, if desired)
-
-## Security Best Practices
-
-When using CodeContext:
-
-1. **Keep Dependencies Updated:** Regularly update to the latest version
-2. **Validate Input:** Be cautious when analyzing untrusted codebases
-3. **Review Output:** Check generated reports before sharing publicly
-4. **Limit Permissions:** Run with minimal necessary permissions
-
-## Security Features
-
-- No external network calls (except Git operations)
-- No data collection or telemetry
-- All analysis is local
-- No code execution from analyzed files
+- Bind the server to `127.0.0.1` for local use.
+- Configure `CODECONTEXT_ALLOWED_PATHS` to the smallest required set of directories.
+- Keep `.codecontext.json` and API keys out of source control.
+- Place the server behind authentication, TLS, request quotas, and a trusted-origin policy when deployed remotely.
+- Review reports before sharing them because they may contain file names, paths, Git authors, commit messages, and source-derived descriptions.
+- Treat generated HTML and external visualization assets as part of the deployment supply chain.
+- Keep dependencies and the JDK patched.
 
 ## Contact
 
-For security concerns: **[shivanshsoni568@gmail.com]**
-
-Thank you for helping keep CodeContext and our users safe!
+Security reports: **shivanshsoni568@gmail.com**
