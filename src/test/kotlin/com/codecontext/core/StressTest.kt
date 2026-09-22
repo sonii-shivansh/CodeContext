@@ -1,89 +1,46 @@
 package com.codecontext.core
 
+import com.codecontext.core.graph.RobustDependencyGraph
+import com.codecontext.core.parser.ParserFactory
+import com.codecontext.core.scanner.RepositoryScanner
+import com.codecontext.output.ReportGenerator
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.file.shouldExist
+import io.kotest.matchers.shouldBe
 import java.io.File
 import kotlin.io.path.createTempDirectory
+import kotlin.random.Random
 
-class StressTest :
-        FunSpec({
-            test("Stress Test: Analyze 1000 files with complex dependencies") {
-                val tempDir = createTempDirectory("codecontext-stress").toFile()
-                tempDir.deleteOnExit()
-
-                // Generate 1000 Kotlin files
-                val files =
-                        (1..1000).map { i ->
-                            val name = "Class$i"
-                            val file = File(tempDir, "$name.kt")
-
-                            // Generate dependencies: ClassN depends on Class(N-1) and Class(Random)
-                            val deps = mutableListOf<String>()
-                            if (i > 1) deps.add("Class${i-1}")
-                            if (i > 5) deps.add("Class${(1 until i).random()}")
-
-                            val imports = deps.map { "import com.stress.$it" }.joinToString("\n")
-
-                            file.writeText(
-                                    """
-                package com.stress
-                
-                $imports
-                
-                /**
-                 * Description for $name.
-                 */
-                class $name {
-                    fun doSomething() { }
-                }
-            """.trimIndent()
-                            )
-                            file
-                        }
-
-                println("Generated ${files.size} files in ${tempDir.absolutePath}")
-
-                // Execute Analysis via CLI Command logic (but invoking functionality directly to
-                // avoid System.exit)
-                // actually AnalyzeCommand runs cleanly.
-
-                // We need to bypass Clikt's run check or strictly invoke pipeline manually if
-                // needed.
-                // But main() is easiest.
-                // We'll trust AnalyzeCommand logic.
-
-                // Use a subprocess or just run command logic?
-                // Calling main() might call system.exit.
-                // Let's call AnalyzeCommand() directly if accessible.
-                // We'll mimic the AnalyzeCommand body logic here to test the Core Pipeline
-                // integrally.
-
-                val scanner = com.codecontext.core.scanner.RepositoryScanner()
-                val scannedFiles = scanner.scan(tempDir.absolutePath)
-                assert(scannedFiles.size == 1000)
-
-                val parsedFiles =
-                        scannedFiles.map {
-                            com.codecontext.core.parser.ParserFactory.getParser(it).parse(it)
-                        }
-
-                val graph = com.codecontext.core.graph.RobustDependencyGraph()
-                graph.build(parsedFiles)
-                graph.analyze()
-
-                val pathGen = com.codecontext.core.generator.LearningPathGenerator()
-                val path = pathGen.generate(graph)
-                assert(path.size == 1000)
-
-                val reportFile = File(tempDir, "output/index.html")
-                reportFile.parentFile.mkdirs()
-
-                val reporter = com.codecontext.output.ReportGenerator()
-                reporter.generate(graph, reportFile.absolutePath, parsedFiles, path)
-
-                reportFile.shouldExist()
-
-                // Cleanup handled by OS mostly, but good practice
-                tempDir.deleteRecursively()
+class StressTest : FunSpec({
+    test("analyzes 1000 files with deterministic dependencies") {
+        val tempDir = createTempDirectory("codecontext-stress").toFile()
+        tempDir.deleteOnExit()
+        val random = Random(42)
+        (1..1000).forEach { i ->
+            val name = "Class$i"
+            val file = File(tempDir, "$name.kt")
+            val deps = buildList {
+                if (i > 1) add("Class${i - 1}")
+                if (i > 5) add("Class${random.nextInt(1, i)}")
             }
-        })
+            val imports = deps.joinToString("\n") { "import com.stress.$it" }
+            file.writeText("""
+                package com.stress
+                $imports
+                class $name { fun doSomething() {} }
+            """.trimIndent())
+        }
+        val scannedFiles = RepositoryScanner().scan(tempDir.absolutePath)
+        scannedFiles.size shouldBe 1000
+        val parsedFiles = scannedFiles.map { ParserFactory.getParser(it).parse(it) }
+        val graph = RobustDependencyGraph()
+        graph.build(parsedFiles)
+        graph.analyze()
+        val path = com.codecontext.core.generator.LearningPathGenerator().generate(graph)
+        path.size shouldBe 1000
+        val reportFile = File(tempDir, "output/index.html").apply { parentFile.mkdirs() }
+        ReportGenerator().generate(graph, reportFile.absolutePath, parsedFiles, path)
+        reportFile.shouldExist()
+        tempDir.deleteRecursively()
+    }
+})
