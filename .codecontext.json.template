@@ -1,26 +1,31 @@
 {
-    "excludePaths": [
-        ".git",
-        ".idea",
-        ".gradle",
-        "build",
-        "target",
-        "node_modules",
-        ".vscode",
-        "out",
-        "dist",
-        ".next"
-    ],
-    "maxFilesAnalyze": 5000,
-    "gitCommitLimit": 1000,
-    "enableCache": true,
-    "enableParallel": true,
-    "hotspotCount": 15,
-    "learningPathLength": 20,
-    "ai": {
-        "enabled": true,
-        "provider": "gemini",
-        "apiKey": "YOUR_API_KEY_HERE",
-        "model": "gemini-2.5-flash"
-    }
+  "excludePaths": [
+    ".git",
+    ".idea",
+    ".gradle",
+    "build",
+    "target",
+    "node_modules",
+    ".vscode",
+    "out",
+    "dist",
+    ".next"
+  ],
+  "maxFilesAnalyze": 5000,
+  "gitCommitLimit": 1000,
+  "enableCache": true,
+  "enableParallel": true,
+  "hotspotCount": 15,
+  "learningPathLength": 20,
+  "ai": {
+    "enabled": false,
+    "provider": "gemini",
+    "apiKey": "",
+    "model": "gemini-2.5-flash"
+  },
+  "rateLimit": {
+    "enabled": true,
+    "requestsPerMinute": 60,
+    "requestsPerHour": 1000
+  }
 }

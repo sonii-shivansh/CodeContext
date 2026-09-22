@@ -1,297 +1,129 @@
 # Development Guide
 
-## 🛠️ Setting Up Your Development Environment
+## Prerequisites
 
-### Prerequisites
+- JDK 21 or newer
+- Git
+- IntelliJ IDEA or another Kotlin-capable editor
+- Bash, PowerShell, or a compatible shell for the Gradle wrapper
 
-- **JDK 21+** - [Download Temurin](https://adoptium.net/)
-- **Git** - For version control and Git analysis features
-- **IDE** - IntelliJ IDEA (recommended) or VS Code with Kotlin plugin
-
-### Clone and Build
-
-```bash
-# Clone the repository
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
-
-# Build the project
-./gradlew build
-
-# Run tests
-./gradlew test
-
-# Install distribution locally
-./gradlew installDist
-```
-
----
-
-## 🏃 Running Locally
-
-### Run via Gradle
+## Build and test
 
 ```bash
-# Analyze current directory
-./gradlew run --args="analyze ."
-
-# Analyze specific directory
-./gradlew run --args="analyze /path/to/project"
-
-# Clear cache and analyze
-./gradlew run --args="analyze . --clear-cache"
-
-# Disable cache
-./gradlew run --args="analyze . --no-cache"
+./gradlew --no-daemon clean test
+./gradlew --no-daemon build
+./gradlew --no-daemon installDist
 ```
 
-### Run via Installed Distribution
-
-```bash
-# After running ./gradlew installDist
-./build/install/codecontext/bin/codecontext analyze .
-```
-
----
-
-## 🧪 Testing
-
-### Run All Tests
-
-```bash
-./gradlew test
-```
-
-### Run Specific Test Class
+Run a focused test class:
 
 ```bash
 ./gradlew test --tests "com.codecontext.core.parser.ParserTest"
 ```
 
-### Run Tests with Coverage
+Run the installed CLI:
 
 ```bash
-./gradlew test jacocoTestReport
-open build/reports/jacoco/test/html/index.html
+./build/install/codecontext/bin/codecontext --help
+./build/install/codecontext/bin/codecontext analyze .
 ```
 
-### Test Categories
-
-- **Unit Tests** - `src/test/kotlin/com/codecontext/core/`
-  - `ParserTest.kt` - Parser functionality
-  - `DependencyGraphTest.kt` - Graph building
-  - `PropertyTest.kt` - Property-based testing
-  
-- **Integration Tests** - `src/test/kotlin/com/codecontext/`
-  - `E2ETest.kt` - End-to-end workflows
-  - `BackendVerificationTest.kt` - Full backend verification
-
-- **Edge Case Tests** - `src/test/kotlin/com/codecontext/core/`
-  - `EdgeCaseTest.kt` - Error handling
-  - `StressTest.kt` - Performance testing
-
----
-
-## 🐛 Debugging
-
-### Debug in IntelliJ IDEA
-
-1. Open the project in IntelliJ IDEA
-2. Create a new "Gradle" run configuration
-3. Set task to: `run --args="analyze ."`
-4. Set breakpoints in the code
-5. Click "Debug" button
-
-### Debug Tests
-
-1. Right-click on a test class or method
-2. Select "Debug 'TestName'"
-
-### Enable Debug Logging
-
-Edit `src/main/resources/logback.xml`:
-
-```xml
-<root level="DEBUG">
-    <appender-ref ref="STDOUT" />
-</root>
-```
-
----
-
-## 📁 Project Structure
-
-```
-src/
-├── main/kotlin/com/codecontext/
-│   ├── Main.kt                    # Entry point
-│   ├── cli/                       # CLI commands
-│   │   ├── MainCommand.kt         # Root command
-│   │   ├── ImprovedAnalyzeCommand.kt  # Analyze command
-│   │   ├── ServerCommand.kt       # API server
-│   │   └── AIAssistantCommand.kt  # AI features
-│   ├── core/                      # Core logic
-│   │   ├── scanner/
-│   │   │   ├── RepositoryScanner.kt      # File scanning
-│   │   │   └── OptimizedGitAnalyzer.kt   # Git analysis
-│   │   ├── parser/
-│   │   │   ├── JavaRealParser.kt         # Java parsing
-│   │   │   ├── KotlinRegexParser.kt      # Kotlin parsing
-│   │   │   ├── ParsedFile.kt             # Data model
-│   │   │   └── ParserFactory.kt          # Parser selection
-│   │   ├── graph/
-│   │   │   └── RobustDependencyGraph.kt  # Graph building
-│   │   ├── generator/
-│   │   │   └── LearningPathGenerator.kt  # Learning paths
-│   │   ├── cache/
-│   │   │   └── CacheManager.kt           # Caching
-│   │   └── config/
-│   │       └── CodeContextConfig.kt      # Configuration
-│   ├── output/
-│   │   └── ReportGenerator.kt     # HTML generation
-│   └── server/
-│       └── ApiServer.kt           # REST API
-└── test/kotlin/com/codecontext/   # Tests
-```
-
----
-
-## 🎨 Code Style
-
-### Kotlin Conventions
-
-We follow [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html):
-
-- **Indentation:** 4 spaces
-- **Line length:** 120 characters max
-- **Naming:**
-  - Classes: `PascalCase`
-  - Functions: `camelCase`
-  - Constants: `UPPER_SNAKE_CASE`
-  - Private properties: `_camelCase` (optional)
-
-### KDoc Comments
-
-Add KDoc for public APIs:
-
-```kotlin
-/**
- * Parses a source file and extracts package and import information.
- *
- * @param file The file to parse
- * @return ParsedFile containing extracted metadata
- * @throws IllegalArgumentException if file type is unsupported
- */
-fun parse(file: File): ParsedFile
-```
-
----
-
-## 🔧 Common Development Tasks
-
-### Add a New Language Parser
-
-1. Create parser class implementing `LanguageParser`:
-```kotlin
-class PythonParser : LanguageParser {
-    override fun parse(file: File): ParsedFile {
-        // Implementation
-    }
-}
-```
-
-2. Register in `ParserFactory.kt`:
-```kotlin
-"py" -> pythonParser
-```
-
-3. Add tests in `src/test/kotlin/com/codecontext/core/parser/`
-
-### Add a New CLI Command
-
-1. Create command class extending `CliktCommand`:
-```kotlin
-class MyCommand : CliktCommand(name = "mycommand", help = "Description") {
-    override fun run() {
-        // Implementation
-    }
-}
-```
-
-2. Register in `Main.kt`:
-```kotlin
-MainCommand()
-    .subcommands(
-        ImprovedAnalyzeCommand(),
-        MyCommand()  // Add here
-    )
-```
-
-### Modify Report Output
-
-Edit `src/main/kotlin/com/codecontext/output/ReportGenerator.kt`
-
-The report uses kotlinx.html DSL:
-```kotlin
-div("my-section") {
-    h2 { +"My Section" }
-    p { +"Content" }
-}
-```
-
----
-
-## 🚀 Release Process
-
-### Version Bumping
-
-1. Update version in `build.gradle.kts`:
-```kotlin
-version = "0.2.0"
-```
-
-2. Update `CHANGELOG.md` with release notes
-
-3. Commit and tag:
-```bash
-git commit -m "chore: bump version to 0.2.0"
-git tag v0.2.0
-git push origin main --tags
-```
-
-### Build Release Artifacts
+## Local server
 
 ```bash
-./gradlew clean build installDist
+./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
+curl --fail http://127.0.0.1:8080/health
 ```
 
----
+Keep the server bound to loopback for local development. Do not expose it publicly without an authentication and authorization layer, TLS, trusted-origin policy, request quotas, and report-retention controls.
 
-## 📊 Performance Profiling
+## Configuration
 
-### Measure Analysis Time
+Create a local configuration file from the template:
 
 ```bash
-time ./gradlew run --args="analyze /path/to/large/project"
+cp .codecontext.json.template .codecontext.json
 ```
 
-### Profile with VisualVM
+The file is intentionally local and must not contain a credential committed to Git. `CodeContextConfig` controls exclusions, file limits, Git history, caching, parsing, reporting, AI, and rate limiting.
 
-1. Run with JMX enabled:
+For server path validation, use the narrowest practical value for:
+
 ```bash
-./gradlew run --args="analyze ." -Dcom.sun.management.jmxremote
+export CODECONTEXT_ALLOWED_PATHS="$PWD:/tmp"
 ```
 
-2. Connect VisualVM to the process
+## Project structure
 
----
+```text
+src/main/kotlin/com/codecontext/
+  Main.kt
+  cli/                       Clikt commands and parallel parser
+  core/
+    ai/                      Optional provider integration
+    cache/                   Content-hash parse cache
+    config/                  Configuration model and loader
+    generator/               Learning paths
+    graph/                   PageRank and dependency graph
+    parser/                  Java and Kotlin parsers
+    scanner/                 Repository and Git scanning
+    temporal/                Evolution analysis
+  enterprise/                Multi-repository analysis
+  output/                    HTML report generation
+  server/                    Ktor API and security controls
+src/test/kotlin/com/codecontext/
+  core/                      Parser, graph, cache, property, and edge tests
+  server/                    Rate-limit and path-security tests
+  verification/              Backend verification tests
+  E2ETest.kt                 End-to-end coverage
+docs/                        Project documentation
+```
 
-## 🤝 Getting Help
+## Code standards
 
-- **Questions:** Open a [Discussion](https://github.com/sonii-shivansh/CodeContext/discussions)
-- **Bugs:** Open an [Issue](https://github.com/sonii-shivansh/CodeContext/issues)
-- **Chat:** Join our [Discord](#) (coming soon)
+- Follow the Kotlin coding conventions.
+- Prefer structured concurrency over `runBlocking` inside suspend flows.
+- Validate external input at the boundary.
+- Do not return stack traces, provider bodies, absolute server paths, or credentials to clients.
+- Add tests for security-sensitive behavior and public API changes.
+- Keep public APIs documented with KDoc where practical.
+- Keep generated reports, `.codecontext/`, build output, and local configuration out of commits.
 
----
+## Adding a parser
 
-Happy coding! 🎉
+1. Implement `LanguageParser`.
+2. Register the parser in `ParserFactory`.
+3. Add representative unit tests, including malformed and empty files.
+4. Update the supported-language documentation.
+
+## Adding an API route
+
+1. Define serializable request and response models.
+2. Validate size, path, and content constraints before analysis.
+3. Return a stable public error shape.
+4. Avoid exposing local filesystem paths or internal exception messages.
+5. Add route and security tests.
+6. Update `docs/API.md`.
+
+## Reports and frontend assets
+
+`ReportGenerator` uses kotlinx.html and embeds serialized graph data. Treat source text, commit messages, author names, and descriptions as untrusted content. Any changes to HTML or JavaScript serialization must include escaping/regression tests.
+
+## Pull requests
+
+Before opening a pull request:
+
+```bash
+./gradlew --no-daemon clean test
+./gradlew --no-daemon build installDist
+```
+
+Also run the Verification workflow and inspect the complete diff against `main`. Pull requests should describe behavior changes, security impact, configuration changes, and validation results.
+
+## Release checklist
+
+1. Update `version` in `build.gradle.kts`.
+2. Update `CHANGELOG.md`.
+3. Run tests, packaging, CLI smoke tests, and server smoke tests.
+4. Review generated artifacts and dependency changes.
+5. Tag and publish only from a reviewed, passing commit.

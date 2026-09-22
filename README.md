@@ -1,233 +1,187 @@
 # CodeContext
 
-**Intelligent codebase context analyzer for faster developer onboarding**
+CodeContext is a Kotlin/JVM command-line and local REST application for understanding Java and Kotlin codebases. It scans source files, extracts dependency metadata, analyzes graph centrality and Git history, and produces an interactive HTML report to support onboarding, architecture review, and knowledge-risk analysis.
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-blue.svg)](https://kotlinlang.org)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Build Status](https://github.com/sonii-shivansh/CodeContext/workflows/CI%2FCD/badge.svg)](https://github.com/sonii-shivansh/CodeContext/actions)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+## Status
 
----
-
-## Why CodeContext?
-
-### The Problem
-
-New developers often take **1–3 months** to become productive in a new codebase due to:
-
-* Difficulty finding where to start
-* Understanding file and module dependencies
-* Outdated or missing documentation
-* Repeatedly asking common questions
-
-### The Solution
-
-CodeContext analyzes your codebase in seconds and generates:
-
-* **Interactive dependency maps** to visualize structure
-* **Knowledge hotspots** to identify critical files using PageRank
-* **Personalized learning paths** that suggest a logical reading order
-* **Contextual insights** including Git history, authorship, and change frequency
-
-**Result:** Reduce onboarding time from **3 months to approximately 3 weeks**.
-
----
+- Java and Kotlin analysis is supported.
+- CLI analysis and local REST serving are supported.
+- Reports are generated locally under `output/`.
+- AI assistance is optional and sends only the configured prompt context to the selected provider.
+- The REST server accepts local paths within configured workspace roots. Remote repository URLs are not accepted by the current server endpoint.
 
 ## Features
 
-| Feature                     | Description                                               |
-| --------------------------- | --------------------------------------------------------- |
-| Interactive Dependency Maps | Zoomable force-directed graphs showing file relationships |
-| Knowledge Hotspots          | PageRank-based identification of critical files           |
-| Learning Paths              | Topologically sorted reading order                        |
-| Git Integration             | Authors, change frequency, and recent commit data         |
-| Team Contribution Map       | Visibility into knowledge silos and bus-factor risks      |
-| Multi-Language Support      | Java and Kotlin (additional languages planned)            |
-| Performance                 | Parallel parsing with intelligent caching                 |
-| Reporting                   | Clean HTML reports with D3.js visualizations              |
+- Dependency graph construction from package and import metadata
+- PageRank-based knowledge hotspots
+- Cycle detection and dependency visualization
+- Learning-path generation for onboarding
+- Git authorship, churn, and recent-change metadata
+- Configuration-driven source exclusions and file-count limits
+- Parallel parsing with content-based caching and atomic cache writes
+- Optional AI analysis through configured Gemini or Anthropic providers
+- Local Ktor REST API with rate limiting and path validation
 
----
+## Requirements
 
-## Demo
-![CodeContext Demo](docs/images/demo.png)
+- JDK 21 or newer
+- Git for Git-history analysis
+- Network access only when optional AI features are enabled
 
-*Interactive dependency graph with knowledge hotspot highlighting and learning path generation*
-
-**Live Example**
-
-```bash
-./gradlew run --args="analyze ."
-```
-
----
-
-## Quick Start
-
-### Prerequisites
-
-* JDK 21+
-* Git (required for Git history analysis)
-
----
-
-### Installation
-
-#### Option 1: Build from Source
+## Quick start
 
 ```bash
 git clone https://github.com/sonii-shivansh/CodeContext.git
 cd CodeContext
-./gradlew build
+./gradlew clean test
 ./gradlew installDist
-```
-
-#### Option 2: Download Release (Planned)
-
-Pre-built binaries will be available on the GitHub Releases page.
-
----
-
-## Usage
-
-### Analyze a Project
-
-```bash
-./gradlew run --args="analyze /path/to/project"
-./build/install/codecontext/bin/codecontext analyze /path/to/project
 ./build/install/codecontext/bin/codecontext analyze .
 ```
 
----
+The default CLI report is written to:
 
-### View the Report
+```text
+output/index.html
+```
+
+Open it with the appropriate command for your platform:
 
 ```bash
-open output/index.html        # macOS
+open output/index.html       # macOS
 xdg-open output/index.html   # Linux
 start output/index.html      # Windows
 ```
 
----
+## CLI commands
 
-### Sample Output
+```bash
+# Analyze a repository
+./build/install/codecontext/bin/codecontext analyze /path/to/repository
 
-```text
-Starting CodeContext analysis for: /path/to/project
-Scanning repository...
-Found 247 files
-Parsing code...
-Parsed 247 files
-Analyzing Git history...
-Building dependency graph...
-Hot Zones (Top 5):
-- UserService.kt (0.0847)
-- DatabaseConfig.kt (0.0623)
-- AuthMiddleware.kt (0.0521)
-- ApiController.kt (0.0498)
-- DataRepository.kt (0.0445)
-Generating report...
-Report generated at: /path/to/project/output/index.html
-Completed in 3421ms
+# Start the local API server
+./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
+
+# Generate AI-assisted insights, when configured
+./build/install/codecontext/bin/codecontext ai-assistant /path/to/repository
+
+# Inspect repository evolution
+./build/install/codecontext/bin/codecontext evolution /path/to/repository
 ```
 
----
+The exact command options are available through:
 
-## Documentation
+```bash
+./build/install/codecontext/bin/codecontext --help
+./build/install/codecontext/bin/codecontext analyze --help
+./build/install/codecontext/bin/codecontext server --help
+```
 
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [Development Guide](docs/DEVELOPMENT.md)
-- [API Documentation](docs/API.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
+## Configuration
+
+Copy the template into the repository you want to analyze or create a `.codecontext.json` file in the current working directory:
+
+```bash
+cp .codecontext.json.template .codecontext.json
+```
+
+Important configuration fields include:
+
+| Field | Default | Purpose |
+| --- | ---: | --- |
+| `excludePaths` | standard build and tool directories | Directory names excluded during scanning |
+| `maxFilesAnalyze` | `5000` | Maximum number of source files per analysis |
+| `gitCommitLimit` | `1000` | Git history limit used by Git analysis |
+| `enableCache` | `true` | Enables parse-result caching in supported CLI flows |
+| `enableParallel` | `true` | Enables parallel parsing where supported |
+| `hotspotCount` | `15` | Number of hotspots used by reporting flows |
+| `learningPathLength` | `20` | Maximum learning-path length |
+| `ai.enabled` | `false` | Enables optional AI analysis |
+| `ai.provider` | `anthropic` | `anthropic` or `gemini` |
+| `ai.apiKey` | empty | Provider credential; never commit it |
+| `ai.model` | provider-specific | Provider model identifier |
+
+The server also supports these environment variables:
+
+- `CODECONTEXT_ALLOWED_PATHS`: path-separated roots accepted by server path validation.
+- `CODECONTEXT_ALLOWED_GIT_HOSTS`: reserved for deployments that add a controlled remote-clone implementation.
+
+Do not place API keys in source control, reports, logs, or issue descriptions.
+
+## REST server
+
+Start the server locally:
+
+```bash
+./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
+```
+
+The server exposes health endpoints and local analysis routes. See [docs/API.md](docs/API.md) for request and response details.
+
+The server is intended to run behind an authenticated, trusted deployment boundary. It does not provide user authentication, tenant isolation, report expiration, or multi-tenant authorization by itself.
+
+## Architecture
+
+```text
+src/main/kotlin/com/codecontext/
+  Main.kt                    Application entry point
+  cli/                       Clikt commands and parallel parsing
+  core/
+    ai/                      Optional AI provider integration
+    cache/                   Content-addressed parse cache
+    config/                  JSON configuration loading
+    generator/               Learning-path generation
+    graph/                   Dependency graph and PageRank
+    parser/                  Java AST and Kotlin parsing
+    scanner/                 Source discovery and Git analysis
+    temporal/                Codebase evolution analysis
+  enterprise/                Multi-repository analysis and licensing
+  output/                    HTML and graph report generation
+  server/                    Ktor routes, validation, and rate limiting
+src/test/kotlin/              Unit, integration, security, and verification tests
+docs/                         Architecture, API, and development documentation
+```
+
+The main analysis pipeline is:
+
+```text
+CLI or REST request
+  -> configuration and path validation
+  -> RepositoryScanner
+  -> CodeParallelParser
+  -> OptimizedGitAnalyzer
+  -> RobustDependencyGraph
+  -> LearningPathGenerator
+  -> ReportGenerator
+```
+
+## Development
+
+```bash
+./gradlew --no-daemon clean test
+./gradlew --no-daemon build installDist
+```
+
+The GitHub verification workflow additionally checks CLI startup, self-analysis, generated report content, and server startup.
+
+See:
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [API reference](docs/API.md)
+- [Development guide](docs/DEVELOPMENT.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
-
----
-
-## Project Structure
-
-```text
-codecontext/
-├── src/main/kotlin/com/codecontext/
-│   ├── cli/              # CLI commands
-│   ├── core/             # Core analysis engine
-│   │   ├── scanner/      # File scanning and filtering
-│   │   ├── parser/       # Language parsers
-│   │   ├── graph/        # Dependency graph and PageRank
-│   │   ├── analyzer/     # Code analysis algorithms
-│   │   └── generator/    # Learning path generation
-│   ├── output/           # Report generation
-│   └── server/           # Optional REST API
-└── src/test/             # Test suite
-```
-
----
-
-## Tech Stack
-
-- **Language:** Kotlin 2.1.0
-- **Build:** Gradle 8.5+
-- **CLI:** [Clikt](https://github.com/ajalt/clikt)
-- **Parsing:** [JavaParser](https://javaparser.org/), Regex
-- **Graphs:** [JGraphT](https://jgrapht.org/) (PageRank, Topological Sort)
-- **Git:** [JGit](https://www.eclipse.org/jgit/)
-- **Visualization:** [D3.js Force Graph](https://github.com/vasturiano/force-graph)
-- **Server:** [Ktor](https://ktor.io/)
-
-
----
-
-## Contributing
-
-Contributions are welcome.
-
-### Contributor Workflow
-
-1. Fork the repository
-2. Clone your fork
-3. Create a feature branch
-4. Implement changes and tests
-5. Run the test suite
-6. Commit changes
-7. Push and open a Pull Request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
----
 
 ## Roadmap
 
-- [x] Java & Kotlin support
-- [x] Interactive dependency graphs
-- [x] PageRank hotspot detection
-- [x] Learning path generation
-- [x] Git history integration
-- [ ] TypeScript/JavaScript support
-- [ ] Python support
-- [ ] Go support
-- [ ] IntelliJ IDEA plugin
-- [ ] VS Code extension
-- [ ] Package manager distribution (Homebrew, Scoop)
-- [ ] Docker image
-- [ ] Cloud-hosted analysis service
-
----
+- TypeScript, JavaScript, Python, and Go parsers
+- More accurate Kotlin parsing using a dedicated syntax model
+- Incremental and watch-mode analysis
+- Report retention and authenticated deployment support
+- Plugin APIs for custom analyzers
+- IDE integrations
+- Package-manager and container distribution
 
 ## License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Support
-
--  **Bug Reports:** [Open an issue](https://github.com/sonii-shivansh/CodeContext/issues/new?template=bug_report.md)
--  **Feature Requests:** [Request a feature](https://github.com/sonii-shivansh/CodeContext/issues/new?template=feature_request.md)
--  **Discussions:** [GitHub Discussions](https://github.com/sonii-shivansh/CodeContext/discussions)
--  **Email:** [shivanshsoni568@gmail.com](mailto:shivanshsoni568@gmail.com)
-
----
-
-<div align="center">
-
-[Website](https://sonii-shivansh.github.io/CodeContext/) • [Documentation](docs/) • [Contributing](CONTRIBUTING.md) • [Changelog](CHANGELOG.md)
-
-</div>
+CodeContext is released under the MIT License. See [LICENSE](LICENSE).

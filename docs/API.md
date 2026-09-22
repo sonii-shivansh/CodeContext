@@ -1,454 +1,205 @@
-# API Documentation
+# API Reference
 
-## Overview
+CodeContext exposes a CLI and a local REST API. The REST API is implemented by `com.codecontext.server.CodeContextServer` and is intended for trusted local or internal use.
 
-CodeContext provides both a **CLI interface** and a **REST API** for programmatic access.
-
----
-
-## CLI API
-
-### Installation
+## Build and start
 
 ```bash
 ./gradlew installDist
+./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
 ```
 
-### Basic Usage
+The default server bind address should remain loopback for local use. Deployments that bind beyond loopback must provide authentication, trusted-origin controls, TLS, request quotas, and report authorization at the deployment boundary.
+
+## CLI
 
 ```bash
-# Analyze current directory
-./build/install/codecontext/bin/codecontext analyze .
-
-# Analyze specific directory
-./build/install/codecontext/bin/codecontext analyze /path/to/project
-
-# With options
-./build/install/codecontext/bin/codecontext analyze . --no-cache --clear-cache
-```
-
-### Commands
-
-#### `analyze`
-
-Analyzes a codebase and generates an interactive report.
-
-**Syntax:**
-```bash
-codecontext analyze <path> [options]
-```
-
-**Arguments:**
-- `<path>` - Path to analyze (default: current directory)
-
-**Options:**
-- `--no-cache` - Disable caching for this run
-- `--clear-cache` - Clear cache before analyzing
-
-**Output:**
-- HTML report: `output/index.html`
-- AI insights (if enabled): `output/ai-insights.md`
-
-**Example:**
-```bash
-codecontext analyze ~/projects/my-app --clear-cache
-```
-
-**Output:**
-```
-🚀 Starting CodeContext analysis for: ~/projects/my-app
-📂 Scanning repository...
-   Found 247 files
-🧠 Parsing code...
-   Parsed 247 files
-📜 Analyzing Git history...
-🕸️ Building dependency graph...
-🗺️ Your Codebase Map
-├─ 🔥 Hot Zones (Top 5):
-│   ├─ UserService.kt (0.0847)
-│   ├─ DatabaseConfig.kt (0.0623)
-│   └─ ...
-📊 Generating report...
-✅ Report: ~/projects/my-app/output/index.html
-✨ Complete in 3421ms
-```
-
----
-
-#### `server`
-
-Starts a REST API server.
-
-**Syntax:**
-```bash
-codecontext server [options]
-```
-
-**Options:**
-- `--port <number>` - Port to listen on (default: 8080)
-- `--host <address>` - Host address (default: 0.0.0.0)
-
-**Example:**
-```bash
-codecontext server --port 3000
-```
-
----
-
-#### `ai-assistant`
-
-Generates AI-powered code insights.
-
-**Syntax:**
-```bash
-codecontext ai-assistant <path> [options]
-```
-
-**Requirements:**
-- OpenAI API key in config or environment variable
-
-**Example:**
-```bash
-export OPENAI_API_KEY=sk-...
-codecontext ai-assistant .
-```
-
----
-
-#### `evolution`
-
-Tracks codebase evolution over time.
-
-**Syntax:**
-```bash
+codecontext analyze <path>
+codecontext server [--host <address>] [--port <number>]
+codecontext ai-assistant <path>
 codecontext evolution <path>
 ```
 
-**Output:**
-- Timeline of changes
-- Hotspot evolution
-- Contributor activity
+Run `codecontext <command> --help` for the options available in the installed version.
 
----
+## REST endpoints
 
-## REST API
+### `GET /`
 
-### Starting the Server
+Returns a plain-text service banner.
 
-```bash
-codecontext server --port 8080
+```text
+CodeContext API is running. 🚀
 ```
 
-### Endpoints
+### `GET /health`
 
-#### `POST /analyze`
+Returns service health and version information.
 
-Triggers analysis of a codebase.
-
-**Request:**
-```json
-{
-  "path": "/path/to/project",
-  "options": {
-    "enableCache": true,
-    "clearCache": false
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "analysisId": "abc123",
-  "stats": {
-    "filesScanned": 247,
-    "filesParsed": 247,
-    "graphNodes": 247,
-    "graphEdges": 892
-  },
-  "reportUrl": "/report/abc123"
-}
-```
-
-**Status Codes:**
-- `200` - Analysis completed successfully
-- `400` - Invalid request
-- `500` - Analysis failed
-
----
-
-#### `GET /report/:id`
-
-Retrieves analysis report.
-
-**Request:**
-```
-GET /report/abc123
-```
-
-**Response:**
-```json
-{
-  "id": "abc123",
-  "timestamp": "2025-12-14T20:00:00Z",
-  "path": "/path/to/project",
-  "hotspots": [
-    {
-      "file": "UserService.kt",
-      "score": 0.0847,
-      "description": "Main user service"
-    }
-  ],
-  "learningPath": [
-    {
-      "file": "Utils.kt",
-      "reason": "Foundation utilities"
-    }
-  ],
-  "graph": {
-    "nodes": [...],
-    "links": [...]
-  }
-}
-```
-
----
-
-#### `GET /health`
-
-Health check endpoint.
-
-**Response:**
 ```json
 {
   "status": "healthy",
-  "version": "0.1.0",
-  "uptime": 3600
+  "version": "0.2.0"
 }
 ```
 
----
+`GET /health/live` and `GET /health/ready` return lightweight liveness and readiness responses.
 
-## Programmatic API (Kotlin)
+### `POST /analyze`
 
-### Using as a Library
+Analyzes an existing local repository and generates an HTML report.
 
-Add to `build.gradle.kts`:
-```kotlin
-dependencies {
-    implementation("com.codecontext:codecontext-core:0.1.0")
-}
-```
+Remote URLs are rejected by the current endpoint. The request path must resolve to a readable directory under one of the configured allowed roots.
 
-### Example Usage
+Request:
 
-```kotlin
-import com.codecontext.core.scanner.RepositoryScanner
-import com.codecontext.core.parser.ParserFactory
-import com.codecontext.core.graph.RobustDependencyGraph
-import com.codecontext.output.ReportGenerator
-
-fun analyzeProject(path: String) {
-    // 1. Scan files
-    val scanner = RepositoryScanner()
-    val files = scanner.scan(path)
-    
-    // 2. Parse files
-    val parsedFiles = files.map { file ->
-        val parser = ParserFactory.getParser(file)
-        parser.parse(file)
-    }
-    
-    // 3. Build graph
-    val graph = RobustDependencyGraph()
-    graph.build(parsedFiles)
-    graph.analyze()
-    
-    // 4. Get hotspots
-    val hotspots = graph.getTopHotspots(10)
-    hotspots.forEach { (file, score) ->
-        println("$file: $score")
-    }
-    
-    // 5. Generate report
-    val generator = ReportGenerator()
-    generator.generate(graph, "output/report.html", parsedFiles, emptyList())
-}
-```
-
----
-
-## Configuration API
-
-### Config File
-
-Location: `.codecontext.json` in project root
-
-**Example:**
 ```json
 {
-  "maxFilesAnalyze": 10000,
-  "hotspotCount": 15,
+  "repoPath": "/workspace/example"
+}
+```
+
+Successful response:
+
+```json
+{
+  "fileCount": 247,
+  "hotspots": [
+    {
+      "file": "UserService.kt",
+      "score": 0.0847
+    }
+  ],
+  "reportUrl": "/reports/9d8f1f2a-7d8f-4b2e-9b0f-4c2d8c6c7a10.html"
+}
+```
+
+The report identifier is randomly generated. The response never exposes the server's absolute filesystem path.
+
+Possible status codes:
+
+- `200 OK`: analysis completed.
+- `400 Bad Request`: invalid path, unsupported remote URL, or file-count limit exceeded.
+- `429 Too Many Requests`: rate limit exceeded.
+- `500 Internal Server Error`: analysis or report generation failed.
+
+### `GET /reports/{id}.html`
+
+Serves a generated report from the `output/` directory. Report retention and authorization are deployment responsibilities; the application currently does not expire reports or associate them with users.
+
+### `POST /ask`
+
+Answers a question using the configured AI provider and repository context.
+
+Request:
+
+```json
+{
+  "repoPath": "/workspace/example",
+  "question": "Where is authentication configured?"
+}
+```
+
+AI must be enabled in `.codecontext.json`. The configured provider may receive prompt context derived from the repository. Do not enable this feature for confidential source code unless the provider and data handling are approved.
+
+Possible status codes:
+
+- `200 OK`: AI response returned.
+- `400 Bad Request`: invalid path, invalid question, or AI disabled.
+- `429 Too Many Requests`: rate limit exceeded.
+- `502 Bad Gateway`: provider request failed.
+
+### `POST /analyze-org`
+
+Analyzes multiple local repositories with bounded concurrency.
+
+Request:
+
+```json
+[
+  "/workspace/service-a",
+  "/workspace/service-b"
+]
+```
+
+At most 20 repositories may be submitted per request. Each repository is subject to the configured `maxFilesAnalyze` limit. Results are returned in request order.
+
+## Path security
+
+The server resolves paths with `Path.toRealPath()` and accepts only readable directories that are equal to or descendants of an allowed root.
+
+By default, allowed roots are:
+
+- the current working directory;
+- the system temporary directory.
+
+Override them with `CODECONTEXT_ALLOWED_PATHS`, separated by the platform path separator. Configure the smallest possible set of roots.
+
+## Rate limiting
+
+Rate limiting is enabled by default and is configured through:
+
+```json
+{
+  "rateLimit": {
+    "enabled": true,
+    "requestsPerMinute": 60,
+    "requestsPerHour": 1000
+  }
+}
+```
+
+The server returns `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers where applicable.
+
+## Configuration
+
+The server reads `.codecontext.json` from the current working directory. Important fields include:
+
+```json
+{
+  "excludePaths": [".git", "build", "node_modules"],
+  "maxFilesAnalyze": 5000,
   "enableCache": true,
   "ai": {
     "enabled": false,
+    "provider": "gemini",
     "apiKey": "",
-    "model": "gpt-4"
+    "model": "gemini-2.5-flash"
   }
 }
 ```
 
-### Loading Config
+Never commit a populated `apiKey` value.
+
+## Kotlin API
+
+The core pipeline can also be used directly from Kotlin:
 
 ```kotlin
-import com.codecontext.core.config.ConfigLoader
+suspend fun analyzeProject(path: String) {
+    val config = ConfigLoader.load()
+    val files = RepositoryScanner(config).scan(path)
+    val parsed = CodeParallelParser(CacheManager()).parseFiles(files)
+    val graph = RobustDependencyGraph()
+    graph.build(parsed).getOrThrow()
+    graph.analyze().getOrThrow()
 
-val config = ConfigLoader.load()
-println("Max files: ${config.maxFilesAnalyze}")
-```
-
----
-
-## Data Models
-
-### ParsedFile
-
-```kotlin
-data class ParsedFile(
-    val file: File,
-    val packageName: String,
-    val imports: List<String>,
-    val gitMetadata: GitMetadata = GitMetadata(),
-    val description: String = ""
-)
-```
-
-### GitMetadata
-
-```kotlin
-data class GitMetadata(
-    val lastModified: Long = 0,
-    val changeFrequency: Int = 0,
-    val topAuthors: List<String> = emptyList(),
-    val recentMessages: List<String> = emptyList()
-)
-```
-
-### LearningStep
-
-```kotlin
-data class LearningStep(
-    val file: String,
-    val description: String,
-    val reason: String
-)
-```
-
----
-
-## Error Handling
-
-### CLI Errors
-
-```bash
-❌ No source files found
-❌ Too many files (12000). Limit: 10000
-❌ Failed to build graph: ...
-❌ Analysis failed: ...
-```
-
-### API Errors
-
-```json
-{
-  "error": {
-    "code": "INVALID_PATH",
-    "message": "Path does not exist: /invalid/path",
-    "details": {}
-  }
-}
-```
-
-**Error Codes:**
-- `INVALID_PATH` - Path doesn't exist
-- `TOO_MANY_FILES` - Exceeds max file limit
-- `PARSE_ERROR` - Failed to parse file
-- `GRAPH_BUILD_ERROR` - Failed to build dependency graph
-- `INTERNAL_ERROR` - Unexpected error
-
----
-
-## Rate Limiting (REST API)
-
-- **Default:** 100 requests per minute per IP
-- **Burst:** Up to 10 concurrent analyses
-
----
-
-## Examples
-
-### Analyze and Get Hotspots
-
-```kotlin
-val scanner = RepositoryScanner()
-val files = scanner.scan(".")
-
-val parser = CodeParallelParser()
-val parsed = runBlocking { parser.parseFiles(files) }
-
-val graph = RobustDependencyGraph()
-graph.build(parsed)
-graph.analyze()
-
-val hotspots = graph.getTopHotspots(5)
-```
-
-### Custom Parser
-
-```kotlin
-class PythonParser : LanguageParser {
-    override fun parse(file: File): ParsedFile {
-        val content = file.readText()
-        val packageName = extractPackage(content)
-        val imports = extractImports(content)
-        return ParsedFile(file, packageName, imports)
+    graph.getTopHotspots(10).forEach { (file, score) ->
+        println("$file: $score")
     }
 }
-
-// Register
-ParserFactory.register("py", PythonParser())
 ```
 
----
+The project is currently distributed as an application rather than a published Maven library.
 
-## Webhooks (Future)
+## Error shape
 
-Coming soon: Webhook support for real-time notifications.
+Errors use a deliberately small public shape:
 
 ```json
 {
-  "event": "analysis.completed",
-  "data": {
-    "analysisId": "abc123",
-    "timestamp": "2025-12-14T20:00:00Z"
-  }
+  "error": "Invalid or unsafe repository path"
 }
 ```
 
----
-
-## SDK Support (Planned)
-
-- **JavaScript/TypeScript** - npm package
-- **Python** - pip package
-- **Go** - Go module
-
----
-
-## Support
-
-For API questions or issues:
-- 📧 Email: shivanshsoni568@gmail.com
-- 🐛 Issues: https://github.com/sonii-shivansh/CodeContext/issues
-- 💬 Discussions: https://github.com/sonii-shivansh/CodeContext/discussions
+Provider and internal failures are sanitized before being returned to clients.
