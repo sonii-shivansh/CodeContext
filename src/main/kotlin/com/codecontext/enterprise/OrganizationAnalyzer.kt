@@ -2,73 +2,43 @@ package com.codecontext.enterprise
 
 import com.codecontext.cli.CodeParallelParser
 import com.codecontext.core.cache.CacheManager
+import com.codecontext.core.config.CodeContextConfig
+import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.scanner.RepositoryScanner
 import java.io.File
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
-data class RepoResult(
-        val name: String,
-        val fileCount: Int,
-        val hotspots: List<Pair<String, Double>>,
-        val error: String? = null
-)
+data class RepoResult(val name: String, val fileCount: Int, val hotspots: List<Pair<String, Double>>, val error: String? = null)
 
-class OrganizationAnalyzer {
-
-    suspend fun analyzeRepositories(repoPaths: List<String>): List<RepoResult> = coroutineScope {
+class OrganizationAnalyzer(private val maxConcurrentRepositories: Int = 2) {
+    suspend fun analyzeRepositories(repoPaths: List<String>, config: CodeContextConfig = ConfigLoader.load()): List<RepoResult> = coroutineScope {
+        require(maxConcurrentRepositories > 0) { "maxConcurrentRepositories must be positive" }
         echo("🏢 Starting Organization Analysis for ${repoPaths.size} repositories...")
-
-        repoPaths.map { path -> async { analyzeSingleRepo(path) } }.awaitAll()
+        val semaphore = Semaphore(maxConcurrentRepositories)
+        repoPaths.map { path -> async { semaphore.withPermit { analyzeSingleRepo(path, config) } } }.awaitAll()
     }
 
-    private fun analyzeSingleRepo(path: String): RepoResult {
+    private suspend fun analyzeSingleRepo(path: String, config: CodeContextConfig): RepoResult {
         return try {
             val file = File(path)
-            if (!file.exists()) {
-                return RepoResult(path, 0, emptyList(), "Path not found")
-            }
-
-            // 1. Scan
-            val scanner = RepositoryScanner()
-            val files = scanner.scan(path)
-
-            if (files.isEmpty()) {
-                return RepoResult(file.name, 0, emptyList(), "No source files")
-            }
-
-            // 2. Parse (Parallel)
-            val cacheManager = CacheManager() // Separate cache per repo or shared? Shared is fine.
-            val parser = CodeParallelParser(cacheManager)
-
-            // Calling suspend function from blocking context if inside async?
-            // analyzeRepositories is suspend, so we can call suspend functions.
-            // But CodeParallelParser.parseFiles is suspend.
-            // We need to match contexts.
-
-            val parsedFiles = runBlocking {
-                parser.parseFiles(files)
-            } // Blocking inside the async thread
-
-            // 3. Graph
+            if (!file.isDirectory || !file.canRead()) return RepoResult(path, 0, emptyList(), "Path not found or unreadable")
+            val files = RepositoryScanner(config).scan(path)
+            if (files.isEmpty()) return RepoResult(file.name, 0, emptyList(), "No source files")
+            require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
+            val parsedFiles = CodeParallelParser(CacheManager()).parseFiles(files)
             val graph = RobustDependencyGraph()
             graph.build(parsedFiles)
             graph.analyze()
-
-            // 4. Hotspots
-            val hotspots = graph.getTopHotspots(5)
-
-            RepoResult(file.name, files.size, hotspots)
+            RepoResult(file.name, parsedFiles.size, graph.getTopHotspots(5))
         } catch (e: Exception) {
-            e.printStackTrace()
-            RepoResult(File(path).name, 0, emptyList(), e.message)
+            RepoResult(File(path).name, 0, emptyList(), e.message ?: "Analysis failed")
         }
     }
 
-    private fun echo(msg: String) {
-        println(msg)
-    }
+    private fun echo(msg: String) = println(msg)
 }

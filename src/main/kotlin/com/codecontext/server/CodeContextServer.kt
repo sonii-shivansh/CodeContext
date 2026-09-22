@@ -13,7 +13,6 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -21,70 +20,73 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.UUID
 import kotlinx.serialization.Serializable
 
 @Serializable data class AnalysisRequest(val repoPath: String)
 @Serializable data class AskRequest(val repoPath: String, val question: String)
-@Serializable data class AnalysisResponse(val fileCount: Int, val hotspots: List<HotspotInfo>, val reportPath: String)
+@Serializable data class AnalysisResponse(val fileCount: Int, val hotspots: List<HotspotInfo>, val reportUrl: String)
 @Serializable data class HotspotInfo(val file: String, val score: Double)
+@Serializable data class ApiError(val error: String)
+
+private const val MAX_QUESTION_LENGTH = 16_000
 
 fun Application.module() {
     install(ContentNegotiation) { json() }
-    install(CORS) {
-        allowMethod(io.ktor.http.HttpMethod.Options)
-        allowMethod(io.ktor.http.HttpMethod.Post)
-        allowMethod(io.ktor.http.HttpMethod.Get)
-        allowHeader(io.ktor.http.HttpHeaders.ContentType)
-        allowHeader("x-api-key")
-        anyHost()
-    }
+    // CORS is intentionally disabled by default. Add a trusted-origin allowlist at the proxy layer.
     configureRateLimiting()
+
     routing {
         staticFiles("/reports", File("output"))
         get("/") { call.respondText("CodeContext API is running. 🚀") }
-        get("/health") { call.respond(mapOf("status" to "healthy", "version" to "0.1.0", "uptime" to System.currentTimeMillis() / 1000)) }
+        get("/health") { call.respond(mapOf("status" to "healthy", "version" to "0.2.0")) }
         get("/health/live") { call.respond(mapOf("status" to "live")) }
         get("/health/ready") { call.respond(mapOf("status" to "ready")) }
 
         post("/analyze") {
             try {
                 val request = call.receive<AnalysisRequest>()
-                var path = request.repoPath
-                if (path.startsWith("http://") || path.startsWith("https://")) {
-                    call.respond(io.ktor.http.HttpStatusCode.BadRequest, mapOf("error" to "Remote repositories are not supported by this local endpoint"))
-                    return@post
+                require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
+                require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) {
+                    "Remote repositories are not supported by this local endpoint"
                 }
-                val sanitizedPath = sanitizePath(path)
-                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, mapOf("error" to "Invalid or unsafe repository path"))
+                val path = sanitizePath(request.repoPath)
+                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
                 val config = ConfigLoader.load()
-                val (graph, parsedFiles, _) = AnalysisLogic.analyze(sanitizedPath, config)
-                val enrichedFiles = OptimizedGitAnalyzer().analyze(sanitizedPath, parsedFiles)
-                val reportFile = File("output/${File(sanitizedPath).name}-report.html").apply { parentFile.mkdirs() }
-                com.codecontext.output.ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, com.codecontext.core.generator.LearningPathGenerator().generate(graph))
+                val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
+                val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
+                val reportId = UUID.randomUUID().toString()
+                val reportFile = File("output/$reportId.html").apply { parentFile.mkdirs() }
+                com.codecontext.output.ReportGenerator().generate(
+                    graph, reportFile.absolutePath, enrichedFiles,
+                    com.codecontext.core.generator.LearningPathGenerator().generate(graph)
+                )
                 val hotspots = graph.getTopHotspots(5).map { HotspotInfo(File(it.first).name, it.second) }
-                call.respond(AnalysisResponse(parsedFiles.size, hotspots, reportFile.absolutePath))
+                call.respond(AnalysisResponse(parsedFiles.size, hotspots, "/reports/$reportId.html"))
             } catch (e: IllegalArgumentException) {
-                call.respond(io.ktor.http.HttpStatusCode.BadRequest, mapOf("error" to (e.message ?: "Invalid request")))
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
-                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, mapOf("error" to "Analysis failed"))
+                System.err.println("Analysis failed: ${e::class.simpleName}")
+                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, ApiError("Analysis failed"))
             }
         }
 
         post("/ask") {
             try {
                 val request = call.receive<AskRequest>()
-                require(request.question.isNotBlank() && request.question.length <= 16_000) { "Question is invalid" }
+                require(request.question.isNotBlank() && request.question.length <= MAX_QUESTION_LENGTH) { "Question is invalid" }
                 val config = ConfigLoader.load()
-                val sanitizedPath = sanitizePath(request.repoPath)
-                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, mapOf("error" to "Invalid or unsafe repository path"))
-                if (!config.ai.enabled) return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, mapOf("error" to "AI disabled in config"))
-                val (graph, parsedFiles, _) = AnalysisLogic.analyze(sanitizedPath, config)
+                val path = sanitizePath(request.repoPath)
+                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                if (!config.ai.enabled) return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("AI disabled in config"))
+                val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val context = CodebaseContext(parsedFiles.size, listOf("Kotlin/Java"), graph.getTopHotspots(10).map { it.first }, emptyList())
                 call.respond(AICodeAnalyzer(config.ai.apiKey, config.ai.model, config.ai.provider).askQuestion(request.question, context))
             } catch (e: IllegalArgumentException) {
-                call.respond(io.ktor.http.HttpStatusCode.BadRequest, mapOf("error" to (e.message ?: "Invalid request")))
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
-                call.respond(io.ktor.http.HttpStatusCode.BadGateway, mapOf("error" to "AI provider request failed"))
+                System.err.println("AI request failed: ${e::class.simpleName}")
+                call.respond(io.ktor.http.HttpStatusCode.BadGateway, ApiError("AI provider request failed"))
             }
         }
 
@@ -93,11 +95,11 @@ fun Application.module() {
                 val paths = call.receive<List<String>>()
                 require(paths.isNotEmpty() && paths.size <= 20) { "At most 20 repositories may be analyzed per request" }
                 paths.forEach { require(sanitizePath(it) != null) { "Invalid or unsafe repository path" } }
-                call.respond(com.codecontext.enterprise.OrganizationAnalyzer().analyzeRepositories(paths))
+                call.respond(com.codecontext.enterprise.OrganizationAnalyzer().analyzeRepositories(paths, ConfigLoader.load()))
             } catch (e: IllegalArgumentException) {
-                call.respond(io.ktor.http.HttpStatusCode.BadRequest, mapOf("error" to (e.message ?: "Invalid request")))
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
-                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, mapOf("error" to "Organization analysis failed"))
+                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, ApiError("Organization analysis failed"))
             }
         }
     }
@@ -116,7 +118,6 @@ object AnalysisLogic {
     }
 }
 
-/** Resolves a readable directory under explicitly configured roots. */
 fun sanitizePath(inputPath: String): String? {
     return try {
         if (inputPath.isBlank() || inputPath.length > 4096) return null
@@ -127,25 +128,23 @@ fun sanitizePath(inputPath: String): String? {
             ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir")))
             .mapNotNull { runCatching { Paths.get(it).toRealPath() }.getOrNull() }
         if (roots.any { root -> candidate == root || candidate.startsWith(root) }) candidate.toString() else null
-    } catch (_: Exception) {
-        null
-    }
+    } catch (_: Exception) { null }
 }
 
 fun Application.configureRateLimiting() {
     val config = ConfigLoader.load()
     if (!config.rateLimit.enabled) return
-    val rateLimiter = RateLimiter(config.rateLimit.requestsPerMinute, config.rateLimit.requestsPerHour)
+    val limiter = com.codecontext.server.RateLimiter(config.rateLimit.requestsPerMinute, config.rateLimit.requestsPerHour)
     intercept(ApplicationCallPipeline.Call) {
         val clientId = call.request.header("x-api-key")?.let { "key:${it.hashCode()}" } ?: "ip:${call.request.local.remoteHost}"
-        if (!rateLimiter.checkLimit(clientId)) {
-            val retryAfter = rateLimiter.getSecondsUntilReset(clientId)
+        if (!limiter.checkLimit(clientId)) {
+            val retryAfter = limiter.getSecondsUntilReset(clientId)
             call.response.headers.append("Retry-After", retryAfter.toString())
-            call.respond(io.ktor.http.HttpStatusCode.TooManyRequests, mapOf("error" to "Rate limit exceeded", "retryAfter" to retryAfter))
+            call.respond(io.ktor.http.HttpStatusCode.TooManyRequests, ApiError("Rate limit exceeded"))
             return@intercept finish()
         }
         call.response.headers.append("X-RateLimit-Limit", config.rateLimit.requestsPerMinute.toString())
-        call.response.headers.append("X-RateLimit-Remaining", rateLimiter.getRemainingMinute(clientId).toString())
+        call.response.headers.append("X-RateLimit-Remaining", limiter.getRemainingMinute(clientId).toString())
         proceed()
     }
 }
