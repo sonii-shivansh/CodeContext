@@ -7,6 +7,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Duration
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
@@ -53,8 +54,12 @@ class AICodeAnalyzer(
         private val model: String = "gemini-2.5-flash",
         private val provider: String = "gemini"
 ) {
-        private val client = HttpClient.newHttpClient()
-        private val json = Json { ignoreUnknownKeys = true }
+        private val client =
+                HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(20))
+                        .callTimeout(Duration.ofSeconds(45))
+                        .build()
+        private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
 
         private val isEnabled: Boolean =
                 apiKey.isNotBlank() && apiKey != "heuristic" && !apiKey.startsWith("demo")
@@ -72,7 +77,6 @@ class AICodeAnalyzer(
 
                         val prompt = buildFileAnalysisPrompt(file, context)
                         val response = callAI(prompt)
-
                         return@withContext parseInsight(response, file.file.absolutePath)
                 }
 
@@ -115,7 +119,7 @@ class AICodeAnalyzer(
                                                                         pageRank =
                                                                                 graph.pageRankScores[
                                                                                         file.file
-                                                                                                .absolutePath]
+                                                                                                    .absolutePath]
                                                                                         ?: 0.0,
                                                                         gitChurn =
                                                                                 file.gitMetadata
@@ -187,12 +191,12 @@ class AICodeAnalyzer(
                         val prompt =
                                 """
         Explain in 2-3 sentences why this file is critical to the codebase:
-        
+
         File: ${File(file).name}
         PageRank Score: $pageRank (higher = more central)
         Git Changes: $gitChurn times
         Files Depending On It: $dependents
-        
+
         Write for a developer joining the team. Focus on impact and risks.
         """
 
@@ -213,15 +217,15 @@ class AICodeAnalyzer(
                         val prompt =
                                 """
         You're onboarding a $developerLevel developer to a codebase.
-        
+
         Here are the key files:
         $filesSummary
-        
+
         Create a 7-day learning plan with:
         - Day-by-day file reading order
         - What to focus on in each file
         - Hands-on exercises (e.g., "Add a test", "Trace this function call")
-        
+
         Format as Markdown.
         """
 
@@ -231,30 +235,30 @@ class AICodeAnalyzer(
         private fun buildFileAnalysisPrompt(file: ParsedFile, context: AnalysisContext): String {
                 val fileContent =
                         try {
-                                file.file.readText().take(3000)
+                                sanitizePromptContent(file.file.readText().take(3000))
                         } catch (e: Exception) {
                                 "[File content unavailable]"
                         }
 
                 return """
         Analyze this codebase file and provide structured insights.
-        
+
         FILE: ${file.file.name}
         PACKAGE: ${file.packageName}
         IMPORTS: ${file.imports.take(10).joinToString(", ")}
-        
+
         CONTEXT:
         - Total codebase size: ${context.totalFiles} files
         - This file depends on: ${context.dependencies} files
         - This file is used by: ${context.dependents} files
         - PageRank (importance): ${String.format("%.4f", context.pageRank)}
         - Git churn: ${context.gitChurn} changes
-        
+
         CODE PREVIEW:
         ```
         ${fileContent.replace("```", "")}
         ```
-        
+
         Respond ONLY with JSON:
         {
           "purpose": "One sentence: what does this file do?",
@@ -271,24 +275,24 @@ class AICodeAnalyzer(
         private fun buildConversationPrompt(question: String, context: CodebaseContext): String {
                 return """
         You're an expert guide for this codebase.
-        
+
         CODEBASE OVERVIEW:
         - Total files: ${context.totalFiles}
         - Languages: ${context.languages.joinToString(", ")}
         - Top hotspots: ${context.hotspots.take(5).joinToString(", ") { File(it).name }}
-        
+
         RECENT CHANGES:
         ${context.recentChanges.take(3).joinToString("\n") { "- ${it.file}: ${it.message}" }}
-        
-        DEVELOPER QUESTION: "$question"
-        
+
+        DEVELOPER QUESTION: "${sanitizePromptContent(question)}"
+
         Respond with JSON:
         {
           "answer": "Clear, helpful answer (2-3 sentences)",
           "suggestedFiles": ["file1.kt", "file2.java"],
           "confidence": 0.0-1.0
         }
-        
+
         Be concise and actionable. If you don't know, say so.
         """
         }
@@ -300,25 +304,25 @@ class AICodeAnalyzer(
         ): String {
                 return """
         Review the following code changes (Pull Request) for a codebase.
-        
+
         CHANGED FILES:
         ${files.joinToString("\n") { "- $it" }}
-        
+
         CRITICAL HOTSPOTS AFFECTED:
         ${if (affectedHotspots.isEmpty()) "None" else affectedHotspots.joinToString(", ")}
-        
+
         DIFF:
         ```diff
-        ${diff.take(5000)} ${if (diff.length > 5000) "...(truncated)" else ""}
+        ${sanitizePromptContent(diff.take(5000))}${if (diff.length > 5000) "...(truncated)" else ""}
         ```
-        
+
         Analyze for:
         1. Correctness and Logic Errors
         2. Security Vulnerabilities
         3. Potential Breaking Changes
         4. Performance Implications
         5. Impact on identified Hotspots
-        
+
         Respond ONLY with JSON:
         {
           "summary": "Brief executive summary",
@@ -350,66 +354,63 @@ class AICodeAnalyzer(
         /** Call Google Gemini API */
         private suspend fun callGemini(prompt: String): String {
                 val requestBody =
-                        """
-                {
-                  "contents": [{
-                    "parts": [{
-                      "text": ${Json.encodeToString(prompt)}
-                    }]
-                  }],
-                  "generationConfig": {
-                    "temperature": 0.7,
-                    "topK": 40,
-                    "topP": 0.95,
-                    "maxOutputTokens": 2048
-                  }
-                }
-                """.trimIndent()
-
-                val url =
-                        "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
+                        json.encodeToString(
+                                mapOf(
+                                        "contents" to listOf(
+                                                mapOf(
+                                                        "parts" to listOf(
+                                                                mapOf("text" to sanitizePromptContent(prompt))
+                                                        )
+                                                )
+                                        ),
+                                        "generationConfig" to mapOf(
+                                                "temperature" to 0.7,
+                                                "topK" to 40,
+                                                "topP" to 0.95,
+                                                "maxOutputTokens" to 2048
+                                        )
+                                )
+                        )
 
                 val request =
                         HttpRequest.newBuilder()
-                                .uri(URI.create(url))
+                                .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"))
                                 .header("Content-Type", "application/json")
+                                .header("x-goog-api-key", apiKey)
                                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                                 .build()
 
                 val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-
-                if (response.statusCode() != 200) {
-                        throw Exception(
-                                "Gemini API error: ${response.statusCode()} ${response.body()}"
-                        )
+                val body = response.body()
+                if (response.statusCode() !in 200..299) {
+                        throw Exception("Gemini provider request failed with status ${response.statusCode()}")
                 }
 
-                // Parse Gemini response
-                val responseJson = Json.parseToJsonElement(response.body()).jsonObject
+                val responseJson = Json.parseToJsonElement(body).jsonObject
                 val candidates = responseJson["candidates"]?.jsonArray
                 val firstCandidate = candidates?.firstOrNull()?.jsonObject
                 val content = firstCandidate?.get("content")?.jsonObject
                 val parts = content?.get("parts")?.jsonArray
                 val text = parts?.firstOrNull()?.jsonObject?.get("text")?.jsonPrimitive?.content
 
-                return text ?: throw Exception("Invalid Gemini response format: ${response.body()}")
+                return text ?: throw Exception("Invalid Gemini response format")
         }
 
-        /** Call Anthropic Claude API (original implementation) */
+        /** Call Anthropic Claude API */
         private suspend fun callClaude(prompt: String): String {
                 val requestBody =
-                        """
-                {
-                  "model": "$model",
-                  "max_tokens": 1000,
-                  "messages": [
-                    {
-                      "role": "user",
-                      "content": "${prompt.replace("\"", "\\\"").replace("\n", "\\n").replace("\t", "\\t")}"
-                    }
-                  ]
-                }
-                """.trimIndent()
+                        json.encodeToString(
+                                mapOf(
+                                        "model" to model,
+                                        "max_tokens" to 1000,
+                                        "messages" to listOf(
+                                                mapOf(
+                                                        "role" to "user",
+                                                        "content" to sanitizePromptContent(prompt)
+                                                )
+                                        )
+                                )
+                        )
 
                 val request =
                         HttpRequest.newBuilder()
@@ -421,32 +422,22 @@ class AICodeAnalyzer(
                                 .build()
 
                 val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-
-                if (response.statusCode() != 200) {
-                        throw Exception(
-                                "Claude API error: ${response.statusCode()} ${response.body()}"
-                        )
+                val body = response.body()
+                if (response.statusCode() !in 200..299) {
+                        throw Exception("Claude provider request failed with status ${response.statusCode()}")
                 }
 
-                val responseJson = Json.parseToJsonElement(response.body()).jsonObject
+                val responseJson = Json.parseToJsonElement(body).jsonObject
                 val content = responseJson["content"]?.jsonArray?.firstOrNull()?.jsonObject
-                return content?.get("text")
-                        ?.toString()
-                        ?.removeSurrounding("\"")
-                        ?.replace("\\n", "\n")
-                        ?: throw Exception("Invalid response format")
+                val text = content?.get("text")?.jsonPrimitive?.content
+                return text ?: throw Exception("Invalid Claude response format")
         }
 
         private fun parseInsight(response: String, filePath: String): AIInsight {
-                val jsonText =
-                        response.substringAfter("{")
-                                .substringBeforeLast("}")
-                                .let { "{$it}" }
-                                .replace("\\\"", "\"")
-
+                val jsonText = extractJsonPayload(response)
                 return try {
                         json.decodeFromString<AIInsight>(jsonText).copy(file = filePath)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                         AIInsight(
                                 file = filePath,
                                 purpose = "Analysis unavailable (JSON error)",
@@ -461,24 +452,24 @@ class AICodeAnalyzer(
         }
 
         private fun parseConversation(response: String): AIConversationResponse {
-                val jsonText = response.substringAfter("{").substringBeforeLast("}").let { "{$it}" }
-
+                val jsonText = extractJsonPayload(response)
                 return try {
-                        json.decodeFromString<AIConversationResponse>(jsonText)
-                } catch (e: Exception) {
+                        val parsed = json.decodeFromString<AIConversationResponse>(jsonText)
+                        parsed.copy(confidence = parsed.confidence.coerceIn(0.0, 1.0))
+                } catch (_: Exception) {
                         AIConversationResponse(
-                                answer = response.take(200) + "...",
+                                answer = response.take(200).trim() + if (response.length > 200) "..." else "",
                                 suggestedFiles = emptyList(),
-                                confidence = 0.5
+                                confidence = 0.0
                         )
                 }
         }
 
         private fun parsePRReview(response: String): PRReview {
-                val jsonText = response.substringAfter("{").substringBeforeLast("}").let { "{$it}" }
+                val jsonText = extractJsonPayload(response)
                 return try {
                         json.decodeFromString<PRReview>(jsonText)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                         PRReview(
                                 summary = "Failed to parse AI response.",
                                 impactAnalysis = "Unknown",
@@ -488,6 +479,32 @@ class AICodeAnalyzer(
                                 hotspotImpact = null
                         )
                 }
+        }
+
+        private fun extractJsonPayload(rawResponse: String): String {
+                val sanitized = rawResponse.trim()
+                val fenced =
+                        Regex("```(?:json)?\\s*(\\{.*?\\})\\s*```", setOf(RegexOption.DOT_MATCHES_ALL))
+                                .find(sanitized)
+                if (fenced != null) {
+                        return fenced.groupValues[1].trim()
+                }
+                val start = sanitized.indexOf('{')
+                val end = sanitized.lastIndexOf('}')
+                return if (start >= 0 && end > start) sanitized.substring(start, end + 1).trim() else sanitized
+        }
+
+        private fun sanitizePromptContent(input: String): String {
+                var output = input
+                val secretPatterns =
+                        listOf(
+                                Regex("(?i)(api[_-]?key|secret|token|password|passwd|authorization)[\\s:=]+[A-Za-z0-9._~+/=-]{8,}"),
+                                Regex("(?i)(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]+|AIza[0-9A-Za-z_-]{10,}|sk-[A-Za-z0-9]{10,}|AKIA[0-9A-Z]{16})")
+                        )
+                for (pattern in secretPatterns) {
+                        output = pattern.replace(output, "***REDACTED***")
+                }
+                return output
         }
 }
 
