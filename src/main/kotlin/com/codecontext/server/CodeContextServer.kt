@@ -154,15 +154,23 @@ object AnalysisLogic {
 }
 
 /** Resolves a directory and ensures it remains inside an explicitly allowed workspace. */
-fun sanitizePath(inputPath: String): String? = try {
-    if (inputPath.isBlank() || inputPath.length > 4096) return null
-    val candidate = Paths.get(inputPath).toRealPath()
-    if (!Files.isDirectory(candidate) || !Files.isReadable(candidate)) return null
-    val allowedRoots = (System.getenv("CODECONTEXT_ALLOWED_PATHS")?.split(File.pathSeparator)
-        ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir")))
-        .mapNotNull { root -> runCatching { Paths.get(root).toRealPath() }.getOrNull() }
-    if (allowedRoots.any { candidate == it || candidate.startsWith(it) }) candidate.toString() else null
-} catch (_: Exception) { null }
+fun sanitizePath(inputPath: String): String? {
+    return try {
+        if (inputPath.isBlank() || inputPath.length > 4096) null
+        else {
+            val candidate = Paths.get(inputPath).toRealPath()
+            if (!Files.isDirectory(candidate) || !Files.isReadable(candidate)) null
+            else {
+                val allowedRoots = (System.getenv("CODECONTEXT_ALLOWED_PATHS")?.split(File.pathSeparator)
+                    ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir")))
+                    .mapNotNull { root -> runCatching { Paths.get(root).toRealPath() }.getOrNull() }
+                if (allowedRoots.any { candidate == it || candidate.startsWith(it) }) candidate.toString() else null
+            }
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
 
 fun Application.configureRateLimiting() {
     val config = ConfigLoader.load()
