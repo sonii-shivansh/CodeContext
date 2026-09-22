@@ -2,6 +2,8 @@ package com.codecontext.core.cache
 
 import com.codecontext.core.parser.ParsedFile
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -11,54 +13,32 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class CacheManager(private val cacheDir: File = File(".codecontext/cache")) {
-
-    init {
-        if (!cacheDir.exists()) cacheDir.mkdirs()
-    }
-
-    // FIX: Add thread-safe locking per file
+    init { if (!cacheDir.exists()) cacheDir.mkdirs() }
     private val locks = ConcurrentHashMap<String, ReentrantReadWriteLock>()
-
-    private fun getLock(key: String): ReentrantReadWriteLock {
-        return locks.computeIfAbsent(key) { ReentrantReadWriteLock() }
-    }
+    private fun getLock(key: String) = locks.computeIfAbsent(key) { ReentrantReadWriteLock() }
 
     fun getCachedParse(file: File): ParsedFile? {
         val cacheKey = getCacheKey(file)
         val cacheFile = File(cacheDir, "$cacheKey.json")
-
-        val lock = getLock(cacheKey)
-
-        return lock.read {
+        return getLock(cacheKey).read {
             if (!cacheFile.exists()) return@read null
-
-            // Check if source file is newer than cache
-            if (file.lastModified() > cacheFile.lastModified()) return@read null
-
-            try {
-                val json = cacheFile.readText()
-                Json.decodeFromString<ParsedFile>(json)
-            } catch (e: Exception) {
-                // If cache is corrupted, delete it
-                cacheFile.delete()
-                null
-            }
+            try { Json.decodeFromString<ParsedFile>(cacheFile.readText()) }
+            catch (_: Exception) { cacheFile.delete(); null }
         }
     }
 
     fun saveParse(file: File, parsed: ParsedFile) {
         val cacheKey = getCacheKey(file)
         val cacheFile = File(cacheDir, "$cacheKey.json")
-
-        val lock = getLock(cacheKey)
-
-        lock.write {
+        getLock(cacheKey).write {
             try {
-                val json = Json.encodeToString(parsed)
-                // FIX: Atomic write using temp file
-                val tempFile = File(cacheFile.absolutePath + ".tmp")
-                tempFile.writeText(json)
-                tempFile.renameTo(cacheFile) // Atomic on most filesystems
+                val temp = File(cacheFile.absolutePath + ".tmp")
+                temp.writeText(Json.encodeToString(parsed))
+                runCatching {
+                    Files.move(temp.toPath(), cacheFile.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+                }.getOrElse {
+                    Files.move(temp.toPath(), cacheFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                }
             } catch (e: Exception) {
                 System.err.println("Failed to cache ${file.name}: ${e.message}")
             }
@@ -66,12 +46,20 @@ class CacheManager(private val cacheDir: File = File(".codecontext/cache")) {
     }
 
     private fun getCacheKey(file: File): String {
-        // FIX: Include file size and last modified in key for better invalidation
-        val path = file.absolutePath
-        val metadata = "${path}:${file.lastModified()}:${file.length()}"
-        return MessageDigest.getInstance("MD5").digest(metadata.toByteArray()).joinToString("") {
-            "%02x".format(it)
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            var read = input.read(buffer)
+            while (read >= 0) {
+                if (read > 0) digest.update(buffer, 0, read)
+                read = input.read(buffer)
+            }
         }
+        val contentHash = digest.digest().joinToString("") { "%02x".format(it) }
+        val metadata = "${file.canonicalPath}:$contentHash"
+        return MessageDigest.getInstance("SHA-256")
+            .digest(metadata.toByteArray())
+            .joinToString("") { "%02x".format(it) }
     }
 
     fun clear() {

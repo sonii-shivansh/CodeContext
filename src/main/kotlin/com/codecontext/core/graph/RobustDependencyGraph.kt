@@ -13,49 +13,38 @@ class RobustDependencyGraph {
 
     fun build(parsedFiles: List<ParsedFile>): Result<Unit> {
         return try {
-            // Build class map
+            graph.removeAllVertices(graph.vertexSet().toList())
+            pageRankScores.clear()
+            hasCycles = false
             val classMap = mutableMapOf<String, String>()
+            val packageIndex = mutableMapOf<String, MutableList<String>>()
 
             parsedFiles.forEach { parsed ->
                 val filePath = parsed.file.absolutePath
                 graph.addVertex(filePath)
-
                 val className = parsed.file.nameWithoutExtension
-                val fqcn =
-                        if (parsed.packageName.isNotEmpty()) "${parsed.packageName}.$className"
-                        else className
+                val fqcn = if (parsed.packageName.isNotEmpty()) "${parsed.packageName}.$className" else className
                 classMap[fqcn] = filePath
+                packageIndex.getOrPut(parsed.packageName) { mutableListOf() }.add(filePath)
             }
 
-            // Add edges with safety checks
             parsedFiles.forEach { source ->
-                source.imports.forEach { import ->
-                    if (import.endsWith(".*")) {
-                        val packageName = import.removeSuffix(".*")
-                        parsedFiles.filter { it.packageName == packageName }.forEach { target ->
-                            addEdgeSafely(source.file.absolutePath, target.file.absolutePath)
+                source.imports.forEach { imported ->
+                    if (imported.endsWith(".*")) {
+                        packageIndex[imported.removeSuffix(".*")].orEmpty().forEach { target ->
+                            addEdgeSafely(source.file.absolutePath, target)
                         }
                     } else {
-                        // Standard Import
-                        classMap[import]?.let { targetPath ->
-                            addEdgeSafely(source.file.absolutePath, targetPath)
-                        }
+                        classMap[imported]?.let { target -> addEdgeSafely(source.file.absolutePath, target) }
                     }
                 }
             }
 
-            // Detect cycles
             if (graph.vertexSet().isNotEmpty()) {
                 val cycleDetector = CycleDetector(graph)
                 hasCycles = cycleDetector.detectCycles()
-
-                if (hasCycles) {
-                    println(
-                            "⚠️ Warning: Circular dependencies detected (cycles found involving ${cycleDetector.findCycles().size} vertices)"
-                    )
-                }
+                if (hasCycles) println("⚠️ Warning: Circular dependencies detected (cycles found involving ${cycleDetector.findCycles().size} vertices)")
             }
-
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -63,41 +52,23 @@ class RobustDependencyGraph {
     }
 
     private fun addEdgeSafely(source: String, target: String) {
-        if (source != target && !graph.containsEdge(source, target)) {
-            try {
-                if (graph.containsVertex(source) && graph.containsVertex(target)) {
-                    graph.addEdge(source, target)
-                }
-            } catch (e: Exception) {
-                // Edge already exists or would create self-loop (should be caught by if check but
-                // just in case)
-            }
+        if (source != target && graph.containsVertex(source) && graph.containsVertex(target) && !graph.containsEdge(source, target)) {
+            runCatching { graph.addEdge(source, target) }
         }
     }
 
     fun analyze(): Result<Unit> {
         return try {
-            if (graph.vertexSet().isEmpty()) {
-                // Not necessarily an error, just empty repo
-                return Result.success(Unit)
-            }
-
-            // PageRank handles cycles gracefully by damping
-            val pageRank = PageRank(graph, 0.85, 100) // damping=0.85, maxIterations=100
-
-            graph.vertexSet().forEach { vertex ->
-                pageRankScores[vertex] = pageRank.getVertexScore(vertex)
-            }
-
+            pageRankScores.clear()
+            if (graph.vertexSet().isEmpty()) return Result.success(Unit)
+            val pageRank = PageRank(graph, 0.85, 100)
+            graph.vertexSet().forEach { vertex -> pageRankScores[vertex] = pageRank.getVertexScore(vertex) }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    fun getTopHotspots(limit: Int = 10): List<Pair<String, Double>> {
-        return pageRankScores.entries.sortedByDescending { it.value }.take(limit).map {
-            it.key to it.value
-        }
-    }
+    fun getTopHotspots(limit: Int = 10): List<Pair<String, Double>> =
+        pageRankScores.entries.sortedByDescending { it.value }.take(limit).map { it.key to it.value }
 }
