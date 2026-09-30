@@ -35,9 +35,6 @@ jobs:
           java -version
           ./gradlew --version
 
-      - name: Verify enterprise snapshot test
-        run: ./gradlew --no-daemon test --tests "com.codecontext.core.AnalysisSnapshotTest"
-
       - name: Run unit and property tests
         run: ./gradlew --no-daemon clean test
 
