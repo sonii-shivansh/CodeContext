@@ -2,6 +2,7 @@ package com.codecontext.core.intelligence
 
 import com.codecontext.core.parser.ParsedFile
 import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 /**
@@ -11,6 +12,7 @@ import kotlinx.serialization.Serializable
  * It is the contract future CI, SARIF, dashboards and grounded AI features can
  * consume without re-running presentation-specific logic.
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class AnalysisSnapshot(
     @EncodeDefault(EncodeDefault.Mode.ALWAYS)
@@ -46,6 +48,8 @@ data class FileSnapshot(
     val churn: Int,
     val authors: List<String>,
     val pageRank: Double,
+    val dependents: Int,
+    val dependencies: Int,
     val description: String = ""
 )
 
@@ -73,19 +77,23 @@ object AnalysisSnapshotBuilder {
         graph: org.jgrapht.graph.DefaultDirectedGraph<String, org.jgrapht.graph.DefaultEdge>,
         pageRankScores: Map<String, Double>,
         hasCycles: Boolean,
+        cycleCount: Int = if (hasCycles) 1 else 0,
         parseFailures: Int = 0
     ): AnalysisSnapshot {
         val packageNames = parsedFiles.map { it.packageName }.filter { it.isNotBlank() }.toSet()
         val fileByPath = parsedFiles.associateBy { it.file.absolutePath }
 
         val files = parsedFiles.map { file ->
+            val path = file.file.absolutePath
             FileSnapshot(
-                path = file.file.absolutePath,
+                path = path,
                 packageName = file.packageName,
                 importCount = file.imports.size,
                 churn = file.gitMetadata.changeFrequency,
                 authors = file.gitMetadata.topAuthors,
-                pageRank = pageRankScores[file.file.absolutePath] ?: 0.0,
+                pageRank = pageRankScores[path] ?: 0.0,
+                dependents = if (graph.containsVertex(path)) graph.inDegreeOf(path) else 0,
+                dependencies = if (graph.containsVertex(path)) graph.outDegreeOf(path) else 0,
                 description = file.description
             )
         }
@@ -132,7 +140,7 @@ object AnalysisSnapshotBuilder {
                 totalFiles = parsedFiles.size,
                 totalNodes = graph.vertexSet().size,
                 totalEdges = graph.edgeSet().size,
-                cycleCount = if (hasCycles) 1 else 0,
+                cycleCount = cycleCount,
                 parseFailures = parseFailures
             ),
             files = files,
