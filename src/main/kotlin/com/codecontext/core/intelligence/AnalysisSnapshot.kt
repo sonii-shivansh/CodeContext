@@ -1,6 +1,7 @@
 package com.codecontext.core.intelligence
 
 import com.codecontext.core.parser.ParsedFile
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
 
 /**
@@ -12,6 +13,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class AnalysisSnapshot(
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val schemaVersion: String = "1.0",
     val repository: RepositorySnapshot,
     val metrics: AnalysisMetrics,
