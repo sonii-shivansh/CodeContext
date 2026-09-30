@@ -10,7 +10,7 @@ import com.codecontext.core.intelligence.RepositorySnapshot
 import com.codecontext.core.intelligence.EngineeringRiskEngine
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldContain
+import io.kotest.matchers.string.shouldContain
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -20,8 +20,8 @@ class AnalysisSnapshotTest : StringSpec({
             repository = RepositorySnapshot("/repo", 1L, listOf("Kotlin")),
             metrics = AnalysisMetrics(2, 2, 1, 0),
             files = listOf(
-                FileSnapshot("/repo/A.kt", "a", 20, 12, listOf("dev"), 0.03),
-                FileSnapshot("/repo/B.kt", "b", 2, 0, listOf("dev"), 0.001)
+                FileSnapshot("/repo/A.kt", "a", 20, 12, listOf("dev"), 0.03, 11, 2),
+                FileSnapshot("/repo/B.kt", "b", 2, 0, listOf("dev"), 0.001, 0, 0)
             ),
             hotspots = listOf(HotspotSnapshot("/repo/A.kt", 0.03, 12, 11, 2)),
             architecture = ArchitectureSnapshot(false, 2, 1)
