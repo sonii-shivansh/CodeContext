@@ -50,13 +50,14 @@ object EngineeringRiskEngine {
             reasons += "moderate dependency surface"
         }
 
-        val hotspot = snapshot.hotspots.firstOrNull { it.path == file.path }
-        if (hotspot != null && hotspot.dependents >= 10) {
+        // Degree data is retained for every file in AnalysisSnapshot, so risk
+        // scoring is independent of the presentation-oriented top-20 hotspot cap.
+        if (file.dependents >= 10) {
             score += 15.0
             reasons += "many dependent files"
         }
 
-        if (snapshot.architecture.hasCycles && (hotspot?.dependencies ?: 0) > 0) {
+        if (snapshot.architecture.hasCycles && file.dependencies > 0) {
             score += 10.0
             reasons += "repository contains dependency cycles"
         }
