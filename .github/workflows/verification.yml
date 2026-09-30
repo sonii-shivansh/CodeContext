@@ -12,9 +12,9 @@ permissions:
 
 jobs:
   verify:
-    name: Build, test, and smoke test
+    name: Build, test, and end-to-end verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -35,28 +35,46 @@ jobs:
           java -version
           ./gradlew --version
 
-      - name: Run tests
+      - name: Run unit and property tests
         run: ./gradlew --no-daemon clean test
 
       - name: Build application and distribution
         run: ./gradlew --no-daemon build installDist
 
-      - name: Verify CLI help
+      - name: Verify CLI
         run: |
           ./build/install/codecontext/bin/codecontext --help
           ./build/install/codecontext/bin/codecontext --version || true
 
-      - name: Run self-analysis smoke test
+      - name: Run self-analysis end-to-end
         run: |
           rm -rf output
           ./build/install/codecontext/bin/codecontext analyze .
           test -s output/index.html
+          test -s output/analysis-snapshot.json
+          test -s output/engineering-risks.json
 
-      - name: Verify generated report
+      - name: Validate generated intelligence artifacts
+        shell: bash
         run: |
           grep -q "CodeContext Analysis Report" output/index.html
           grep -q "Knowledge Hotspots" output/index.html
           grep -q "Personalized Learning Path" output/index.html
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          snapshot = json.loads(Path("output/analysis-snapshot.json").read_text())
+          risks = json.loads(Path("output/engineering-risks.json").read_text())
+
+          assert snapshot["schemaVersion"] == "1.0"
+          assert snapshot["metrics"]["totalFiles"] > 0
+          assert snapshot["metrics"]["totalNodes"] >= snapshot["metrics"]["totalFiles"]
+          assert isinstance(snapshot["hotspots"], list)
+          assert isinstance(risks, list)
+          assert all(0 <= item["score"] <= 100 for item in risks)
+          print(f"Validated {snapshot['metrics']['totalFiles']} files and {len(risks)} risk records")
+          PY
 
       - name: Start server
         shell: bash
@@ -64,7 +82,6 @@ jobs:
           ./build/install/codecontext/bin/codecontext server \
             --host 127.0.0.1 \
             --port 18080 > server.log 2>&1 &
-
           echo $! > server.pid
 
       - name: Wait for server
@@ -74,17 +91,18 @@ jobs:
             if curl --fail --silent http://127.0.0.1:18080/ > response.txt; then
               exit 0
             fi
-
             sleep 1
           done
-
           echo "Server did not become ready."
           cat server.log
           exit 1
 
-      - name: Verify root endpoint
+      - name: Verify API health
         run: |
           grep -F "CodeContext API is running" response.txt
+          curl --fail --silent http://127.0.0.1:18080/health | grep -F '"status":"healthy"'
+          curl --fail --silent http://127.0.0.1:18080/health/live | grep -F '"status":"live"'
+          curl --fail --silent http://127.0.0.1:18080/health/ready | grep -F '"status":"ready"'
 
       - name: Stop server
         if: always()
