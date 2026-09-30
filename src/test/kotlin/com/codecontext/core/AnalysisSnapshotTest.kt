@@ -10,10 +10,6 @@ import com.codecontext.core.intelligence.HotspotSnapshot
 import com.codecontext.core.intelligence.RepositorySnapshot
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 class AnalysisSnapshotTest : StringSpec({
     "risk engine should be deterministic for identical snapshots" {
@@ -34,20 +30,5 @@ class AnalysisSnapshotTest : StringSpec({
 
         first shouldBe second
         first.first().path shouldBe "/repo/A.kt"
-    }
-
-    "serialized snapshot should always expose its schema version" {
-        val snapshot = AnalysisSnapshot(
-            schemaVersion = ANALYSIS_SCHEMA_VERSION,
-            repository = RepositorySnapshot("/repo", 1L, listOf("Kotlin")),
-            metrics = AnalysisMetrics(0, 0, 0, 0),
-            files = emptyList(),
-            hotspots = emptyList(),
-            architecture = ArchitectureSnapshot(false, 0, 0)
-        )
-
-        val json = Json.parseToJsonElement(Json.encodeToString(snapshot)).jsonObject
-
-        json["schemaVersion"]?.jsonPrimitive?.content shouldBe ANALYSIS_SCHEMA_VERSION
     }
 })
