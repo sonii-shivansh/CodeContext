@@ -1,7 +1,6 @@
 package com.codecontext.core.graph
 
 import com.codecontext.core.parser.ParsedFile
-import org.jgrapht.alg.connectivity.StrongConnectivityInspector
 import org.jgrapht.alg.cycle.CycleDetector
 import org.jgrapht.alg.scoring.PageRank
 import org.jgrapht.graph.DefaultDirectedGraph
@@ -11,14 +10,12 @@ class RobustDependencyGraph {
     val graph = DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge::class.java)
     val pageRankScores = mutableMapOf<String, Double>()
     var hasCycles = false
-    var cycleCount = 0
 
     fun build(parsedFiles: List<ParsedFile>): Result<Unit> {
         return try {
             graph.removeAllVertices(graph.vertexSet().toList())
             pageRankScores.clear()
             hasCycles = false
-            cycleCount = 0
             val classMap = mutableMapOf<String, String>()
             val packageIndex = mutableMapOf<String, MutableList<String>>()
 
@@ -44,13 +41,9 @@ class RobustDependencyGraph {
             }
 
             if (graph.vertexSet().isNotEmpty()) {
-                val cycleDetector = CycleDetector(graph)
-                hasCycles = cycleDetector.detectCycles()
-                cycleCount = StrongConnectivityInspector(graph)
-                    .stronglyConnectedSets()
-                    .count { component -> component.size > 1 }
+                hasCycles = CycleDetector(graph).detectCycles()
                 if (hasCycles) {
-                    println("⚠️ Warning: Circular dependencies detected (cycle components: $cycleCount)")
+                    println("⚠️ Warning: Circular dependencies detected")
                 }
             }
             Result.success(Unit)
