@@ -109,14 +109,12 @@ class ImprovedAnalyzeCommand :
                     echo("$prefix ${File(file).name} (${String.format("%.4f", score)})")
                 }
 
-                // Deterministic engineering intelligence is produced independently of any LLM.
                 val snapshot = AnalysisSnapshotBuilder.build(
                     repositoryPath = rootDir.absoluteFile.normalize().path,
                     parsedFiles = enrichedFiles,
                     graph = graph.graph,
                     pageRankScores = graph.pageRankScores,
                     hasCycles = graph.hasCycles,
-                    cycleCount = graph.cycleCount,
                     parseFailures = failedCount
                 )
                 val risks = EngineeringRiskEngine.calculate(snapshot)
