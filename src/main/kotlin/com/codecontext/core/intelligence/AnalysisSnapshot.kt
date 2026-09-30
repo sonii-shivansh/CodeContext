@@ -34,7 +34,7 @@ data class AnalysisMetrics(
     val totalFiles: Int,
     val totalNodes: Int,
     val totalEdges: Int,
-    val cycleCount: Int,
+    val cycleDetected: Boolean,
     val parseFailures: Int = 0
 )
 
@@ -75,7 +75,6 @@ object AnalysisSnapshotBuilder {
         graph: org.jgrapht.graph.DefaultDirectedGraph<String, org.jgrapht.graph.DefaultEdge>,
         pageRankScores: Map<String, Double>,
         hasCycles: Boolean,
-        cycleCount: Int = if (hasCycles) 1 else 0,
         parseFailures: Int = 0
     ): AnalysisSnapshot {
         val packageNames = parsedFiles.map { it.packageName }.filter { it.isNotBlank() }.toSet()
@@ -139,7 +138,7 @@ object AnalysisSnapshotBuilder {
                 totalFiles = parsedFiles.size,
                 totalNodes = graph.vertexSet().size,
                 totalEdges = graph.edgeSet().size,
-                cycleCount = cycleCount,
+                cycleDetected = hasCycles,
                 parseFailures = parseFailures
             ),
             files = files,
