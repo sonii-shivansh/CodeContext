@@ -2,7 +2,6 @@ package com.codecontext.core
 
 import com.codecontext.core.intelligence.AnalysisMetrics
 import com.codecontext.core.intelligence.AnalysisSnapshot
-import com.codecontext.core.intelligence.AnalysisSnapshotBuilder
 import com.codecontext.core.intelligence.ArchitectureSnapshot
 import com.codecontext.core.intelligence.EngineeringRiskEngine
 import com.codecontext.core.intelligence.FileSnapshot
@@ -10,7 +9,6 @@ import com.codecontext.core.intelligence.HotspotSnapshot
 import com.codecontext.core.intelligence.RepositorySnapshot
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import kotlin.test.assertEquals
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -47,6 +45,6 @@ class AnalysisSnapshotTest : StringSpec({
 
         val json = Json.parseToJsonElement(Json.encodeToString(snapshot)).jsonObject
 
-        assertEquals("1.0", json["schemaVersion"]?.jsonPrimitive?.content)
+        json["schemaVersion"]?.jsonPrimitive?.content shouldBe "1.0"
     }
 })
