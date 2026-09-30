@@ -1,9 +1,9 @@
 package com.codecontext.core.intelligence
 
 import com.codecontext.core.parser.ParsedFile
-import kotlinx.serialization.EncodeDefault
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+
+const val ANALYSIS_SCHEMA_VERSION = "1.0"
 
 /**
  * Stable, machine-readable representation of an analysis run.
@@ -12,11 +12,9 @@ import kotlinx.serialization.Serializable
  * It is the contract future CI, SARIF, dashboards and grounded AI features can
  * consume without re-running presentation-specific logic.
  */
-@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class AnalysisSnapshot(
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val schemaVersion: String = "1.0",
+    val schemaVersion: String,
     val repository: RepositorySnapshot,
     val metrics: AnalysisMetrics,
     val files: List<FileSnapshot>,
@@ -131,6 +129,7 @@ object AnalysisSnapshotBuilder {
         }.distinct().sorted()
 
         return AnalysisSnapshot(
+            schemaVersion = ANALYSIS_SCHEMA_VERSION,
             repository = RepositorySnapshot(
                 path = repositoryPath,
                 analyzedAtEpochMillis = System.currentTimeMillis(),
