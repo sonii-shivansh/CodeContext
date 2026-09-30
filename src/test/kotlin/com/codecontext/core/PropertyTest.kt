@@ -106,5 +106,14 @@ class PropertyTest :
 
                 first shouldBe second
                 first.first().path shouldBe "/repo/A.kt"
+
+                val tied = snapshot.copy(
+                        files = listOf(
+                                FileSnapshot("/repo/C.kt", "c", 2, 0, listOf("dev"), 0.001, 0, 0),
+                                FileSnapshot("/repo/B.kt", "b", 2, 0, listOf("dev"), 0.001, 0, 0)
+                        )
+                )
+                EngineeringRiskEngine.calculate(tied).map { it.path } shouldBe
+                        listOf("/repo/B.kt", "/repo/C.kt")
             }
         })
