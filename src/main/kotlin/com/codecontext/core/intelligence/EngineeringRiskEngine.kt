@@ -50,8 +50,6 @@ object EngineeringRiskEngine {
             reasons += "moderate dependency surface"
         }
 
-        // Degree data is retained for every file in AnalysisSnapshot, so risk
-        // scoring is independent of the presentation-oriented top-20 hotspot cap.
         if (file.dependents >= 10) {
             score += 15.0
             reasons += "many dependent files"
@@ -64,7 +62,7 @@ object EngineeringRiskEngine {
 
         score = min(100.0, max(0.0, score))
         EngineeringRisk(file.path, score, levelFor(score), reasons.ifEmpty { listOf("no major deterministic risk signal") })
-    }.sortedByDescending { it.score }
+    }.sortedWith(compareByDescending<EngineeringRisk> { it.score }.thenBy { it.path })
 
     private fun levelFor(score: Double): RiskLevel = when {
         score >= 80 -> RiskLevel.CRITICAL
