@@ -2,6 +2,7 @@ package com.codecontext.core.intelligence
 
 import kotlin.math.max
 import kotlin.math.min
+import kotlinx.serialization.Serializable
 
 /**
  * Deterministic engineering-risk signals.
@@ -9,6 +10,7 @@ import kotlin.math.min
  * This deliberately does not use an LLM. Risk signals must remain reproducible
  * in CI and provide evidence that a future AI layer can explain.
  */
+@Serializable
 data class EngineeringRisk(
     val path: String,
     val score: Double,
@@ -16,6 +18,7 @@ data class EngineeringRisk(
     val reasons: List<String>
 )
 
+@Serializable
 enum class RiskLevel { LOW, MEDIUM, HIGH, CRITICAL }
 
 object EngineeringRiskEngine {
@@ -53,7 +56,7 @@ object EngineeringRiskEngine {
             reasons += "many dependent files"
         }
 
-        if (snapshot.architecture.hasCycles && hotspot?.dependencies ?: 0 > 0) {
+        if (snapshot.architecture.hasCycles && (hotspot?.dependencies ?: 0) > 0) {
             score += 10.0
             reasons += "repository contains dependency cycles"
         }
