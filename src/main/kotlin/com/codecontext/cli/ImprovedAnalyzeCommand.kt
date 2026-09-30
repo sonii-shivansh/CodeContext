@@ -116,6 +116,7 @@ class ImprovedAnalyzeCommand :
                     graph = graph.graph,
                     pageRankScores = graph.pageRankScores,
                     hasCycles = graph.hasCycles,
+                    cycleCount = graph.cycleCount,
                     parseFailures = failedCount
                 )
                 val risks = EngineeringRiskEngine.calculate(snapshot)
