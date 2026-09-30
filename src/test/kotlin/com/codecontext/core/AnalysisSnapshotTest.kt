@@ -1,5 +1,6 @@
 package com.codecontext.core
 
+import com.codecontext.core.intelligence.ANALYSIS_SCHEMA_VERSION
 import com.codecontext.core.intelligence.AnalysisMetrics
 import com.codecontext.core.intelligence.AnalysisSnapshot
 import com.codecontext.core.intelligence.ArchitectureSnapshot
@@ -17,6 +18,7 @@ import kotlinx.serialization.json.jsonPrimitive
 class AnalysisSnapshotTest : StringSpec({
     "risk engine should be deterministic for identical snapshots" {
         val snapshot = AnalysisSnapshot(
+            schemaVersion = ANALYSIS_SCHEMA_VERSION,
             repository = RepositorySnapshot("/repo", 1L, listOf("Kotlin")),
             metrics = AnalysisMetrics(2, 2, 1, 0),
             files = listOf(
@@ -36,6 +38,7 @@ class AnalysisSnapshotTest : StringSpec({
 
     "serialized snapshot should always expose its schema version" {
         val snapshot = AnalysisSnapshot(
+            schemaVersion = ANALYSIS_SCHEMA_VERSION,
             repository = RepositorySnapshot("/repo", 1L, listOf("Kotlin")),
             metrics = AnalysisMetrics(0, 0, 0, 0),
             files = emptyList(),
@@ -45,6 +48,6 @@ class AnalysisSnapshotTest : StringSpec({
 
         val json = Json.parseToJsonElement(Json.encodeToString(snapshot)).jsonObject
 
-        json["schemaVersion"]?.jsonPrimitive?.content shouldBe "1.0"
+        json["schemaVersion"]?.jsonPrimitive?.content shouldBe ANALYSIS_SCHEMA_VERSION
     }
 })
