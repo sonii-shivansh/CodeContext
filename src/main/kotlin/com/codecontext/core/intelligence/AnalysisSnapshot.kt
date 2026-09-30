@@ -79,8 +79,9 @@ object AnalysisSnapshotBuilder {
     ): AnalysisSnapshot {
         val packageNames = parsedFiles.map { it.packageName }.filter { it.isNotBlank() }.toSet()
         val fileByPath = parsedFiles.associateBy { it.file.absolutePath }
+        val orderedFiles = parsedFiles.sortedBy { it.file.absolutePath }
 
-        val files = parsedFiles.map { file ->
+        val files = orderedFiles.map { file ->
             val path = file.file.absolutePath
             FileSnapshot(
                 path = path,
@@ -96,7 +97,7 @@ object AnalysisSnapshotBuilder {
         }
 
         val hotspots = pageRankScores.entries
-            .sortedByDescending { it.value }
+            .sortedWith(compareByDescending<Map.Entry<String, Double>> { it.value }.thenBy { it.key })
             .take(20)
             .map { (path, score) ->
                 HotspotSnapshot(
@@ -119,7 +120,7 @@ object AnalysisSnapshotBuilder {
             }
         }
 
-        val languages = parsedFiles.mapNotNull { file ->
+        val languages = orderedFiles.mapNotNull { file ->
             when (file.file.extension.lowercase()) {
                 "kt", "kts" -> "Kotlin"
                 "java" -> "Java"
@@ -135,7 +136,7 @@ object AnalysisSnapshotBuilder {
                 languages = languages
             ),
             metrics = AnalysisMetrics(
-                totalFiles = parsedFiles.size,
+                totalFiles = orderedFiles.size,
                 totalNodes = graph.vertexSet().size,
                 totalEdges = graph.edgeSet().size,
                 cycleDetected = hasCycles,
