@@ -8,11 +8,12 @@ import com.codecontext.core.intelligence.EngineeringRiskEngine
 import com.codecontext.core.intelligence.FileSnapshot
 import com.codecontext.core.intelligence.HotspotSnapshot
 import com.codecontext.core.intelligence.RepositorySnapshot
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-class AnalysisSnapshotTest : FunSpec({
-    test("risk engine is deterministic for identical snapshots") {
+class AnalysisSnapshotTest {
+    @Test
+    fun riskEngineIsDeterministicForIdenticalSnapshots() {
         val snapshot = AnalysisSnapshot(
             schemaVersion = ANALYSIS_SCHEMA_VERSION,
             repository = RepositorySnapshot("/repo", 1L, listOf("Kotlin")),
@@ -28,8 +29,8 @@ class AnalysisSnapshotTest : FunSpec({
         val first = EngineeringRiskEngine.calculate(snapshot)
         val second = EngineeringRiskEngine.calculate(snapshot)
 
-        first.size shouldBe 2
-        first shouldBe second
-        first.first().path shouldBe "/repo/A.kt"
+        assertEquals(2, first.size)
+        assertEquals(first, second)
+        assertEquals("/repo/A.kt", first.first().path)
     }
-})
+}
