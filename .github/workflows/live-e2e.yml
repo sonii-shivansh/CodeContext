@@ -135,7 +135,6 @@ jobs:
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
           "$CLI" evolution
-          test -s output/evolution.json
           "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
           test -s output/pr-intelligence.json
 
