@@ -18,8 +18,8 @@ codecontext analyze <path>
 codecontext impact <path> <changed-files...>
 codecontext architecture <path>
 codecontext pr-intelligence <path>
-codecontext repo-qa <question> [--path <path>]
-codecontext plan <change-summary> [--evidence <file>]
+codecontext repo-qa <question> [--path <path>] [--max-results <n>] [--evidence-output <file>]
+codecontext plan <change-summary> [--evidence <file>] [--output <file>]
 codecontext ai-assistant <path>
 codecontext evolution <path>
 codecontext server [--host <address>] [--port <number>]
@@ -46,11 +46,25 @@ Important principles:
 codecontext repo-qa "why is PaymentService risky?" --path /workspace/example --max-results 8
 ```
 
-The output contains the classified intent and ranked evidence. Retrieval is bounded.
+The stdout result contains the classified intent and ranked evidence. Retrieval is bounded.
+
+When the result will feed the engineering planner, export the reusable deterministic evidence artifact separately:
+
+```bash
+codecontext repo-qa "which files are the main architectural hotspots?" \
+  --path /workspace/example \
+  --evidence-output output/grounded-evidence.json
+
+codecontext plan "add payment validation" \
+  --evidence output/grounded-evidence.json \
+  --output output/engineering-plan.json
+```
+
+`--evidence-output` writes the versioned `GroundedEvidence` contract. This keeps human-oriented ranked Q&A output separate from the machine-oriented planner input.
 
 ## Engineering planning
 
-`plan` converts grounded evidence into a deterministic engineering plan.
+`plan` converts a `GroundedEvidence` artifact into a deterministic engineering plan.
 
 ```bash
 codecontext plan "add payment validation" \
