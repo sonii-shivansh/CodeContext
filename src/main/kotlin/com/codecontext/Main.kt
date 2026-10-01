@@ -8,6 +8,7 @@ import com.codecontext.cli.ImprovedAnalyzeCommand
 import com.codecontext.cli.ImpactCommand
 import com.codecontext.cli.MainCommand
 import com.codecontext.cli.PRIntelligenceCommand
+import com.codecontext.cli.RepositoryQACommand
 import com.codecontext.cli.ServerCommand
 import com.github.ajalt.clikt.core.subcommands
 
@@ -19,6 +20,7 @@ fun main(args: Array<String>) {
                 ImpactCommand(),
                 ArchitectureCommand(),
                 PRIntelligenceCommand(),
+                RepositoryQACommand(),
                 AIAssistantCommand(),
                 EvolutionCommand(),
                 ServerCommand()
