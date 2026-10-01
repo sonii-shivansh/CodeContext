@@ -56,10 +56,10 @@ class BackendVerificationTest {
 
             val graph = graphBuilder.graph
             assertTrue(graph.vertexSet().isNotEmpty(), "Graph should contain fixture vertices")
-            val sourcePath = sourceFile.canonicalPath.replace('\\', '/')
-            val targetPath = targetFile.canonicalPath.replace('\\', '/')
+            val sourceVertex = graph.vertexSet().single { it.replace('\\', '/').endsWith("/Source.kt") }
+            val targetVertex = graph.vertexSet().single { it.replace('\\', '/').endsWith("/Target.kt") }
             assertTrue(
-                graph.containsEdge(sourcePath, targetPath),
+                graph.containsEdge(sourceVertex, targetVertex),
                 "Graph should contain the Source -> Target dependency"
             )
 
