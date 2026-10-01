@@ -11,12 +11,11 @@
 
 ```bash
 ./gradlew --no-daemon clean test
-./gradlew --no-daemon ktlintCheck
 ./gradlew --no-daemon build
 ./gradlew --no-daemon installDist
 ```
 
-GitHub Actions is the authoritative validation environment. When local hardware is unavailable, use CI to validate the application and inspect workflow logs before declaring a change complete.
+GitHub Actions is the authoritative validation environment. When local hardware is unavailable, use CI to validate the application and inspect workflow logs and artifacts before declaring a change complete.
 
 ## Run the CLI
 
@@ -24,8 +23,8 @@ GitHub Actions is the authoritative validation environment. When local hardware 
 ./build/install/codecontext/bin/codecontext --help
 ./build/install/codecontext/bin/codecontext --version
 ./build/install/codecontext/bin/codecontext analyze .
-./build/install/codecontext/bin/codecontext repo-qa "why is this component risky?" --path . > output/grounded-evidence.json
-./build/install/codecontext/bin/codecontext plan "change the component" --evidence output/grounded-evidence.json
+./build/install/codecontext/bin/codecontext repo-qa "why is this component risky?" --path . --evidence-output output/grounded-evidence.json
+./build/install/codecontext/bin/codecontext plan "change the component" --evidence output/grounded-evidence.json --output output/engineering-plan.json
 ```
 
 ## Local server
@@ -138,7 +137,6 @@ Before opening a pull request:
 
 ```bash
 ./gradlew --no-daemon clean test
-./gradlew --no-daemon ktlintCheck
 ./gradlew --no-daemon build installDist
 ```
 
@@ -150,7 +148,7 @@ For AI-assisted features, additionally document evidence sources, model/provider
 
 1. Confirm the application version contract and `version` in `build.gradle.kts` agree.
 2. Update `CHANGELOG.md` and `SECURITY.md` for the supported release line.
-3. Run tests, lint, packaging, CLI smoke tests, server smoke tests, and the clean-room E2E workflow.
+3. Run tests, packaging, CLI smoke tests, server smoke tests, cross-platform distribution smoke tests, and the clean-room E2E workflow.
 4. Review generated artifacts, checksums, and dependency changes.
 5. Review security and data-handling implications.
 6. Tag and publish only from a reviewed, passing commit.
