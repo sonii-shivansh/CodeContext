@@ -67,7 +67,7 @@ jobs:
           - name: windows-x64
             runner: windows-2025
           - name: macos-x64
-            runner: macos-13
+            runner: macos-15-intel
           - name: macos-arm64
             runner: macos-14
     runs-on: ${{ matrix.runner }}
