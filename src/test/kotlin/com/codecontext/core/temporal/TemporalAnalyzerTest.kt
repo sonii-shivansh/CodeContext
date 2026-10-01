@@ -29,6 +29,6 @@ class TemporalAnalyzerTest : StringSpec({
         snapshots.size shouldBe 1
         snapshots.single().totalFiles shouldBe 1
         snapshots.single().totalLines shouldBe 3
-        snapshots.single().topHotspots shouldBe emptyList()
+        snapshots.single().topHotspots shouldBe listOf("Example.java")
     }
 })
