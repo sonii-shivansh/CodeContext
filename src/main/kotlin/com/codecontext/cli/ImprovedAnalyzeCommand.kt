@@ -51,7 +51,9 @@ class ImprovedAnalyzeCommand :
                 }
 
                 echo("📂 Scanning repository...")
-                val scanner = RepositoryScanner(config)
+                // RepositoryScanner resolves project configuration from rootDir itself.
+                // This avoids accidentally passing configuration from another working directory.
+                val scanner = RepositoryScanner()
                 val files = scanner.scan(rootDir.path)
                 echo("   Found ${files.size} files")
 
@@ -122,7 +124,8 @@ class ImprovedAnalyzeCommand :
                 val highRiskCount = risks.count { it.level.name == "HIGH" || it.level.name == "CRITICAL" }
                 echo("🛡️  Engineering risk: $highRiskCount high/critical files")
 
-                val outputDir = File("output")
+                // Reports belong to the repository being analyzed, not the CLI process cwd.
+                val outputDir = rootDir.resolve("output")
                 if (!outputDir.exists()) outputDir.mkdirs()
                 if (!noSnapshot) {
                     val snapshotFile = File(outputDir, "analysis-snapshot.json")
