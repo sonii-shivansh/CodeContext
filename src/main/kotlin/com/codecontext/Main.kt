@@ -4,6 +4,8 @@ package com.codecontext
 import com.codecontext.cli.AIAssistantCommand
 import com.codecontext.cli.ArchitectureCommand
 import com.codecontext.cli.ArchitectureDriftCommand
+import com.codecontext.cli.EngineeringContextDiffCommand
+import com.codecontext.cli.EngineeringContextSnapshotCommand
 import com.codecontext.cli.EngineeringPlanCommand
 import com.codecontext.cli.EvolutionCommand
 import com.codecontext.cli.ImprovedAnalyzeCommand
@@ -25,6 +27,8 @@ fun main(args: Array<String>) {
                 ImpactCommand(),
                 ArchitectureCommand(),
                 ArchitectureDriftCommand(),
+                EngineeringContextSnapshotCommand(),
+                EngineeringContextDiffCommand(),
                 PRIntelligenceCommand(),
                 RepositoryQACommand(),
                 EngineeringPlanCommand(),
