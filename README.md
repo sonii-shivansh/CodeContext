@@ -8,7 +8,7 @@ CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source 
 
 ## Current status
 
-The repository currently implements:
+The current release candidate targets **v0.6.0**. The repository implements:
 
 - Java and Kotlin source analysis
 - dependency graph construction
@@ -27,6 +27,8 @@ The repository currently implements:
 - path validation and rate limiting
 - Linux and Windows CI verification
 
+Generated reports are self-contained and do not require a browser CDN request for their visualization code.
+
 ## Design principle
 
 **Deterministic evidence first, AI reasoning second.**
@@ -40,10 +42,11 @@ git clone https://github.com/sonii-shivansh/CodeContext.git
 cd CodeContext
 ./gradlew clean test
 ./gradlew installDist
+./build/install/codecontext/bin/codecontext --version
 ./build/install/codecontext/bin/codecontext analyze .
 ```
 
-The default report is written to `output/index.html`.
+The default report is written to `output/index.html` and can be opened without a network connection.
 
 ## CLI commands
 
@@ -64,8 +67,13 @@ codecontext architecture /path/to/repository --json
 # Grounded repository Q&A
 codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
 
-# Evidence-backed engineering plan
-codecontext plan "add payment validation" --evidence output/grounded-evidence.json
+# Export reusable evidence for engineering planning
+codecontext repo-qa "which files are the main architectural hotspots?" \
+  --path /path/to/repository \
+  --evidence-output output/grounded-evidence.json
+codecontext plan "add payment validation" \
+  --evidence output/grounded-evidence.json \
+  --output output/engineering-plan.json
 
 # Optional AI assistance
 codecontext ai-assistant /path/to/repository
@@ -117,7 +125,7 @@ The server also supports `CODECONTEXT_ALLOWED_PATHS`. Keep allowed roots as narr
 
 CodeContext is local-first. With AI disabled, repository analysis and deterministic intelligence do not send repository content to a CodeContext telemetry or storage service. AI is opt-in and sends bounded repository-derived context directly to the configured external provider when an AI operation is invoked.
 
-Generated HTML reports currently load the `force-graph` visualization library from `unpkg.com`, so opening a report can make an external browser request for that JavaScript asset. The report does not upload its embedded graph data or source files to unpkg as part of that request.
+Generated HTML reports are self-contained and do not require a third-party CDN at report-open time.
 
 See [Data & Privacy](docs/DATA_PRIVACY.md) for the current implementation-level disclosure, including the approximate content limits used by AI operations.
 
@@ -136,7 +144,7 @@ The server does not currently provide authentication, tenant isolation, or deplo
 ./gradlew --no-daemon build installDist
 ```
 
-GitHub Actions is the project's authoritative execution environment. CI validates compilation, tests, CLI flows, server health, generated artifacts, intelligence flows, and platform compatibility.
+GitHub Actions is the project's authoritative clean-environment verification path. CI validates compilation, tests, CLI flows, generated artifacts, intelligence flows, server health, API input boundaries, cross-platform distribution smoke tests, and report portability.
 
 See:
 

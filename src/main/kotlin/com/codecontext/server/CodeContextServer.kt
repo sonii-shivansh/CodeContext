@@ -1,6 +1,7 @@
 package com.codecontext.server
 
 import com.codecontext.cli.CodeParallelParser
+import com.codecontext.core.Version
 import com.codecontext.core.ai.AICodeAnalyzer
 import com.codecontext.core.ai.CodebaseContext
 import com.codecontext.core.cache.CacheManager
@@ -49,7 +50,7 @@ fun Application.module() {
     routing {
         staticFiles("/reports", File("output"))
         get("/") { call.respondText("CodeContext API is running. 🚀") }
-        get("/health") { call.respond(mapOf("status" to "healthy", "version" to "0.2.0")) }
+        get("/health") { call.respond(mapOf("status" to "healthy", "version" to Version.current)) }
         get("/health/live") { call.respond(mapOf("status" to "live")) }
         get("/health/ready") { call.respond(mapOf("status" to "ready")) }
 

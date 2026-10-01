@@ -4,8 +4,9 @@
 
 | Version | Supported |
 | --- | --- |
-| `0.2.x` | Yes |
-| `0.1.x` | Limited; upgrade recommended |
+| `0.6.x` | Yes |
+| `0.5.x` | Limited; upgrade recommended |
+| `0.4.x` and older | No |
 
 ## Reporting a vulnerability
 
@@ -32,11 +33,12 @@ CodeContext is designed primarily for local analysis:
 - generated reports use random identifiers rather than source directory names;
 - provider credentials are sent in headers and are not intentionally logged;
 - AI features are disabled by default and may send repository-derived context to an external provider when enabled;
-- grounded evidence uses repository-relative paths and bounded context.
+- grounded evidence uses repository-relative paths and bounded context;
+- generated HTML reports are self-contained and do not require a third-party browser asset at open time.
 
 The REST server does **not** provide authentication, tenant isolation, report authorization, TLS termination, report expiration, or a complete public-internet deployment boundary. Add those controls before exposing it outside a trusted local or internal network.
 
-## Future agentic security requirements
+## Agentic security boundary
 
 Autonomous code modification is not a current default capability. Before any agent can modify a repository, CodeContext should enforce:
 
@@ -60,7 +62,6 @@ A model's confidence must never substitute for an authorization or verification 
 - Keep `.codecontext.json` and API keys out of source control.
 - Place the server behind authentication, TLS, request quotas, and a trusted-origin policy when deployed remotely.
 - Review reports before sharing them because they may contain file names, paths, Git authors, commit messages, and source-derived descriptions.
-- Treat generated HTML and external visualization assets as part of the deployment supply chain.
 - Keep dependencies and the JDK patched.
 
 ## Contact

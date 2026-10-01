@@ -15,15 +15,16 @@
 ./gradlew --no-daemon installDist
 ```
 
-GitHub Actions is the authoritative validation environment. When local hardware is unavailable, use CI to validate the application and inspect workflow logs before declaring a change complete.
+GitHub Actions is the authoritative validation environment. When local hardware is unavailable, use CI to validate the application and inspect workflow logs and artifacts before declaring a change complete.
 
 ## Run the CLI
 
 ```bash
 ./build/install/codecontext/bin/codecontext --help
+./build/install/codecontext/bin/codecontext --version
 ./build/install/codecontext/bin/codecontext analyze .
-./build/install/codecontext/bin/codecontext repo-qa "why is this component risky?" --path .
-./build/install/codecontext/bin/codecontext plan "change the component" --evidence output/grounded-evidence.json
+./build/install/codecontext/bin/codecontext repo-qa "why is this component risky?" --path . --evidence-output output/grounded-evidence.json
+./build/install/codecontext/bin/codecontext plan "change the component" --evidence output/grounded-evidence.json --output output/engineering-plan.json
 ```
 
 ## Local server
@@ -66,7 +67,7 @@ src/main/kotlin/com/codecontext/
     scanner/                 Repository and Git scanning
     temporal/                Evolution analysis
   enterprise/                Multi-repository analysis
-  output/                    HTML report generation
+  output/                    Self-contained HTML report generation
   server/                    Ktor API and security controls
 tests and verification       Unit, property, CLI, server, and E2E validation
 docs/                        Architecture, API, development, PR, security, and status docs
@@ -128,7 +129,7 @@ Do not introduce model calls directly into parsers, graph algorithms, or securit
 
 ## Reports and frontend assets
 
-`ReportGenerator` uses kotlinx.html and embeds serialized graph data. Treat source text, commit messages, author names, and descriptions as untrusted content. Changes to HTML or JavaScript serialization require escaping/regression tests. Review remote visualization assets as part of the supply chain.
+`ReportGenerator` uses kotlinx.html and embeds the graph data and visualization JavaScript directly into the generated HTML report. Treat source text, commit messages, author names, and descriptions as untrusted content. Changes to HTML or JavaScript serialization require escaping/regression tests. Generated reports must remain usable without a browser CDN dependency.
 
 ## Pull requests
 
@@ -145,9 +146,9 @@ For AI-assisted features, additionally document evidence sources, model/provider
 
 ## Release checklist
 
-1. Update `version` in `build.gradle.kts`.
-2. Update `CHANGELOG.md`.
-3. Run tests, packaging, CLI smoke tests, and server smoke tests.
-4. Review generated artifacts and dependency changes.
+1. Confirm the application version contract and `version` in `build.gradle.kts` agree.
+2. Update `CHANGELOG.md` and `SECURITY.md` for the supported release line.
+3. Run tests, packaging, CLI smoke tests, server smoke tests, cross-platform distribution smoke tests, and the clean-room E2E workflow.
+4. Review generated artifacts, checksums, and dependency changes.
 5. Review security and data-handling implications.
 6. Tag and publish only from a reviewed, passing commit.

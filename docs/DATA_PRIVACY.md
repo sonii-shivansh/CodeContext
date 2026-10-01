@@ -10,19 +10,9 @@ CodeContext does not include product telemetry or an analytics service in the ap
 
 ## What can leave the machine
 
-There are two distinct outbound-data paths to be aware of.
+There is one application-level outbound-data path in the current implementation:
 
-### 1. Generated HTML report visualization
-
-The generated HTML report currently references the `force-graph` JavaScript library from:
-
-`https://unpkg.com/force-graph`
-
-Opening the report therefore causes the browser to request that JavaScript asset from unpkg. The request is for the library itself; CodeContext does not upload the generated graph JSON or source files to unpkg as part of that script request.
-
-This still means that a browser/network request is made to an external service. Users operating in air-gapped or strict no-network environments should not assume the generated report is completely self-contained.
-
-### 2. Optional AI providers
+### Optional AI providers
 
 AI analysis is disabled by default. When AI is explicitly configured and invoked, repository-derived context is sent to the configured provider over HTTPS using the provider API key supplied by the user.
 
@@ -60,6 +50,8 @@ The following operations are local unless an explicitly invoked feature requires
 - local HTML report generation;
 - local REST API execution.
 
+Generated HTML reports are self-contained. Their graph visualization code is embedded in the report, so opening a generated report does not require a browser request to a third-party CDN.
+
 ## What CodeContext does not currently provide
 
 CodeContext does not currently provide a CodeContext-hosted telemetry backend, centralized source-code storage, or a mandatory cloud account.
@@ -74,7 +66,7 @@ Generated reports can contain repository-derived information such as file names,
 
 The authoritative implementation is the source code and configuration in this repository. In particular:
 
-- `ReportGenerator.kt` defines the external visualization asset used by generated reports.
+- `ReportGenerator.kt` defines the self-contained report output and graph visualization.
 - `AICodeAnalyzer.kt` defines the AI provider requests and content-size boundaries.
 - `GroundedAIService.kt` and `GroundedEvidence.kt` define the bounded evidence sent for grounded Q&A.
 - `.codecontext.json.template` shows the default AI configuration.

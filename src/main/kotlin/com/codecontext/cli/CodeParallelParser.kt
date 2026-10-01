@@ -34,7 +34,7 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
                         cacheManager?.getCachedParse(file)?.let { cached ->
                             val count = processed.incrementAndGet()
                             if (count % 100 == 0 || count == total) {
-                                println("   Progress: $count/$total files")
+                                System.err.println("   Progress: $count/$total files")
                             }
                             return@async cached
                         }
@@ -46,12 +46,12 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
 
                         val count = processed.incrementAndGet()
                         if (count % 100 == 0 || count == total) {
-                            println("   Progress: $count/$total files")
+                            System.err.println("   Progress: $count/$total files")
                         }
 
                         parsed
                     } catch (e: Exception) {
-                        println("⚠️  Failed to parse ${file.name}: ${e.message}")
+                        System.err.println("⚠️  Failed to parse ${file.name}: ${e.message}")
                         null
                     }
                 }

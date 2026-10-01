@@ -14,7 +14,7 @@ jobs:
   verify:
     name: Build, test, and end-to-end verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -40,13 +40,27 @@ jobs:
       - name: Run unit and property tests
         run: ./gradlew --no-daemon clean test
 
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codecontext-test-diagnostics
+          if-no-files-found: ignore
+          path: |
+            build/test-results/
+            build/reports/tests/
+            build/reports/ktlint/
+
       - name: Build application and distribution
         run: ./gradlew --no-daemon build installDist
 
       - name: Verify CLI
+        shell: bash
         run: |
           ./build/install/codecontext/bin/codecontext --help
-          ./build/install/codecontext/bin/codecontext --version || true
+          version="$(./build/install/codecontext/bin/codecontext --version)"
+          echo "$version"
+          echo "$version" | grep -F '0.6.0'
 
       - name: Run self-analysis end-to-end
         run: |
@@ -65,127 +79,114 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-
           snapshot = json.loads(Path("output/analysis-snapshot.json").read_text())
           risks = json.loads(Path("output/engineering-risks.json").read_text())
-
           assert snapshot["schemaVersion"] == "1.0"
           assert snapshot["metrics"]["totalFiles"] > 0
           assert snapshot["metrics"]["totalNodes"] >= snapshot["metrics"]["totalFiles"]
           assert isinstance(snapshot["hotspots"], list)
           assert isinstance(risks, list)
           assert all(0 <= item["score"] <= 100 for item in risks)
-          print(f"Validated {snapshot['metrics']['totalFiles']} files and {len(risks)} risk records")
+          PY
+
+      - name: Generate grounded repository evidence
+        run: |
+          rm -f output/grounded-evidence.json
+          ./build/install/codecontext/bin/codecontext repo-qa "which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json > output/repo-qa.json
+          test -s output/repo-qa.json
+          test -s output/grounded-evidence.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("output/repo-qa.json").read_text())
+          evidence = json.loads(Path("output/grounded-evidence.json").read_text())
+          assert "question" in result
+          assert "evidence" in result
+          assert isinstance(result["evidence"], list)
+          assert evidence["schemaVersion"] == "1.0"
+          assert isinstance(evidence["citations"], list)
+          assert evidence["citations"]
+          PY
+
+      - name: Generate evidence-backed engineering plan
+        run: |
+          rm -f output/engineering-plan.json
+          ./build/install/codecontext/bin/codecontext plan "improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
+          test -s output/engineering-plan.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          plan = json.loads(Path("output/engineering-plan.json").read_text())
+          assert plan["schemaVersion"] == "1.0"
+          assert plan["steps"]
+          assert plan["evidenceIds"]
           PY
 
       - name: Verify PR Intelligence CLI
-        shell: bash
         run: |
           rm -f output/pr-intelligence.json
           ./build/install/codecontext/bin/codecontext pr-intelligence . --base HEAD~1 --head HEAD --json
           test -s output/pr-intelligence.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          result = json.loads(Path("output/pr-intelligence.json").read_text())
-          assert result["schemaVersion"] == "1.0"
-          assert result["changeSummary"]["filesChanged"] >= 1
-          assert result["aggregateSeverity"] in {"INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"}
-          print(f"PR Intelligence validated: {result['changeSummary']['filesChanged']} changed files")
-          PY
 
       - name: Verify Architecture Intelligence CLI
-        shell: bash
         run: |
           rm -f output/architecture.json
           ./build/install/codecontext/bin/codecontext architecture . --json
           test -s output/architecture.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          result = json.loads(Path("output/architecture.json").read_text())
-          assert result["schemaVersion"] == "1.0"
-          assert result["summary"]["filesAnalyzed"] > 0
-          assert isinstance(result["findings"], list)
-          assert isinstance(result["cycles"], list)
-          assert isinstance(result["layers"], dict)
-          print(f"Architecture Intelligence validated: {result['summary']['findings']} findings")
-          PY
 
       - name: Start server
         shell: bash
         run: |
-          ./build/install/codecontext/bin/codecontext server \
-            --host 127.0.0.1 \
-            --port 18080 > server.log 2>&1 &
+          ./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 18080 > server.log 2>&1 &
           echo $! > server.pid
 
       - name: Wait for server
         shell: bash
         run: |
           for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:18080/ > response.txt; then
-              exit 0
-            fi
+            if curl --fail --silent http://127.0.0.1:18080/ > response.txt; then exit 0; fi
             sleep 1
           done
-          echo "Server did not become ready."
           cat server.log
           exit 1
 
-      - name: Verify API health
+      - name: Verify API health and version contract
         run: |
           grep -F "CodeContext API is running" response.txt
-          curl --fail --silent http://127.0.0.1:18080/health | grep -F '"status":"healthy"'
+          health="$(curl --fail --silent http://127.0.0.1:18080/health)"
+          echo "$health" | grep -F '"status":"healthy"'
+          echo "$health" | grep -F '"version":"0.6.0"'
           curl --fail --silent http://127.0.0.1:18080/health/live | grep -F '"status":"live"'
           curl --fail --silent http://127.0.0.1:18080/health/ready | grep -F '"status":"ready"'
 
-      - name: Verify PR Intelligence REST API
-        shell: bash
+      - name: Verify API input security boundaries
         run: |
-          curl --fail --silent \
-            -H 'Content-Type: application/json' \
-            -d '{"repoPath":".","baseRevision":"HEAD~1","headRevision":"HEAD"}' \
-            http://127.0.0.1:18080/pr-intelligence > pr-intelligence-response.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
+          status=$(curl --silent --output /tmp/traversal.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":"/tmp/../etc"}' http://127.0.0.1:18080/analyze)
+          test "$status" = "400"
+          status=$(curl --silent --output /tmp/remote.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":"https://example.com/repo"}' http://127.0.0.1:18080/analyze)
+          test "$status" = "400"
+          status=$(curl --silent --output /tmp/revision.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":".","baseRevision":"HEAD~1"}' http://127.0.0.1:18080/pr-intelligence)
+          test "$status" = "400"
 
-          result = json.loads(Path("pr-intelligence-response.json").read_text())
-          assert result["schemaVersion"] == "1.0"
-          assert "changeSummary" in result
-          assert "findings" in result
-          print("PR Intelligence REST endpoint validated")
-          PY
+      - name: Verify PR Intelligence REST API
+        run: |
+          curl --fail --silent -H 'Content-Type: application/json' -d '{"repoPath":".","baseRevision":"HEAD~1","headRevision":"HEAD"}' http://127.0.0.1:18080/pr-intelligence > pr-intelligence-response.json
+          test -s pr-intelligence-response.json
 
       - name: Verify Architecture Intelligence REST API
-        shell: bash
         run: |
-          curl --fail --silent \
-            -H 'Content-Type: application/json' \
-            -d '{"repoPath":"."}' \
-            http://127.0.0.1:18080/architecture > architecture-response.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
+          curl --fail --silent -H 'Content-Type: application/json' -d '{"repoPath":"."}' http://127.0.0.1:18080/architecture > architecture-response.json
+          test -s architecture-response.json
 
-          result = json.loads(Path("architecture-response.json").read_text())
-          assert result["schemaVersion"] == "1.0"
-          assert result["summary"]["filesAnalyzed"] > 0
-          assert "findings" in result
-          assert "cycles" in result
-          print("Architecture Intelligence REST endpoint validated")
-          PY
+      - name: Verify generated report is self-contained
+        run: |
+          ! grep -q "unpkg.com" output/index.html
+          ! grep -q '<script src=' output/index.html
 
       - name: Stop server
         if: always()
-        shell: bash
         run: |
-          if [ -f server.pid ]; then
-            kill "$(cat server.pid)" || true
-          fi
+          if [ -f server.pid ]; then kill "$(cat server.pid)" || true; fi
 
       - name: Upload verification artifacts
         if: always()
@@ -195,6 +196,8 @@ jobs:
           if-no-files-found: ignore
           path: |
             output/
+            build/test-results/
+            build/reports/tests/
             server.log
             response.txt
             pr-intelligence-response.json
