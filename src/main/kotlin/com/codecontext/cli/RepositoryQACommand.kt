@@ -20,12 +20,11 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grounded repository evidence for a developer question") {
-    private val question by argument("question", help = "Question about the repository").default("")
+    private val question by argument("question", help = "Question about the repository")
     private val path by option("--path", help = "Repository path").default(".")
     private val maxResults by option("--max-results", help = "Maximum evidence items").int().default(8)
 
     override fun run() {
-        if (question.isBlank()) throw com.github.ajalt.clikt.core.PrintHelpMessage(currentContext)
         val root = File(path).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $path" }
         require(maxResults in 1..32) { "--max-results must be between 1 and 32" }
