@@ -1,27 +1,21 @@
 package com.codecontext.mcp
 
-import com.codecontext.cli.CodeParallelParser
 import com.codecontext.core.Version
-import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.intelligence.ArchitectureIntelligenceEngine
 import com.codecontext.core.intelligence.ChangeImpactEngine
 import com.codecontext.core.intelligence.GitChangeSetBuilder
 import com.codecontext.core.intelligence.PRIntelligenceAnalyzer
 import com.codecontext.core.scanner.OptimizedGitAnalyzer
-import com.codecontext.core.scanner.RepositoryScanner
 import com.codecontext.server.AnalysisLogic
 import com.codecontext.server.sanitizePath
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -30,9 +24,10 @@ import java.io.InputStreamReader
 
 private val json = Json { encodeDefaults = true; explicitNulls = false }
 
-/** Minimal MCP 2025-06-18 stdio transport for local CodeContext tooling. */
+/** MCP legacy-era stdio transport for local CodeContext tooling. */
 object McpProtocol {
-    private const val PROTOCOL_VERSION = "2025-06-18"
+    // 2025-11-25 is the latest MCP revision using the initialize handshake.
+    private const val PROTOCOL_VERSION = "2025-11-25"
 
     fun handle(request: JsonObject): JsonObject {
         val id = request["id"]
@@ -130,7 +125,7 @@ object McpProtocol {
             pathLookup.mapValues { it.value.gitMetadata.changeFrequency },
             pathLookup.mapValues { it.value.packageName }
         )
-        return textResult(json.encodeToString(ChangeImpactResultSerializer, result))
+        return textResult(json.encodeToString(com.codecontext.core.intelligence.ChangeImpactResult.serializer(), result))
     }
 
     private fun architectureAnalysis(args: JsonObject): JsonObject {
@@ -138,13 +133,13 @@ object McpProtocol {
         val config = ConfigLoader.load()
         val (graph, _, _) = runBlocking { AnalysisLogic.analyze(path, config) }
         val result = ArchitectureIntelligenceEngine.analyze(graph.graph, java.io.File(path), config.architecture)
-        return textResult(json.encodeToString(ArchitectureIntelligenceResultSerializer, result))
+        return textResult(json.encodeToString(com.codecontext.core.intelligence.ArchitectureIntelligenceResult.serializer(), result))
     }
 
     private fun prIntelligence(args: JsonObject): JsonObject {
         val path = safeRepoPath(args)
-        val base = args["baseRevision"]?.jsonPrimitive?.contentOrNull
-        val head = args["headRevision"]?.jsonPrimitive?.contentOrNull
+        val base = args["baseRevision"]?.jsonPrimitive?.content
+        val head = args["headRevision"]?.jsonPrimitive?.content
         require((base == null) == (head == null)) { "baseRevision and headRevision must be supplied together" }
         if (base != null) require(base.length <= 256 && head!!.length <= 256) { "Git revisions are too long" }
         val changeSet = if (base == null) {
@@ -153,7 +148,7 @@ object McpProtocol {
             GitChangeSetBuilder.fromRevisions(path, base, head!!)
         }
         val result = PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.load())
-        return textResult(json.encodeToString(PRIntelligenceResultSerializer, result))
+        return textResult(json.encodeToString(com.codecontext.core.intelligence.PRIntelligenceResult.serializer(), result))
     }
 
     private fun safeRepoPath(args: JsonObject): String {
@@ -219,11 +214,4 @@ object McpProtocol {
     }
 
     private fun emptyResponse(): JsonObject = buildJsonObject {}
-
-    private val ChangeImpactResultSerializer = com.codecontext.core.intelligence.ChangeImpactResult.serializer()
-    private val ArchitectureIntelligenceResultSerializer = com.codecontext.core.intelligence.ArchitectureIntelligenceResult.serializer()
-    private val PRIntelligenceResultSerializer = com.codecontext.core.intelligence.PRIntelligenceResult.serializer()
 }
-
-private val kotlinx.serialization.json.JsonPrimitive.contentOrNull: String?
-    get() = if (isString) content else null
