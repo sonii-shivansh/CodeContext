@@ -46,7 +46,7 @@ class EngineeringPlanner {
         val citations = request.evidence.citations.sortedBy { it.id }
         val affected = (request.changedPaths + citations.mapNotNull { it.path })
             .map { normalizePath(it) }
-            .filter { it.isNotEmpty() && !it.startsWith("<outside-") }
+            .filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }
             .distinct()
             .sorted()
             .take(100)
@@ -123,4 +123,9 @@ class EngineeringPlanner {
     }
 
     private fun normalizePath(path: String): String = path.replace('\\', '/').trim().removePrefix("./")
+
+    private fun isGeneratedPath(path: String): Boolean =
+        path == ".codecontext" || path.startsWith(".codecontext/") ||
+            path == "build" || path.startsWith("build/") ||
+            path == "target" || path.startsWith("target/")
 }
