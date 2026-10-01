@@ -74,10 +74,17 @@ jobs:
 
       - name: Diagnose real project
         working-directory: ${{ runner.temp }}/real-project
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           "$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext" doctor | tee doctor.txt
           grep -q "CodeContext doctor" doctor.txt
           grep -q "Repository" doctor.txt
+          if [ -n "$GEMINI_API_KEY" ]; then
+            grep -q "AI credentials" doctor.txt
+            grep -q "Gemini API — reachable and credentials accepted" doctor.txt
+            grep -q "CodeContext is ready to use" doctor.txt
+          fi
 
       - name: Analyze real project
         working-directory: ${{ runner.temp }}/real-project
@@ -150,6 +157,10 @@ jobs:
           "$CLI" prepare "Improve the repository safely"
           test -s output/engineering-context.json
           test -s output/engineering-plan.json
+          if grep -R -E -q '\.codecontext/(cache|output)|\.codecontext\\\\(cache|output)' output/engineering-plan.json output/grounded-evidence.json output/engineering-context.json; then
+            echo "CodeContext internal metadata leaked into engineering intelligence"
+            exit 1
+          fi
 
       - name: Verification workflow on real project
         working-directory: ${{ runner.temp }}/real-project
@@ -163,11 +174,15 @@ jobs:
         timeout-minutes: 5
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        shell: bash
         run: |
+          set -o pipefail
           CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
           "$CLI" ask "Give a concise evidence-grounded overview of this repository's architecture and identify two files I should inspect first." | tee output/live-gemini-ask.txt
           test -s output/live-gemini-ask.txt
           ! grep -q "AI features disabled" output/live-gemini-ask.txt
+          grep -q "💡" output/live-gemini-ask.txt
+          grep -q "🎯 Confidence:" output/live-gemini-ask.txt
 
       - name: Start REST server
         working-directory: ${{ runner.temp }}/real-project

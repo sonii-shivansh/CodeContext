@@ -11,7 +11,7 @@ import mu.KotlinLogging
 @Serializable
 data class CodeContextConfig(
     val excludePaths: List<String> = listOf(
-        ".git", ".idea", ".gradle", "build", "target", "node_modules", ".vscode", "out", "dist", ".next"
+        ".git", ".idea", ".gradle", ".codecontext", "build", "target", "node_modules", ".vscode", "out", "dist", ".next"
     ),
     val maxFilesAnalyze: Int = 5000,
     val gitCommitLimit: Int = 1000,
