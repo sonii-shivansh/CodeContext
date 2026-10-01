@@ -35,8 +35,6 @@ class DoctorCommand : CliktCommand(
 
         val projectConfig = File(".codecontext.json")
         val userConfig = UserConfigStore.load()
-        val environmentKey = System.getenv("GEMINI_API_KEY")?.trim().orEmpty()
-            .ifBlank { System.getenv("GOOGLE_API_KEY")?.trim().orEmpty() }
         val effective = ConfigLoader.loadEffective()
         val keySource = when {
             System.getenv("GEMINI_API_KEY")?.trim()?.isNotBlank() == true -> "GEMINI_API_KEY environment variable"
