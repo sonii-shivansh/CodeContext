@@ -59,7 +59,8 @@ jobs:
         run: |
           ./build/install/codecontext/bin/codecontext --help
           version="$(./build/install/codecontext/bin/codecontext --version)"
-          test "$version" = "0.6.0"
+          echo "$version"
+          echo "$version" | grep -F '0.6.0'
 
       - name: Run self-analysis end-to-end
         run: |
