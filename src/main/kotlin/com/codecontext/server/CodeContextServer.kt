@@ -9,6 +9,9 @@ import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.intelligence.ChangeImpactEngine
 import com.codecontext.core.intelligence.ChangeImpactResult
+import com.codecontext.core.intelligence.GitChangeSetBuilder
+import com.codecontext.core.intelligence.PRIntelligenceAnalyzer
+import com.codecontext.core.intelligence.PRIntelligenceResult
 import com.codecontext.core.scanner.OptimizedGitAnalyzer
 import com.codecontext.core.scanner.RepositoryScanner
 import io.ktor.serialization.kotlinx.json.*
@@ -27,16 +30,17 @@ import kotlinx.serialization.Serializable
 @Serializable data class AnalysisRequest(val repoPath: String)
 @Serializable data class AskRequest(val repoPath: String, val question: String)
 @Serializable data class ImpactRequest(val repoPath: String, val changedPaths: List<String>)
+@Serializable data class PRIntelligenceRequest(val repoPath: String, val baseRevision: String? = null, val headRevision: String? = null)
 @Serializable data class AnalysisResponse(val fileCount: Int, val hotspots: List<HotspotInfo>, val reportUrl: String)
 @Serializable data class HotspotInfo(val file: String, val score: Double)
 @Serializable data class ApiError(val error: String)
 
 private const val MAX_QUESTION_LENGTH = 16_000
 private const val MAX_CHANGED_PATHS = 100
+private const val MAX_REVISION_LENGTH = 256
 
 fun Application.module() {
     install(ContentNegotiation) { json() }
-    // CORS is intentionally disabled by default. Add a trusted-origin allowlist at the proxy layer.
     configureRateLimiting()
 
     routing {
@@ -103,6 +107,32 @@ fun Application.module() {
             }
         }
 
+        post("/pr-intelligence") {
+            try {
+                val request = call.receive<PRIntelligenceRequest>()
+                require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
+                require(request.repoPath.length <= 4096) { "Repository path is invalid" }
+                require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) {
+                    "Remote repositories are not supported by this local endpoint"
+                }
+                validateRevisionPair(request.baseRevision, request.headRevision)
+                val path = sanitizePath(request.repoPath)
+                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                val changeSet = if (request.baseRevision != null) {
+                    GitChangeSetBuilder.fromRevisions(path, request.baseRevision, request.headRevision!!)
+                } else {
+                    GitChangeSetBuilder.fromWorkingTree(path)
+                }
+                val result: PRIntelligenceResult = PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.load())
+                call.respond(result)
+            } catch (e: IllegalArgumentException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: Exception) {
+                System.err.println("PR intelligence failed: ${e::class.simpleName}")
+                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, ApiError("PR intelligence analysis failed"))
+            }
+        }
+
         post("/ask") {
             try {
                 val request = call.receive<AskRequest>()
@@ -134,6 +164,13 @@ fun Application.module() {
                 call.respond(io.ktor.http.HttpStatusCode.InternalServerError, ApiError("Organization analysis failed"))
             }
         }
+    }
+}
+
+fun validateRevisionPair(baseRevision: String?, headRevision: String?) {
+    require((baseRevision == null) == (headRevision == null)) { "baseRevision and headRevision must be supplied together" }
+    listOfNotNull(baseRevision, headRevision).forEach { revision ->
+        require(revision.isNotBlank() && revision.length <= MAX_REVISION_LENGTH) { "Git revision is invalid" }
     }
 }
 
