@@ -48,7 +48,7 @@ class DoctorCommand : CliktCommand(
         if (effective.ai.provider.equals("gemini", ignoreCase = true) && effective.ai.apiKey.isNotBlank()) {
             echo("   Validating Gemini credentials...")
             when (val result = AISetup.validateGemini(effective.ai.apiKey, effective.ai.model)) {
-                AISetup.Success -> echo("✓ Gemini API", "reachable and credentials accepted")
+                AISetup.Success -> echo("✓ Gemini API — reachable and credentials accepted")
                 is AISetup.Failure -> {
                     failures++
                     echo("❌ Gemini API — ${result.message}")
