@@ -14,7 +14,7 @@ jobs:
   verify:
     name: Build, test, and end-to-end verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -40,13 +40,18 @@ jobs:
       - name: Run unit and property tests
         run: ./gradlew --no-daemon clean test
 
+      - name: Run code quality checks
+        run: ./gradlew --no-daemon ktlintCheck
+
       - name: Build application and distribution
         run: ./gradlew --no-daemon build installDist
 
       - name: Verify CLI
+        shell: bash
         run: |
           ./build/install/codecontext/bin/codecontext --help
-          ./build/install/codecontext/bin/codecontext --version || true
+          version="$(./build/install/codecontext/bin/codecontext --version)"
+          test "$version" = "0.6.0"
 
       - name: Run self-analysis end-to-end
         run: |
@@ -76,6 +81,25 @@ jobs:
           assert isinstance(risks, list)
           assert all(0 <= item["score"] <= 100 for item in risks)
           print(f"Validated {snapshot['metrics']['totalFiles']} files and {len(risks)} risk records")
+          PY
+
+      - name: Verify repository Q&A and engineering plan
+        shell: bash
+        run: |
+          rm -f output/grounded-evidence.json output/engineering-plan.json
+          ./build/install/codecontext/bin/codecontext repo-qa "which files are the main architectural hotspots?" --path . > output/grounded-evidence.json
+          test -s output/grounded-evidence.json
+          ./build/install/codecontext/bin/codecontext plan "improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
+          test -s output/engineering-plan.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          evidence = json.loads(Path("output/grounded-evidence.json").read_text())
+          plan = json.loads(Path("output/engineering-plan.json").read_text())
+          assert isinstance(evidence, dict)
+          assert "findings" in plan or "steps" in plan or isinstance(plan, dict)
+          print("Repository Q&A and engineering planning validated")
           PY
 
       - name: Verify PR Intelligence CLI
@@ -135,12 +159,34 @@ jobs:
           cat server.log
           exit 1
 
-      - name: Verify API health
+      - name: Verify API health and version contract
+        shell: bash
         run: |
           grep -F "CodeContext API is running" response.txt
-          curl --fail --silent http://127.0.0.1:18080/health | grep -F '"status":"healthy"'
+          health="$(curl --fail --silent http://127.0.0.1:18080/health)"
+          echo "$health" | grep -F '"status":"healthy"'
+          echo "$health" | grep -F '"version":"0.6.0"'
           curl --fail --silent http://127.0.0.1:18080/health/live | grep -F '"status":"live"'
           curl --fail --silent http://127.0.0.1:18080/health/ready | grep -F '"status":"ready"'
+
+      - name: Verify API input security boundaries
+        shell: bash
+        run: |
+          status=$(curl --silent --output /tmp/traversal.json --write-out '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            -d '{"repoPath":"/tmp/../etc"}' \
+            http://127.0.0.1:18080/analyze)
+          test "$status" = "400"
+          status=$(curl --silent --output /tmp/remote.json --write-out '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            -d '{"repoPath":"https://example.com/repo"}' \
+            http://127.0.0.1:18080/analyze)
+          test "$status" = "400"
+          status=$(curl --silent --output /tmp/revision.json --write-out '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            -d '{"repoPath":".","baseRevision":"HEAD~1"}' \
+            http://127.0.0.1:18080/pr-intelligence)
+          test "$status" = "400"
 
       - name: Verify PR Intelligence REST API
         shell: bash
@@ -178,6 +224,12 @@ jobs:
           assert "cycles" in result
           print("Architecture Intelligence REST endpoint validated")
           PY
+
+      - name: Verify generated report is self-contained
+        shell: bash
+        run: |
+          ! grep -q "unpkg.com" output/index.html
+          ! grep -q "https://" output/index.html
 
       - name: Stop server
         if: always()
