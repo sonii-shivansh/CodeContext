@@ -1,6 +1,8 @@
 package com.codecontext.core.ai
 
 import com.codecontext.core.intelligence.AnalysisSnapshot
+import com.codecontext.core.intelligence.FileSnapshot
+import java.nio.file.Path
 import kotlinx.serialization.Serializable
 
 /** A repository fact that can be cited by the AI reasoning layer. */
@@ -53,7 +55,7 @@ object GroundedEvidenceBuilder {
                     EvidenceCitation(
                         id = "hotspot.${index + 1}",
                         type = "hotspot",
-                        path = hotspot.path,
+                        path = repositoryRelativePath(snapshot.repository.path, hotspot.path),
                         detail = "Dependency-centrality hotspot identified by the deterministic analysis.",
                         metrics = mapOf(
                             "score" to hotspot.score.toString(),
@@ -73,7 +75,7 @@ object GroundedEvidenceBuilder {
                         EvidenceCitation(
                             id = "file.${index + 1}",
                             type = "file-graph-fact",
-                            path = file.path,
+                            path = repositoryRelativePath(snapshot.repository.path, file.path),
                             detail = "File participates in the analyzed dependency graph.",
                             metrics = mapOf(
                                 "dependents" to file.dependents.toString(),
@@ -100,5 +102,15 @@ object GroundedEvidenceBuilder {
         }
 
         return GroundedEvidence(citations.take(maxCitations))
+    }
+
+    private fun repositoryRelativePath(repository: String, file: String): String {
+        val root = Path.of(repository).toAbsolutePath().normalize()
+        val candidate = Path.of(file).toAbsolutePath().normalize()
+        return if (candidate.startsWith(root)) {
+            root.relativize(candidate).toString().replace('\\', '/')
+        } else {
+            "<outside-repository>"
+        }
     }
 }
