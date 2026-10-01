@@ -71,7 +71,7 @@ jobs:
           - name: macos-arm64
             runner: macos-14
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -86,26 +86,32 @@ jobs:
       - name: Build distribution on Unix
         if: runner.os != 'Windows'
         run: |
-          chmod +x ./gradlew
+          chmod +x ./gradlew ./scripts/prepare-runtime.sh
           ./gradlew --no-daemon installDist
+          ./scripts/prepare-runtime.sh build/install/codecontext
 
-      - name: Verify CLI on Unix
+      - name: Verify bundled CLI on Unix without relying on system Java
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          ./build/install/codecontext/bin/codecontext --version | grep -F '${{ needs.resolve-version.outputs.version }}'
+          JAVA_HOME='/does-not-exist' ./build/install/codecontext/bin/codecontext --version | grep -F '${{ needs.resolve-version.outputs.version }}'
+          test -x ./build/install/codecontext/jre/bin/java
 
       - name: Build distribution on Windows
         if: runner.os == 'Windows'
         shell: pwsh
-        run: .\gradlew.bat --no-daemon installDist
+        run: |
+          .\gradlew.bat --no-daemon installDist
+          .\scripts\prepare-runtime.ps1 -DistDir .\build\install\codecontext
 
-      - name: Verify CLI on Windows
+      - name: Verify bundled CLI on Windows without relying on system Java
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          $env:JAVA_HOME = 'C:\does-not-exist'
           $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
           if ($version -notmatch [regex]::Escape('${{ needs.resolve-version.outputs.version }}')) { throw "Unexpected version: $version" }
+          if (-not (Test-Path .\build\install\codecontext\jre\bin\java.exe)) { throw 'Bundled Java runtime was not packaged.' }
 
       - name: Package Unix artifact
         if: runner.os != 'Windows'
