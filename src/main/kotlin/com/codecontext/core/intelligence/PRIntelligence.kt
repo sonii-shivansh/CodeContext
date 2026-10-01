@@ -69,19 +69,25 @@ object PRIntelligenceEngine {
         impact: ChangeImpactResult,
         risks: List<EngineeringRisk> = emptyList(),
         packageByPath: Map<String, String> = emptyMap(),
-        testCandidates: Collection<String> = emptyList()
+        testCandidates: Collection<String> = emptyList(),
+        pathMapper: (String) -> String = ::normalize
     ): PRIntelligenceResult {
-        val changed = changeSet.files.map { normalize(it.path) }.toSet()
-        val unresolved = changeSet.files.filter { it.changeType == ChangeType.DELETED || normalize(it.path) !in impact.changedPaths }
-        val highRiskChanged = risks.filter { normalize(it.path) in changed && it.level in setOf(RiskLevel.HIGH, RiskLevel.CRITICAL) }
-        val candidateTests = testCandidates.map(::normalize).distinct().sorted()
+        val changed = changeSet.files.map { pathMapper(normalize(it.path)) }.toSet()
+        val impactChanged = impact.changedPaths.map { pathMapper(normalize(it)) }.toSet()
+        val unresolved = changeSet.files.filter {
+            it.changeType == ChangeType.DELETED || pathMapper(normalize(it.path)) !in impactChanged
+        }
+        val highRiskChanged = risks.filter {
+            pathMapper(normalize(it.path)) in changed && it.level in setOf(RiskLevel.HIGH, RiskLevel.CRITICAL)
+        }
+        val candidateTests = testCandidates.map { pathMapper(normalize(it)) }.distinct().sorted()
         val findings = mutableListOf<PRFinding>()
 
         if (unresolved.isNotEmpty()) {
             findings += PRFinding(
                 ruleId = "CHANGE_UNRESOLVED",
                 severity = FindingSeverity.MEDIUM,
-                paths = unresolved.map { normalize(it.path) }.sorted(),
+                paths = unresolved.map { pathMapper(normalize(it.path)) }.sorted(),
                 evidence = mapOf("count" to unresolved.size.toString()),
                 reason = "One or more changed files could not be resolved in the analyzed source graph; static impact coverage is incomplete for those files."
             )
@@ -91,7 +97,8 @@ object PRIntelligenceEngine {
             findings += PRFinding(
                 ruleId = "IMPACT_BROAD",
                 severity = if (impact.summary.impactedFiles >= 25 || impact.summary.maxDepth >= 5) FindingSeverity.HIGH else FindingSeverity.MEDIUM,
-                paths = impact.nodes.filter { it.relationship != ImpactRelationship.CHANGED }.map { normalize(it.path) }.sorted(),
+                paths = impact.nodes.filter { it.relationship != ImpactRelationship.CHANGED }
+                    .map { pathMapper(normalize(it.path)) }.sorted(),
                 evidence = mapOf("impactedFiles" to impact.summary.impactedFiles.toString(), "maxDepth" to impact.summary.maxDepth.toString()),
                 reason = "The change reaches a substantial dependency surface; affected dependents should be reviewed and tested."
             )
@@ -99,7 +106,8 @@ object PRIntelligenceEngine {
 
         if (impact.summary.crossPackageImpacts > 0) {
             val changedPackages = changed.mapNotNull { packageByPath[it] }.filter(String::isNotBlank).toSet()
-            val impactedPaths = impact.nodes.filter { it.relationship != ImpactRelationship.CHANGED }.map { normalize(it.path) }
+            val impactedPaths = impact.nodes.filter { it.relationship != ImpactRelationship.CHANGED }
+                .map { pathMapper(normalize(it.path)) }
             findings += PRFinding(
                 ruleId = "ARCH_CROSS_PACKAGE",
                 severity = if (impact.summary.crossPackageImpacts >= 10) FindingSeverity.HIGH else FindingSeverity.MEDIUM,
@@ -113,7 +121,7 @@ object PRIntelligenceEngine {
             findings += PRFinding(
                 ruleId = "CHANGED_HIGH_RISK_COMPONENT",
                 severity = FindingSeverity.HIGH,
-                paths = highRiskChanged.map { normalize(it.path) }.sorted(),
+                paths = highRiskChanged.map { pathMapper(normalize(it.path)) }.sorted(),
                 evidence = mapOf("highRiskFiles" to highRiskChanged.size.toString()),
                 reason = "The change directly modifies components with existing deterministic engineering-risk signals."
             )
@@ -124,7 +132,7 @@ object PRIntelligenceEngine {
             findings += PRFinding(
                 ruleId = "TEST_CANDIDATE_MISSING",
                 severity = FindingSeverity.MEDIUM,
-                paths = sourceChanges.map { normalize(it.path) }.sorted(),
+                paths = sourceChanges.map { pathMapper(normalize(it.path)) }.sorted(),
                 evidence = mapOf("candidateTests" to "0"),
                 reason = "No likely test candidates were identified for the changed source files. This is a review signal, not proof of missing coverage."
             )
@@ -135,7 +143,7 @@ object PRIntelligenceEngine {
             findings += PRFinding(
                 ruleId = "CHANGE_LARGE",
                 severity = FindingSeverity.MEDIUM,
-                paths = changeSet.files.map { normalize(it.path) }.sorted(),
+                paths = changeSet.files.map { pathMapper(normalize(it.path)) }.sorted(),
                 evidence = mapOf("filesChanged" to changeSet.files.size.toString(), "lineChanges" to totalChangedLines.toString()),
                 reason = "The change is large enough that decomposition or focused review may reduce regression risk."
             )
