@@ -13,11 +13,11 @@ Do not disclose security vulnerabilities in a public issue. Report them privatel
 
 - a concise description;
 - affected version, commit, or deployment mode;
-- reproduction steps or a proof of concept;
+- reproduction steps or proof of concept;
 - security impact and possible mitigations;
-- any relevant logs with secrets removed.
+- relevant logs with secrets removed.
 
-Please do not include API keys, credentials, private source code, or personal data unless absolutely necessary.
+Do not include API keys, credentials, private source code, or personal data unless absolutely necessary.
 
 The project aims to acknowledge reports within 48 hours and provide an initial assessment within seven days. Fix and disclosure timelines depend on severity, reproducibility, and release risk.
 
@@ -31,9 +31,27 @@ CodeContext is designed primarily for local analysis:
 - configurable file limits and rate limiting reduce resource abuse;
 - generated reports use random identifiers rather than source directory names;
 - provider credentials are sent in headers and are not intentionally logged;
-- AI features are disabled by default and may send repository-derived context to an external provider when enabled.
+- AI features are disabled by default and may send repository-derived context to an external provider when enabled;
+- grounded evidence uses repository-relative paths and bounded context.
 
 The REST server does **not** provide authentication, tenant isolation, report authorization, TLS termination, report expiration, or a complete public-internet deployment boundary. Add those controls before exposing it outside a trusted local or internal network.
+
+## Future agentic security requirements
+
+Autonomous code modification is not a current default capability. Before any agent can modify a repository, CodeContext should enforce:
+
+- isolated workspaces;
+- explicit repository and directory allowlists;
+- protected-file policies;
+- operation-level permissions;
+- maximum change-size limits;
+- secret and sensitive-data boundaries;
+- required tests and CI gates;
+- human approval for configured high-risk actions;
+- complete action/provenance logging;
+- deterministic post-change verification.
+
+A model's confidence must never substitute for an authorization or verification decision.
 
 ## Deployment guidance
 

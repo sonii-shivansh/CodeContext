@@ -2,104 +2,110 @@
 
 ## Purpose
 
-CodeContext is a local-first analysis pipeline. It transforms Java and Kotlin source files into dependency metadata, Git context, graph metrics, learning guidance, and an interactive HTML report.
+CodeContext is a local-first engineering-intelligence pipeline for Java and Kotlin repositories. It transforms source code, Git history, dependency structure, and engineering signals into deterministic analysis, grounded evidence, repository Q&A, engineering plans, reports, and optional AI-assisted reasoning.
 
-## System shape
+## Current system
 
-```mermaid
-graph TD
-    A[CLI or REST request] --> B[Configuration and path validation]
-    B --> C[RepositoryScanner]
-    C --> D[CodeParallelParser]
-    D --> E[OptimizedGitAnalyzer]
-    E --> F[RobustDependencyGraph]
-    F --> G[LearningPathGenerator]
-    G --> H[ReportGenerator]
-    H --> I[HTML report]
-    D --> J[CacheManager]
-    A --> K[AICodeAnalyzer]
+```text
+CLI / REST / CI
+      ↓
+Configuration + path validation
+      ↓
+Repository Scanner
+      ↓
+Java / Kotlin Parsers + Git Intelligence
+      ↓
+Unified Dependency Graph
+      ↓
+Analysis Snapshot
+      ↓
+┌────────────────────────────────────────────┐
+│ Deterministic Intelligence                 │
+│ Risk · Impact · PR · Architecture          │
+│ Evolution · Hotspots · Learning Paths      │
+└──────────────────────┬─────────────────────┘
+                       ↓
+               Grounded Evidence
+                 ↙           ↘
+        Repository Q&A      Engineering Planner
+                 ↘           ↙
+                 Optional AI
+                       ↓
+                  CLI / REST / CI
 ```
 
-## Runtime flows
+## Command surface
 
-### CLI analysis
+`Main.kt` registers repository analysis, impact, architecture, PR Intelligence, repository Q&A, engineering planning, AI assistance, evolution, and server commands.
 
-`Main.kt` registers Clikt commands. `ImprovedAnalyzeCommand` loads configuration, scans the target directory, parses supported source files, enriches results with Git metadata, builds the dependency graph, computes PageRank, generates a learning path, and writes `output/index.html`.
+### Repository analysis
 
-### REST analysis
+`RepositoryScanner` discovers supported Java and Kotlin source files while enforcing configured exclusions and file limits. Source is parsed rather than executed.
 
-`CodeContextServer.module()` configures JSON handling, rate limiting, health routes, report serving, and analysis routes. `AnalysisLogic.analyze()` uses the same configuration model as the scanner and enforces `maxFilesAnalyze`. Reports are written under `output/` using random identifiers and are exposed through `/reports/{id}.html`.
+`ParserFactory` selects a parser by extension. Java uses JavaParser-based analysis. Kotlin uses the project's current lightweight Kotlin parsing support and therefore has known complex-syntax limitations.
 
-### AI analysis
+`CodeParallelParser` coordinates parsing and cache access.
 
-`AICodeAnalyzer` supports configured Gemini and Anthropic providers. It creates structured JSON requests, keeps credentials in headers, redacts common secrets from prompt content, validates provider responses, sanitizes errors, and clamps confidence values. AI calls are external network operations and are disabled by default.
+### Git intelligence
 
-## Core components
-
-### Scanning
-
-`RepositoryScanner` walks a repository and includes `.kt` and `.java` files. Directory exclusions come from `CodeContextConfig.excludePaths` and are matched by path segment. The scanner does not execute source files.
-
-### Parsing
-
-`ParserFactory` selects a parser by extension. `JavaRealParser` uses JavaParser-based AST handling. `KotlinRegexParser` provides lightweight Kotlin parsing and intentionally has limitations for complex syntax. `CodeParallelParser` coordinates parallel parsing and cache access.
-
-### Git analysis
-
-`OptimizedGitAnalyzer` enriches parsed files with modification time, change frequency, authors, and recent commit information. Git operations are read-only from the application's perspective.
+`OptimizedGitAnalyzer` supplies change frequency, modification time, authorship, and recent-change context. Git operations are read-only.
 
 ### Dependency graph
 
-`RobustDependencyGraph` stores absolute file paths as vertices and import relationships as directed edges. It builds a fully indexed package map for wildcard imports, detects cycles, and calculates PageRank with JGraphT. A graph instance is reset before each build so repeated use cannot retain stale vertices or scores.
+`RobustDependencyGraph` resolves local dependency relationships, wildcard imports, cycles, and PageRank. The graph is rebuilt for each analysis to avoid stale state.
 
-### Learning paths
+### Analysis snapshot
 
-`LearningPathGenerator` orders files using dependency relationships, complexity, and graph importance to produce a practical onboarding sequence.
+`AnalysisSnapshot` is the boundary between low-level analysis and higher-level intelligence. It provides a structured representation of repository metrics, files, hotspots, and architecture information.
 
-### Caching
+## Deterministic intelligence
 
-`CacheManager` stores serialized parse results in `.codecontext/cache` by default. Cache keys include the canonical file path and a SHA-256 content hash, so same-size or timestamp-preserving edits invalidate correctly. Writes use a temporary file and atomic replacement when supported.
+The current system includes:
 
-### Reports
+- engineering risk signals;
+- dependency-aware change impact;
+- PR Intelligence for Git diffs;
+- Architecture Intelligence;
+- Git evolution analysis;
+- hotspots and learning paths.
 
-`ReportGenerator` produces an HTML report using kotlinx.html and serialized graph data for a Force Graph visualization. Reports include hotspots, learning paths, Git contribution context, and dependency relationships. The report includes a remote visualization dependency; deployments requiring strict offline or supply-chain controls should self-host and pin that asset.
+These components produce machine-readable results and are designed to be reproducible for the same repository state and configuration.
 
-### Organization analysis
+## Grounded evidence
 
-`OrganizationAnalyzer` processes multiple repositories with structured coroutines and a semaphore-based concurrency limit. Each repository uses the shared configuration and file-count policy, and a failed repository produces an isolated result rather than cancelling unrelated work.
+`GroundedEvidenceBuilder` converts deterministic analysis into bounded `EvidenceCitation` records. Citation IDs are stable within the generated evidence set, and paths exposed through evidence are repository-relative.
 
-## Data model
+`GroundedAIService` can pass bounded evidence to the configured AI provider. AI is optional and does not replace deterministic repository facts.
 
-```text
-File -> ParsedFile -> Graph vertex/edge data -> Report
-                    \-> GitMetadata
-                    \-> CacheManager
-```
+## Repository Q&A
 
-`ParsedFile` contains the file path, package name, imports, description, and `GitMetadata`. The graph uses parsed imports to resolve local classes and package wildcard relationships.
+`RepositoryQuestionClassifier` classifies an initial set of repository-question intents. `RepositoryEvidenceRetriever` extracts and ranks relevant evidence with deterministic ordering and bounded result counts.
 
-## Security boundaries
+The `repo-qa` command can therefore provide useful grounded retrieval without requiring an external model.
 
-- Source code is parsed, not executed.
-- Local server paths are canonicalized and constrained to allowed roots.
-- File-count limits and rate limits reduce resource abuse.
-- Reports use random identifiers rather than repository names or filesystem paths.
-- AI credentials are sent in provider headers and are redacted from prompt content where recognizable.
-- AI providers are external services and may receive repository-derived context when enabled.
-- The server does not provide authentication, tenant isolation, report authorization, or report retention by itself.
-- CORS is not enabled by default; trusted deployments must configure browser access at their edge.
+## Engineering planner
 
-## Performance characteristics
+`EngineeringPlanner` consumes grounded evidence and produces a structured, versioned engineering plan containing affected components, risk, implementation steps, evidence IDs, verification criteria, and uncertainty.
 
-For `n` source files, scanning and parsing are approximately linear in the number of files, graph construction is approximately `O(n + e)` for `e` resolved relationships, and PageRank is bounded by the configured iteration count. Organization analysis intentionally limits concurrent repositories to avoid unbounded CPU and memory pressure.
+The current planner is read-only and provider-independent. It does not modify source code, commit changes, or autonomously execute repository actions.
 
-Actual performance depends on repository size, parser complexity, Git history, cache state, and available hardware.
+## REST and security boundaries
+
+The Ktor server exposes local analysis and intelligence flows. Repository paths are canonicalized and checked against configured allowed roots. Rate limiting is enabled by default.
+
+The current server is intended for trusted local/internal deployment. Authentication, authorization, tenant isolation, TLS, and external deployment controls are not provided by the application itself.
+
+AI credentials are configuration data and must not be embedded in evidence artifacts. External AI calls are opt-in.
+
+## CI
+
+GitHub Actions is the authoritative execution environment. The project verifies builds and tests across supported workflows, including Windows compatibility and end-to-end intelligence flows.
 
 ## Extension points
 
-- Add a parser through `LanguageParser` and `ParserFactory`.
-- Add analysis metrics under `core/` and integrate them into the CLI/report pipeline.
-- Add report sections through `ReportGenerator`.
-- Add API routes in `CodeContextServer` with explicit validation and sanitized errors.
-
-Future work includes incremental analysis, watch mode, plugin APIs, improved Kotlin parsing, authenticated report hosting, and additional language support.
+- add parsers through `LanguageParser` and `ParserFactory`;
+- add deterministic intelligence under `core/`;
+- add evidence types without changing existing evidence semantics;
+- add retrieval/planning rules with deterministic ordering;
+- add CLI/REST adapters around application services;
+- extend AI providers behind the existing provider boundary.

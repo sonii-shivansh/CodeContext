@@ -1,29 +1,23 @@
 # PR Intelligence
 
-PR Intelligence converts a local Git change set into a deterministic engineering assessment. It combines Git diff metadata, dependency impact, existing engineering-risk signals, package boundaries, and likely test candidates.
+PR Intelligence converts a local Git change set into a deterministic engineering assessment. It combines Git diff metadata, dependency impact, existing engineering-risk signals, package boundaries, architecture signals, and likely test candidates.
 
 ## CLI
 
-Analyze the current working tree:
-
 ```bash
 codecontext pr-intelligence /path/to/repository --json
-```
 
-Analyze two revisions:
-
-```bash
 codecontext pr-intelligence /path/to/repository \
   --base main \
   --head feature/my-change \
   --json
 ```
 
-The JSON report is written to `output/pr-intelligence.json`.
+The JSON report is written to `output/pr-intelligence.json` when JSON output is requested.
 
 ## REST
 
-`POST /pr-intelligence` accepts a local repository path and optionally a base/head revision pair.
+`POST /pr-intelligence` accepts a local repository path and optionally a base/head revision pair. Remote repository URLs are deliberately rejected by the current local endpoint.
 
 ```json
 {
@@ -34,8 +28,6 @@ The JSON report is written to `output/pr-intelligence.json`.
 ```
 
 Omit both revisions to analyze the working tree. Supplying only one revision is rejected.
-
-Remote repository URLs are deliberately rejected. A future GitHub adapter can provide remote PR data without making the local endpoint a network-fetch primitive.
 
 ## Result
 
@@ -49,44 +41,45 @@ The result is versioned and machine-readable:
 - `findings`: deterministic rule-based evidence;
 - `aggregateSeverity`: highest finding severity.
 
-Every finding has a stable `ruleId`, severity, affected repository-relative paths, evidence values, and a human-readable reason.
+Every finding has a stable rule identifier, severity, affected repository-relative paths, evidence values, and a human-readable reason.
 
-## First-version rules
+## Rules
 
 | Rule | Meaning |
 | --- | --- |
 | `CHANGE_UNRESOLVED` | A changed/deleted path could not be resolved in the analyzed graph. |
 | `IMPACT_BROAD` | The dependency blast radius is substantial. |
-| `ARCH_CROSS_PACKAGE` | Impact crosses the package boundary of the changed files. |
+| `ARCH_CROSS_PACKAGE` | Impact crosses the package boundary of changed files. |
 | `CHANGED_HIGH_RISK_COMPONENT` | A high/critical deterministic risk component was modified. |
 | `TEST_CANDIDATE_MISSING` | No likely test candidate was identified. |
 | `CHANGE_LARGE` | The change is large by file or line count. |
 
-These rules are review signals. They do not prove runtime correctness, test sufficiency, or production impact.
+These are review signals. They do not prove runtime correctness, test sufficiency, or production impact.
 
-## Architecture
+## Evidence-first workflow
 
 ```text
 Git working tree / revision pair
-              |
-              v
+              ↓
        GitChangeSetBuilder
-              |
-              v
+              ↓
        PRIntelligenceAnalyzer
-          /    |     \
-         v     v      v
-      Impact  Risk  Test/Architecture signals
-         \     |     /
-          \    |    /
-           v   v   v
-        PRIntelligenceResult
-              |
-        +-----+------+
-        |            |
-       JSON         REST
-        |
-      Future GitHub adapter / CI check / grounded AI
+              ↓
+       Impact / Risk / Architecture / Test signals
+              ↓
+        Versioned PR result
+              ↓
+      Grounded evidence / planner / AI
 ```
 
-The deterministic core has no dependency on an LLM or GitHub API. AI can later explain evidence produced here without becoming the source of truth.
+The deterministic core has no dependency on an LLM or GitHub API. This makes it suitable for CI and allows AI layers to explain evidence without becoming the source of truth.
+
+## Future Change Proof
+
+PR Intelligence is a foundation for a stronger Change Proof artifact that will eventually connect:
+
+```text
+change → impact → architecture → ownership → policy → tests → CI → uncertainty
+```
+
+The future proof should remain machine-readable and reproducible for the same repository snapshot.

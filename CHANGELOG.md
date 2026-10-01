@@ -6,25 +6,23 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Added
 
-- Configuration-driven source exclusions through `excludePaths`.
-- Configured file-count enforcement through `maxFilesAnalyze`.
-- Bounded multi-repository analysis concurrency.
-- Content-hash-based parse cache invalidation.
-- Atomic cache replacement with a fallback for filesystems without atomic moves.
-- Dependency graph rebuild safety and indexed wildcard-import resolution.
+- Deterministic Change Impact Intelligence and PR Intelligence.
+- Architecture Intelligence and architecture evidence.
+- Versioned `AnalysisSnapshot` and grounded `EvidenceCitation` contracts.
+- Grounded repository Q&A retrieval through the `repo-qa` CLI command.
+- Evidence-backed engineering planning through the `plan` CLI command.
+- Linux and Windows CI verification for the current intelligence flows.
 
 ### Changed
 
-- Local API reports now use random identifiers and public report URLs.
-- Organization analysis uses structured coroutines instead of nested `runBlocking`.
-- Documentation now reflects the local-only REST endpoint and current AI-provider behavior.
+- Documentation now describes the implemented evidence-first architecture and current command/API surface.
+- AI is documented as an optional reasoning layer rather than a repository source of truth.
 
 ### Security
 
-- Preserved strict canonical-path validation and sibling-path protection.
-- Removed permissive CORS behavior from the default server.
-- Prevented absolute server filesystem paths from being returned by the API.
-- Kept provider errors and AI credentials out of public API responses and prompt content where recognizable.
+- Grounded evidence exposes repository-relative paths instead of absolute filesystem paths.
+- AI context remains bounded and opt-in.
+- Server path validation and rate limiting remain enabled for the local API.
 
 ## [0.2.0] - 2026-09-19
 
@@ -57,7 +55,7 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Known limitations
 
-- Kotlin parsing is regex-based and may miss complex constructs.
+- Kotlin parsing may miss complex constructs.
 - Reports currently depend on a browser visualization asset loaded from a CDN.
 - The server does not provide authentication, tenant isolation, or report retention.
 - AI analysis requires external provider access and explicit configuration.

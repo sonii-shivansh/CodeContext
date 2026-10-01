@@ -1,37 +1,35 @@
 # CodeContext
 
-CodeContext is a Kotlin/JVM command-line and local REST application for understanding Java and Kotlin codebases. It scans source files, extracts dependency metadata, analyzes graph centrality and Git history, and produces deterministic engineering intelligence plus an interactive HTML report.
+**Deterministic engineering intelligence for Java and Kotlin repositories.**
 
-## Status
+CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A and evidence-backed engineering planning.
 
-- Java and Kotlin analysis is supported.
-- CLI analysis and local REST serving are supported.
-- Reports and machine-readable intelligence artifacts are generated locally under `output/`.
-- Change Impact Intelligence and PR Intelligence are deterministic and provider-independent.
-- AI assistance is optional and sends only the configured prompt context to the selected provider.
-- The REST server accepts local paths within configured workspace roots. Remote repository URLs are not accepted by the current server endpoints.
+## Current status
 
-## Features
+The repository currently implements:
 
-- Dependency graph construction from package and import metadata
-- PageRank-based knowledge hotspots
-- Deterministic engineering-risk signals
-- Change-impact and dependency blast-radius analysis
-- PR Intelligence for Git diffs: risk, architecture, tests, and change-size signals
-- Versioned JSON intelligence artifacts suitable for CI and future AI grounding
-- Cycle detection and dependency visualization
-- Learning-path generation for onboarding
-- Git authorship, churn, and recent-change metadata
-- Configuration-driven source exclusions and file-count limits
-- Parallel parsing with content-based caching and atomic cache writes
-- Optional AI analysis through configured Gemini or Anthropic providers
-- Local Ktor REST API with rate limiting and path validation
+- Java and Kotlin source analysis
+- dependency graph construction
+- PageRank knowledge hotspots
+- cycle and architecture analysis
+- Git authorship, churn, and evolution analysis
+- learning-path generation
+- deterministic change-impact analysis
+- deterministic PR Intelligence
+- Architecture Intelligence
+- versioned analysis/evidence artifacts
+- grounded repository Q&A retrieval
+- deterministic, evidence-backed engineering planning
+- optional AI assistance over bounded repository-derived context
+- local Ktor REST API
+- path validation and rate limiting
+- Linux and Windows CI verification
 
-## Requirements
+## Design principle
 
-- JDK 21 or newer
-- Git for Git-history analysis
-- Network access only when optional AI features are enabled
+**Deterministic evidence first, AI reasoning second.**
+
+Repository facts are produced by deterministic analysis. Grounded evidence preserves those facts for downstream Q&A and planning. AI is optional and is not treated as the authoritative source of repository truth.
 
 ## Quick start
 
@@ -43,115 +41,92 @@ cd CodeContext
 ./build/install/codecontext/bin/codecontext analyze .
 ```
 
-The default CLI report is written to `output/index.html`.
+The default report is written to `output/index.html`.
 
 ## CLI commands
 
 ```bash
-# Analyze a repository
-./build/install/codecontext/bin/codecontext analyze /path/to/repository
+# Repository analysis
+codecontext analyze /path/to/repository
 
-# Analyze current working-tree changes
-./build/install/codecontext/bin/codecontext pr-intelligence /path/to/repository --json
+# Change impact
+codecontext impact /path/to/repository src/main/Service.kt --json
 
-# Analyze two Git revisions
-./build/install/codecontext/bin/codecontext pr-intelligence /path/to/repository \
-  --base main --head feature/my-change --json
+# PR / change intelligence
+codecontext pr-intelligence /path/to/repository --json
+codecontext pr-intelligence /path/to/repository --base main --head feature/my-change --json
 
-# Analyze explicit changed files
-./build/install/codecontext/bin/codecontext impact /path/to/repository src/main/Service.kt --json
+# Architecture intelligence
+codecontext architecture /path/to/repository --json
 
-# Start the local API server
-./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
+# Grounded repository Q&A
+codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
 
-# Generate AI-assisted insights, when configured
-./build/install/codecontext/bin/codecontext ai-assistant /path/to/repository
+# Evidence-backed engineering plan
+codecontext plan "add payment validation" --evidence output/grounded-evidence.json
 
-# Inspect repository evolution
-./build/install/codecontext/bin/codecontext evolution /path/to/repository
+# Optional AI assistance
+codecontext ai-assistant /path/to/repository
+
+# Git evolution
+codecontext evolution /path/to/repository
+
+# Local REST server
+codecontext server --host 127.0.0.1 --port 8080
 ```
 
-PR Intelligence writes `output/pr-intelligence.json` when `--json` is supplied. See [PR Intelligence](docs/PR_INTELLIGENCE.md) for the data model and rules.
+Use `codecontext <command> --help` for the exact options in the installed version.
 
-The exact command options are available through:
+## Architecture
 
-```bash
-./build/install/codecontext/bin/codecontext --help
-./build/install/codecontext/bin/codecontext pr-intelligence --help
-./build/install/codecontext/bin/codecontext impact --help
+```text
+Repository + Git
+       ↓
+Scanner / Parsers / Git Intelligence
+       ↓
+Dependency Graph + Analysis Snapshot
+       ↓
+Deterministic Intelligence
+ ┌─────┼─────┬──────┬──────────────┐
+Risk  Impact  PR  Architecture  Evolution
+       ↓
+Grounded Evidence
+   ↙          ↘
+Q&A          Planner
+   ↘          ↙
+ Optional AI reasoning
+       ↓
+ CLI / REST / CI
 ```
 
 ## Configuration
 
-Copy the template into the repository you want to analyze or create a `.codecontext.json` file in the current working directory:
+Create a local configuration file when needed:
 
 ```bash
 cp .codecontext.json.template .codecontext.json
 ```
 
-Important configuration fields include:
+Important settings include source exclusions, file-count limits, Git history limits, caching, parallel parsing, reporting limits, AI configuration, and rate limiting. Never commit API keys.
 
-| Field | Default | Purpose |
-| --- | ---: | --- |
-| `excludePaths` | standard build and tool directories | Directory names excluded during scanning |
-| `maxFilesAnalyze` | `5000` | Maximum number of source files per analysis |
-| `gitCommitLimit` | `1000` | Git history limit used by Git analysis |
-| `enableCache` | `true` | Enables parse-result caching in supported CLI flows |
-| `enableParallel` | `true` | Enables parallel parsing where supported |
-| `hotspotCount` | `15` | Number of hotspots used by reporting flows |
-| `learningPathLength` | `20` | Maximum learning-path length |
-| `ai.enabled` | `false` | Enables optional AI analysis |
-| `ai.provider` | `anthropic` | `anthropic` or `gemini` |
-| `ai.apiKey` | empty | Provider credential; never commit it |
-| `ai.model` | provider-specific | Provider model identifier |
+The server also supports `CODECONTEXT_ALLOWED_PATHS`. Keep allowed roots as narrow as practical.
 
-The server also supports `CODECONTEXT_ALLOWED_PATHS`. Do not place API keys in source control, reports, logs, or issue descriptions.
+## REST API
 
-## REST server
+The local API provides health, analysis, reports, change-impact, PR Intelligence, repository Q&A/AI flows, and organization analysis. Local repository paths are validated against configured workspace roots; remote repository URLs are not accepted by the current local endpoints.
 
-Start the server locally:
+See [docs/API.md](docs/API.md).
 
-```bash
-./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
-```
+The server does not currently provide authentication, tenant isolation, or deployment-level authorization. Those are responsibilities of any deployment boundary beyond trusted local use.
 
-The server exposes health, analysis, change-impact, and PR Intelligence routes. See [docs/API.md](docs/API.md) and [docs/PR_INTELLIGENCE.md](docs/PR_INTELLIGENCE.md).
-
-The server is intended to run behind an authenticated, trusted deployment boundary. It does not provide user authentication, tenant isolation, report expiration, or multi-tenant authorization by itself.
-
-## Architecture
-
-```text
-Source + Git
-    ↓
-RepositoryScanner → Parser → Git metadata
-    ↓
-Unified dependency graph
-    ↓
-┌───────────────────────────────────────┐
-│ deterministic intelligence            │
-│                                       │
-│ PageRank / Risk / Change Impact       │
-│ Architecture / Test / PR Intelligence │
-└───────────────────────────────────────┘
-    ↓
-Versioned evidence JSON
-    ↓
-CLI / REST / CI
-    ↓
-Future: GitHub integration + grounded AI
-```
-
-The key design principle is **deterministic evidence first, AI reasoning second**. AI should explain or reason over computed repository facts rather than replace them.
-
-## Development
+## Development and CI
 
 ```bash
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon build installDist
 ```
 
-GitHub Actions additionally verifies CLI startup, CodeContext self-analysis, generated intelligence artifacts, PR Intelligence CLI and REST flows, and server health. The CI pipeline is the authoritative execution environment for the project.
+GitHub Actions is the project's authoritative execution environment. CI validates compilation, tests, CLI flows, server health, generated artifacts, intelligence flows, and platform compatibility.
 
 See:
 
@@ -159,22 +134,9 @@ See:
 - [API reference](docs/API.md)
 - [PR Intelligence](docs/PR_INTELLIGENCE.md)
 - [Development guide](docs/DEVELOPMENT.md)
-- [Enterprise roadmap](docs/ENTERPRISE_ROADMAP.md)
+- [Enterprise implementation status](docs/ENTERPRISE_ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
-
-## Roadmap
-
-- Architecture rules and drift detection
-- GitHub PR comments and status checks
-- Configurable engineering governance policies
-- Grounded AI repository Q&A and evidence citations
-- AI-assisted change planning and PR review
-- Incremental and watch-mode analysis
-- Ownership and knowledge-concentration intelligence
-- Cross-repository impact analysis
-- TypeScript, JavaScript, Python, and Go parsers
-- IDE integrations and package/container distribution
 
 ## License
 

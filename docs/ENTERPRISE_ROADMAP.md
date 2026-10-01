@@ -1,152 +1,142 @@
-# CodeContext — Enterprise Code Intelligence Roadmap
+# CodeContext — Current Implementation Status
 
-## Vision
+This document describes what is implemented in the repository today. It is intentionally not a future product roadmap.
 
-Evolve CodeContext from a repository analyzer into an engineering-intelligence platform that combines static analysis, dependency intelligence, Git history, architecture rules, AI reasoning, and CI/CD automation.
+## Repository intelligence
 
-## Core capabilities
+Implemented:
 
-1. **Repository Intelligence**
-   - Language-aware parsing
-   - Dependency and call graphs
-   - Module/service boundaries
-   - Architecture discovery
+- Java and Kotlin source discovery and parsing
+- configurable source exclusions and file limits
+- parallel parsing and content-based caching
+- dependency graph construction
+- wildcard-import handling
+- cycle detection
+- PageRank knowledge hotspots
+- Git authorship, churn, modification-time, and recent-change analysis
+- learning-path generation
+- HTML reporting
 
-2. **Change Intelligence**
-   - PR blast-radius analysis
-   - Change-impact prediction
-   - Hotspot detection
-   - Risk scoring based on graph centrality, churn, ownership, and test coverage
+## Change and PR intelligence
 
-3. **Engineering Intelligence**
-   - Ownership and knowledge concentration
-   - Technical debt signals
-   - Architecture drift detection
-   - Dependency-cycle detection
-   - Maintainability trends over time
+Implemented:
 
-4. **AI Engineering Layer**
-   - Grounded codebase Q&A
-   - Explain architecture and execution flows
-   - PR review assistance
-   - Change planning
-   - Test-generation recommendations
-   - Evidence-backed answers with file/line references
+- dependency-aware change impact analysis
+- changed-file analysis
+- blast-radius signals
+- deterministic PR Intelligence
+- change-size and risk signals
+- architecture findings
+- test recommendations/signals
+- machine-readable intelligence artifacts
 
-5. **CI/CD Intelligence**
-   - Headless analysis in GitHub Actions
-   - Machine-readable JSON/SARIF output
-   - PR comments/checks
-   - Quality gates
-   - Regression detection
+## Architecture intelligence
 
-6. **Enterprise Platform**
-   - Repository registry
-   - Team/service ownership
-   - Historical snapshots
-   - Organization-wide architecture map
-   - Policy and governance rules
+Implemented:
 
-## Architectural direction
+- architecture-oriented findings over the dependency graph
+- cycle/boundary signals
+- deterministic architecture artifacts
+- CI end-to-end verification of the architecture flow
 
-```text
-                 +----------------------+
-                 |   Developer / CI     |
-                 +----------+-----------+
-                            |
-                CLI / REST / GitHub App
-                            |
-                 +----------v-----------+
-                 | Analysis Orchestrator|
-                 +----------+-----------+
-                            |
-        +-------------------+-------------------+
-        |                   |                   |
-   Source Analysis      Git Intelligence    Test Signals
-        |                   |                   |
-        +-------------------+-------------------+
-                            |
-                 +----------v-----------+
-                 | Unified Code Model    |
-                 | files/modules/symbols |
-                 | deps/ownership/change |
-                 +----------+-----------+
-                            |
-        +-------------------+-------------------+
-        |                   |                   |
-   Graph Intelligence  Architecture Rules   Risk Engine
-        |                   |                   |
-        +-------------------+-------------------+
-                            |
-                 +----------v-----------+
-                 | Evidence / Context    |
-                 | Retrieval Layer       |
-                 +----------+-----------+
-                            |
-                 +----------v-----------+
-                 | AI Reasoning Layer    |
-                 +----------+-----------+
-                            |
-       +--------------------+--------------------+
-       |                    |                    |
-     Report               JSON/SARIF          PR/CI
-```
+## Grounded evidence
 
-## Design principles
+Implemented:
 
-- Deterministic analysis is the source of truth; AI explains and reasons over evidence.
-- Every AI answer should be traceable to repository evidence whenever possible.
-- Local-first operation remains supported.
-- CI must be able to execute the complete pipeline without a developer laptop.
-- Large repositories require bounded concurrency, incremental work, and persistent caches.
-- Security boundaries must be explicit before remote/enterprise deployment.
-- Backward-compatible CLI behavior should be preserved while adding capabilities.
+- versioned evidence contracts
+- `EvidenceCitation`
+- bounded evidence generation
+- repository-relative citation paths
+- deterministic citation ordering
+- evidence size limits
+- safeguards against evidence paths escaping the repository
 
-## Delivery sequence
+## Repository Q&A
 
-### Phase 1 — Foundation
-- Unified analysis result model
-- Analysis manifest and metadata
-- Structured logging
-- JSON/SARIF output
-- Deterministic smoke fixtures
-- CI end-to-end verification
+Implemented:
 
-### Phase 2 — Change Intelligence
-- Git diff analysis
-- Dependency-aware blast radius
-- PR risk model
-- Changed-file criticality
-- Test-impact recommendations
+- repository question intent classification
+- entity/path extraction
+- dependency, risk, impact, architecture, PR, and test-oriented retrieval intents
+- deterministic evidence ranking
+- bounded result sets
+- explicit insufficient-evidence handling
+- `repo-qa` CLI command
 
-### Phase 3 — Architecture Intelligence
-- Module/service discovery
-- Architecture rules
-- Drift detection
-- Cycle and boundary violations
-- Architecture snapshots and comparison
+The first implementation does not require an external model.
 
-### Phase 4 — Grounded AI
-- Repository context index
-- Symbol/file retrieval
-- Evidence citations
-- Architecture Q&A
-- Change-plan generation
-- AI-assisted PR review
+## Engineering Planner
 
-### Phase 5 — Enterprise
-- Organization repository registry
-- Historical metrics
-- Ownership/knowledge graph
-- Governance policies
-- GitHub integration
-- Team dashboards
+Implemented:
 
-## Definition of done for enterprise maturity
+- versioned engineering-plan model
+- deterministic plan synthesis from grounded evidence
+- affected components
+- risk
+- implementation steps
+- evidence IDs
+- verification criteria
+- uncertainty handling
+- bounded input/output
+- `plan` CLI command
 
-- Every major capability has deterministic tests.
-- CI executes unit, integration, CLI, API, security, performance smoke, and end-to-end checks.
-- Large-repository behavior is bounded and observable.
-- AI output is grounded in analyzed repository evidence rather than unsupported claims.
-- CI can fail a PR on explicitly configured architecture/security/risk policies.
-- Reports are reproducible for the same repository snapshot and configuration.
+The current planner is read-only and does not modify repositories.
+
+## AI integration
+
+Implemented:
+
+- optional AI provider abstraction
+- configured Gemini/Anthropic provider support in the existing AI assistant flow
+- grounded evidence passed as bounded context
+- explicit separation between deterministic repository facts and model reasoning
+
+AI is disabled unless configured.
+
+## Local REST API
+
+Implemented:
+
+- service banner
+- health/readiness/liveness routes
+- local repository analysis
+- generated report serving
+- repository question/AI flow
+- organization analysis with bounded concurrency
+- change-impact and PR Intelligence flows
+- path validation
+- rate limiting
+- sanitized public errors
+
+The current server is intended for trusted local/internal use and does not itself provide authentication, authorization, tenant isolation, or deployment-level TLS.
+
+## CI and verification
+
+Implemented CI verification includes:
+
+- JVM compilation and tests
+- lint/code-quality checks
+- CLI verification
+- generated artifact validation
+- self-analysis
+- PR Intelligence end-to-end verification
+- Architecture Intelligence end-to-end verification
+- REST API end-to-end verification
+- Linux and Windows validation
+
+CI is the authoritative execution environment for the repository.
+
+## Current limitations
+
+The repository currently has important boundaries:
+
+- analysis is focused on Java and Kotlin;
+- Kotlin parsing has known complex-syntax limitations;
+- remote repository URLs are not accepted by the local server endpoints;
+- the REST server does not provide authentication or multi-tenant authorization;
+- the planner is read-only;
+- autonomous code modification is not implemented;
+- production telemetry integrations are not implemented;
+- organization-wide governance and cross-repository intelligence are not implemented.
+
+This file should be updated when implementation changes materially. It should not describe unimplemented features as if they already exist.
