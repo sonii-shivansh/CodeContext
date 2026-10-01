@@ -74,12 +74,6 @@ Git working tree / revision pair
 
 The deterministic core has no dependency on an LLM or GitHub API. This makes it suitable for CI and allows AI layers to explain evidence without becoming the source of truth.
 
-## Future Change Proof
+## Current boundary
 
-PR Intelligence is a foundation for a stronger Change Proof artifact that will eventually connect:
-
-```text
-change → impact → architecture → ownership → policy → tests → CI → uncertainty
-```
-
-The future proof should remain machine-readable and reproducible for the same repository snapshot.
+PR Intelligence currently produces deterministic review signals and machine-readable evidence. It does **not** claim to prove runtime correctness, test coverage, deployment safety, or production impact, and it does not autonomously approve, merge, or modify a change.
