@@ -18,6 +18,8 @@ jobs:
     name: Real repository E2E
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    env:
+      HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' }}
 
     steps:
       - name: Checkout CodeContext
@@ -157,7 +159,7 @@ jobs:
           test -s output/verify.json
 
       - name: Live Gemini repository Q&A
-        if: ${{ secrets.GEMINI_API_KEY != '' }}
+        if: ${{ env.HAS_GEMINI == 'true' }}
         working-directory: ${{ runner.temp }}/real-project
         timeout-minutes: 5
         env:
