@@ -39,10 +39,11 @@ class ChangeImpactEngineTest {
         )
 
         assertEquals(1, result.summary.changedFiles)
-        assertEquals(4, result.nodes.size)
+        assertEquals(5, result.nodes.size)
         assertTrue(result.nodes.any { it.path.endsWith("Controller.kt") && it.depth == 1 })
         assertTrue(result.nodes.any { it.path.endsWith("Repository.kt") && it.depth == 1 })
         assertTrue(result.nodes.any { it.path.endsWith("Facade.kt") && it.depth == 2 })
+        assertTrue(result.nodes.any { it.path.endsWith("RepositoryTest.kt") && it.depth == 2 })
     }
 
     @Test
@@ -65,7 +66,7 @@ class ChangeImpactEngineTest {
         )
 
         assertEquals(listOf("/repo/a/Service.kt"), result.changedPaths)
-        assertEquals(4, result.nodes.size)
+        assertEquals(5, result.nodes.size)
     }
 
     @Test
