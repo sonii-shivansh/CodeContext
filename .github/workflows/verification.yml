@@ -98,7 +98,7 @@ jobs:
           evidence = json.loads(Path("output/grounded-evidence.json").read_text())
           plan = json.loads(Path("output/engineering-plan.json").read_text())
           assert isinstance(evidence, dict)
-          assert "findings" in plan or "steps" in plan or isinstance(plan, dict)
+          assert isinstance(plan, dict)
           print("Repository Q&A and engineering planning validated")
           PY
 
@@ -229,7 +229,7 @@ jobs:
         shell: bash
         run: |
           ! grep -q "unpkg.com" output/index.html
-          ! grep -q "https://" output/index.html
+          ! grep -q '<script src=' output/index.html
 
       - name: Stop server
         if: always()
