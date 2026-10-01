@@ -62,4 +62,33 @@ class GitChangeSetBuilderTest {
         }
         root.deleteRecursively()
     }
+
+    @Test
+    fun `working tree ignores CodeContext generated output`() {
+        val root = Files.createTempDirectory("codecontext-working-tree-").toFile()
+        Git.init().setDirectory(root).call().use { git ->
+            root.resolve("README.md").writeText("hello\n")
+            git.add().addFilepattern("README.md").call()
+            git.commit().setMessage("initial")
+                .setAuthor(PersonIdent("test", "test@example.com"))
+                .setCommitter(PersonIdent("test", "test@example.com"))
+                .call()
+
+            root.resolve("src.kt").writeText("class Source\n")
+            root.resolve("output/verify.json").apply {
+                parentFile.mkdirs()
+                writeText("generated")
+            }
+            root.resolve("output/engineering-plan.json").writeText("generated")
+            root.resolve(".codecontext/cache/generated.json").apply {
+                parentFile.mkdirs()
+                writeText("generated")
+            }
+
+            val result = GitChangeSetBuilder.fromWorkingTree(root.path)
+
+            assertEquals(listOf("src.kt"), result.files.map { it.path })
+        }
+        root.deleteRecursively()
+    }
 }
