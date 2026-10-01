@@ -5,6 +5,7 @@ import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.intelligence.ArchitectureContract
 import com.codecontext.core.intelligence.ArchitectureContractEngine
+import com.codecontext.core.intelligence.ArchitectureContractHistoryStore
 import com.codecontext.core.intelligence.ArchitectureContractResult
 import com.codecontext.core.intelligence.ArchitectureIntelligenceEngine
 import com.codecontext.core.scanner.RepositoryScanner
@@ -24,6 +25,7 @@ class ArchitectureContractCommand : CliktCommand(
     private val path by argument("path", help = "Repository path")
     private val contractPath by option("--contract", help = "Architecture contract JSON; defaults to .codecontext-architecture-contract.json")
     private val jsonOutput by option("--json", help = "Write machine-readable contract result").flag()
+    private val recordPath by option("--record", help = "Persist the deterministic contract decision history")
 
     override fun run() {
         val root = File(path).absoluteFile.normalize()
@@ -46,6 +48,12 @@ class ArchitectureContractCommand : CliktCommand(
             ArchitectureContract()
         }
         val result = ArchitectureContractEngine.evaluate(architecture, contract)
+        val decision = ArchitectureContractHistoryStore.decision(root, contract, result)
+        recordPath?.let { target ->
+            val historyFile = File(target)
+            ArchitectureContractHistoryStore.record(historyFile, decision)
+            echo("🧾 Contract decision history: ${historyFile.absolutePath}")
+        }
         if (jsonOutput) {
             val output = File("output/architecture-contract.json")
             output.parentFile.mkdirs()
@@ -56,7 +64,8 @@ class ArchitectureContractCommand : CliktCommand(
         echo("├─ Passed: ${result.passed}")
         echo("├─ Findings: ${architecture.findings.size}")
         echo("├─ Cycles: ${architecture.cycles.size}")
-        echo("└─ Violations: ${result.violations.size}")
+        echo("├─ Violations: ${result.violations.size}")
+        echo("└─ Decision: ${decision.decisionId}")
         if (!result.passed) {
             result.violations.take(30).forEach { violation ->
                 echo("   ${violation.ruleId}: ${violation.message}")
