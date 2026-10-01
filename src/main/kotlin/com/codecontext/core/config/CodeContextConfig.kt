@@ -11,7 +11,7 @@ import mu.KotlinLogging
 @Serializable
 data class CodeContextConfig(
     val excludePaths: List<String> = listOf(
-        ".git", ".idea", ".gradle", "build", "target", "node_modules", ".vscode", "out", "dist", ".next"
+        ".git", ".idea", ".gradle", ".codecontext", "output", "build", "target", "node_modules", ".vscode", "out", "dist", ".next"
     ),
     val maxFilesAnalyze: Int = 5000,
     val gitCommitLimit: Int = 1000,
@@ -64,6 +64,10 @@ object ConfigLoader {
             CodeContextConfig()
         }
     }
+
+    /** Load project configuration relative to the repository being analyzed, not the CLI process cwd. */
+    fun loadForRepository(repoPath: String): CodeContextConfig =
+        load(File(repoPath).canonicalFile.resolve(".codecontext.json").path)
 
     /** Resolves environment -> project credential -> user credential -> defaults. */
     fun loadEffective(configPath: String = ".codecontext.json"): CodeContextConfig {
