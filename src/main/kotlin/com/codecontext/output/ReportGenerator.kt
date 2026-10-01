@@ -34,43 +34,27 @@ class ReportGenerator {
     ) {
         val hotspots = graph.getTopHotspots(15)
         val fileMap = parsedFiles.associateBy { it.file.absolutePath }
-
         val teamStats = mutableMapOf<String, Int>()
         parsedFiles.forEach { file ->
-            file.gitMetadata.topAuthors.forEach { author ->
-                teamStats[author] = (teamStats[author] ?: 0) + 1
-            }
+            file.gitMetadata.topAuthors.forEach { author -> teamStats[author] = (teamStats[author] ?: 0) + 1 }
         }
         val topTeam = teamStats.entries.sortedByDescending { it.value }.take(10)
-
         val nodes = graph.graph.vertexSet().map { id ->
             val fileData = fileMap[id]
             val meta = fileData?.gitMetadata
-            val authors = meta?.topAuthors?.joinToString(", ") ?: "Unknown"
-            val churn = meta?.changeFrequency ?: 0
-            val lastMod = if (meta != null && meta.lastModified > 0) {
-                java.util.Date(meta.lastModified).toString()
-            } else {
-                "Never"
-            }
             GraphNode(
                 id = id,
                 label = File(id).name,
                 score = graph.pageRankScores[id] ?: 0.0,
-                authors = authors,
-                churn = churn,
-                lastMod = lastMod,
+                authors = meta?.topAuthors?.joinToString(", ") ?: "Unknown",
+                churn = meta?.changeFrequency ?: 0,
+                lastMod = if (meta != null && meta.lastModified > 0) java.util.Date(meta.lastModified).toString() else "Never",
                 description = fileData?.description ?: ""
             )
         }
-        val links = graph.graph.edgeSet().map {
-            GraphLink(
-                source = graph.graph.getEdgeSource(it),
-                target = graph.graph.getEdgeTarget(it)
-            )
+        val links = graph.graph.edgeSet().map { edge ->
+            GraphLink(source = graph.graph.getEdgeSource(edge), target = graph.graph.getEdgeTarget(edge))
         }
-
-        // Escape characters that could terminate the surrounding HTML script element.
         val safeJsonGraph = Json.encodeToString(GraphData(nodes, links))
             .replace("<", "\\u003c")
             .replace(">", "\\u003e")
@@ -106,23 +90,13 @@ class ReportGenerator {
             body {
                 div("container") {
                     h1 { +"CodeContext Analysis Report" }
-
                     div {
                         h2 { +"👥 Team Contribution Map" }
                         table("team-table") {
-                            tr {
-                                th { +"Developer" }
-                                th { +"Files Modified" }
-                            }
-                            topTeam.forEach { (author, count) ->
-                                tr {
-                                    td { +author }
-                                    td { +count.toString() }
-                                }
-                            }
+                            tr { th { +"Developer" }; th { +"Files Modified" } }
+                            topTeam.forEach { (author, count) -> tr { td { +author }; td { +count.toString() } } }
                         }
                     }
-
                     div {
                         h2 { +"🎓 Personalized Learning Path" }
                         p { +"Start from these fundamental files and work your way up:" }
@@ -133,9 +107,7 @@ class ReportGenerator {
                                         strong { +File(step.file).name }
                                         span { +" [${step.description}]" }
                                         val fileDesc = fileMap[step.file]?.description
-                                        if (!fileDesc.isNullOrBlank()) {
-                                            span("description") { +"💡 $fileDesc" }
-                                        }
+                                        if (!fileDesc.isNullOrBlank()) span("description") { +"💡 $fileDesc" }
                                         br {}
                                         small { +step.reason }
                                     }
@@ -143,7 +115,6 @@ class ReportGenerator {
                             }
                         }
                     }
-
                     div {
                         h2 { +"🔥 Knowledge Hotspots (Top Critical Files)" }
                         ul("hotspot-list") {
@@ -152,16 +123,13 @@ class ReportGenerator {
                                     div {
                                         span { +File(path).name }
                                         val fileDesc = fileMap[path]?.description
-                                        if (!fileDesc.isNullOrBlank()) {
-                                            span("description") { +"💡 $fileDesc" }
-                                        }
+                                        if (!fileDesc.isNullOrBlank()) span("description") { +"💡 $fileDesc" }
                                     }
                                     span("hotspot-score") { +String.format("%.4f", score) }
                                 }
                             }
                         }
                     }
-
                     div {
                         h2 { +"🗺️ Codebase Map (hover for context)" }
                         div {
@@ -171,7 +139,6 @@ class ReportGenerator {
                         }
                     }
                 }
-
                 script {
                     unsafe {
                         +"""
@@ -182,7 +149,6 @@ class ReportGenerator {
                           const tooltip = document.getElementById('graph-tooltip');
                           const ctx = canvas.getContext('2d');
                           let nodes = [];
-
                           function resize() {
                             const ratio = window.devicePixelRatio || 1;
                             const rect = container.getBoundingClientRect();
@@ -193,37 +159,29 @@ class ReportGenerator {
                             ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
                             draw();
                           }
-
                           function layout() {
                             const rect = container.getBoundingClientRect();
-                            const cx = rect.width / 2;
-                            const cy = rect.height / 2;
+                            const cx = rect.width / 2, cy = rect.height / 2;
                             const radius = Math.max(60, Math.min(rect.width, rect.height) * .34);
                             nodes = data.nodes.map((node, index) => {
                               const angle = data.nodes.length ? (index / data.nodes.length) * Math.PI * 2 : 0;
                               return { ...node, x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius, r: Math.max(4, Math.min(14, 5 + node.score * 400)) };
                             });
                           }
-
                           function draw() {
                             const rect = container.getBoundingClientRect();
                             ctx.clearRect(0, 0, rect.width, rect.height);
                             const byId = new Map(nodes.map(n => [n.id, n]));
-                            ctx.lineWidth = 1;
-                            ctx.strokeStyle = '#b8b8b8';
+                            ctx.lineWidth = 1; ctx.strokeStyle = '#b8b8b8';
                             data.links.forEach(link => {
                               const source = byId.get(link.source), target = byId.get(link.target);
                               if (!source || !target) return;
                               ctx.beginPath(); ctx.moveTo(source.x, source.y); ctx.lineTo(target.x, target.y); ctx.stroke();
                             });
                             nodes.forEach(node => {
-                              ctx.beginPath();
-                              ctx.fillStyle = '#2563eb';
-                              ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
-                              ctx.fill();
+                              ctx.beginPath(); ctx.fillStyle = '#2563eb'; ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2); ctx.fill();
                             });
                           }
-
                           function nodeAt(x, y) {
                             for (let i = nodes.length - 1; i >= 0; i--) {
                               const n = nodes[i], dx = x - n.x, dy = y - n.y;
@@ -231,7 +189,6 @@ class ReportGenerator {
                             }
                             return null;
                           }
-
                           canvas.addEventListener('mousemove', event => {
                             const rect = canvas.getBoundingClientRect();
                             const node = nodeAt(event.clientX - rect.left, event.clientY - rect.top);
@@ -239,7 +196,7 @@ class ReportGenerator {
                             tooltip.style.display = 'block';
                             tooltip.style.left = Math.min(event.clientX - rect.left + 12, rect.width - 330) + 'px';
                             tooltip.style.top = Math.max(8, event.clientY - rect.top + 12) + 'px';
-                            tooltip.textContent = `${node.label} — score ${node.score.toFixed(4)}; changes ${node.churn}; authors ${node.authors || 'Unknown'}`;
+                            tooltip.textContent = node.label + ' — score ' + node.score.toFixed(4) + '; changes ' + node.churn + '; authors ' + (node.authors || 'Unknown');
                           });
                           canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
                           window.addEventListener('resize', () => { layout(); resize(); });
@@ -250,7 +207,6 @@ class ReportGenerator {
                 }
             }
         }
-
         File(outputPath).writeText(htmlContent)
     }
 }
