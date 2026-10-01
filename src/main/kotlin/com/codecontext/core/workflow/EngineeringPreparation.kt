@@ -8,6 +8,7 @@ import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.intelligence.AnalysisSnapshotBuilder
 import com.codecontext.core.intelligence.ChangeSet
+import com.codecontext.core.intelligence.DecisionProvenance
 import com.codecontext.core.planner.EngineeringPlan
 import com.codecontext.core.planner.EngineeringPlanRequest
 import com.codecontext.core.planner.EngineeringPlanner
@@ -22,7 +23,8 @@ data class EngineeringPreparationResult(
     val repository: String,
     val changeSet: ChangeSet,
     val evidence: GroundedEvidence,
-    val plan: EngineeringPlan
+    val plan: EngineeringPlan,
+    val provenance: DecisionProvenance = DecisionProvenance.create("prepare", null, "1.0", emptyList())
 )
 
 /** Builds a reusable evidence snapshot and deterministic engineering plan before coding. */
@@ -57,11 +59,18 @@ object EngineeringPreparation {
                 evidence = evidence
             )
         )
+        val provenance = DecisionProvenance.capture(
+            repoPath = root.path,
+            operation = "prepare",
+            analysisSchemaVersion = snapshot.schemaVersion,
+            evidenceIds = evidence.citations.map { it.id }
+        )
         return EngineeringPreparationResult(
             repository = root.path,
             changeSet = changeSet,
             evidence = evidence,
-            plan = plan
+            plan = plan,
+            provenance = provenance
         )
     }
 }

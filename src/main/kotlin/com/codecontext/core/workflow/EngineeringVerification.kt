@@ -6,9 +6,8 @@ import com.codecontext.core.intelligence.AnalysisSnapshotBuilder
 import com.codecontext.core.intelligence.ArchitectureIntelligenceEngine
 import com.codecontext.core.intelligence.ArchitectureIntelligenceResult
 import com.codecontext.core.intelligence.ChangeImpactEngine
+import com.codecontext.core.intelligence.DecisionProvenance
 import com.codecontext.core.intelligence.GitChangeSetBuilder
-import com.codecontext.core.intelligence.PRIntelligenceAnalyzer
-import com.codecontext.core.intelligence.PRIntelligenceResult
 import com.codecontext.core.scanner.OptimizedGitAnalyzer
 import com.codecontext.core.scanner.RepositoryScanner
 import com.codecontext.cli.CodeParallelParser
@@ -22,10 +21,11 @@ data class EngineeringVerificationResult(
     val schemaVersion: String = "1.0",
     val repository: String,
     val safety: ChangeSafetyResult,
-    val prIntelligence: PRIntelligenceResult,
+    val prIntelligence: com.codecontext.core.intelligence.PRIntelligenceResult,
     val architecture: ArchitectureIntelligenceResult,
     val verificationCommands: List<String>,
-    val status: SafetyStatus
+    val status: SafetyStatus,
+    val provenance: DecisionProvenance = DecisionProvenance.create("verify", null, "1.0", emptyList())
 )
 
 /** Runs deterministic post-change checks against the current working tree. */
@@ -71,13 +71,20 @@ object EngineeringVerification {
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
+        val provenance = DecisionProvenance.capture(
+            repoPath = root.path,
+            operation = "verify",
+            analysisSchemaVersion = snapshot.schemaVersion,
+            evidenceIds = plan.evidenceIds
+        )
         return EngineeringVerificationResult(
             repository = root.path,
             safety = safety,
             prIntelligence = pr,
             architecture = architecture,
             verificationCommands = plan.verificationCommands,
-            status = status
+            status = status,
+            provenance = provenance
         )
     }
 }
