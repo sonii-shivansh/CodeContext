@@ -34,7 +34,10 @@ class RepositoryQATest {
     @Test
     fun `returns insufficient evidence when no citation matches intent`() {
         val question = RepositoryQuestionClassifier.classify("Which tests should I run?")
-        val result = RepositoryEvidenceRetriever().retrieve(question, GroundedEvidence(emptyList<EvidenceCitation>()))
+        val result = RepositoryEvidenceRetriever().retrieve(
+            question,
+            GroundedEvidence(citations = emptyList())
+        )
         assertTrue(result.insufficientEvidence)
         assertTrue(result.evidence.isEmpty())
     }
