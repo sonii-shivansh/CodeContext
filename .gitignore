@@ -38,6 +38,7 @@ temp/
 .codecontext/cache/
 test_output*.txt
 build-error.log
+build_log.txt
 
 # Kotlin
 *.class
