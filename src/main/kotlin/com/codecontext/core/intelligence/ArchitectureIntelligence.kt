@@ -42,7 +42,7 @@ data class ArchitectureSummary(
 
 @Serializable
 data class ArchitectureIntelligenceResult(
-    val schemaVersion: String = "1.0",
+    val schemaVersion: String,
     val summary: ArchitectureSummary,
     val findings: List<ArchitectureFinding>,
     val cycles: List<ArchitectureCycle>,
@@ -52,7 +52,7 @@ data class ArchitectureIntelligenceResult(
 object ArchitectureIntelligenceEngine {
     fun analyze(graph: Graph<String, DefaultEdge>, repoRoot: File, ruleConfig: ArchitectureRuleConfig = ArchitectureRuleConfig()): ArchitectureIntelligenceResult {
         if (!ruleConfig.enabled) {
-            return ArchitectureIntelligenceResult( summary = ArchitectureSummary(graph.vertexSet().size, graph.edgeSet().size, 0, 0, 0, 0), findings = emptyList(), cycles = emptyList(), layers = emptyMap())
+            return ArchitectureIntelligenceResult("1.0", ArchitectureSummary(graph.vertexSet().size, graph.edgeSet().size, 0, 0, 0, 0), emptyList(), emptyList(), emptyMap())
         }
         val layerByPath = graph.vertexSet().associateWith { path -> detectLayer(path, repoRoot, ruleConfig.layers) }
         val findings = mutableListOf<ArchitectureFinding>()
@@ -84,12 +84,7 @@ object ArchitectureIntelligenceEngine {
         val layerCounts = layerByPath.values.filterNotNull().groupingBy { it }.eachCount().toSortedMap()
         val sortedFindings = findings.distinctBy { listOf(it.ruleId, it.source, it.target, it.relationship, it.evidence) }
             .sortedWith(compareBy<ArchitectureFinding> { it.severityOrder() }.thenBy { it.ruleId }.thenBy { it.source }.thenBy { it.target.orEmpty() })
-        return ArchitectureIntelligenceResult(
-            summary = ArchitectureSummary(graph.vertexSet().size, graph.edgeSet().size, sortedFindings.size, cycles.size, crossLayerDependencies, highCouplingFiles.size),
-            findings = sortedFindings,
-            cycles = cycles,
-            layers = layerCounts
-        )
+        return ArchitectureIntelligenceResult("1.0", ArchitectureSummary(graph.vertexSet().size, graph.edgeSet().size, sortedFindings.size, cycles.size, crossLayerDependencies, highCouplingFiles.size), sortedFindings, cycles, layerCounts)
     }
 
     private fun detectLayer(path: String, repoRoot: File, layers: List<ArchitectureLayer>): String? {
