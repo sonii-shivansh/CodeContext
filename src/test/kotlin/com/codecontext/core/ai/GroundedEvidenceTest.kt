@@ -29,6 +29,15 @@ class GroundedEvidenceTest : FunSpec({
         evidence.citations.size shouldBe 3
         evidence.citations.map { it.id } shouldBe listOf("repo.metrics", "hotspot.1", "hotspot.2")
     }
+
+    test("exposes repository-relative paths instead of absolute filesystem paths") {
+        val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot())
+        val paths = evidence.citations.mapNotNull { it.path }
+
+        paths shouldContain "A.kt"
+        paths shouldContain "B.kt"
+        paths.none { it.startsWith("/") || it.contains(":\\") } shouldBe true
+    }
 })
 
 private fun snapshot() = AnalysisSnapshot(
