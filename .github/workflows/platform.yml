@@ -1,0 +1,55 @@
+name: Platform Smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64
+            os: ubuntu-24.04
+          - name: Windows x64
+            os: windows-2025
+          - name: macOS x64
+            os: macos-13
+          - name: macOS arm64
+            os: macos-14
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "gradle"
+
+      - name: Build distribution on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon installDist
+          ./build/install/codecontext/bin/codecontext --version | grep -Fx '0.6.0'
+          ./build/install/codecontext/bin/codecontext --help >/dev/null
+
+      - name: Build distribution on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          .\gradlew.bat --no-daemon installDist
+          $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
+          if ($version -ne '0.6.0') { throw "Unexpected CLI version: $version" }
+          & .\build\install\codecontext\bin\codecontext.bat --help | Out-Null
