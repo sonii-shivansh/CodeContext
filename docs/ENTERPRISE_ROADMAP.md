@@ -43,6 +43,20 @@ Implemented:
 - deterministic drift reporting for findings, cycles, and layer counts
 - CI end-to-end verification of the architecture flow and architecture-drift CLI
 
+## Engineering context
+
+Implemented:
+
+- versioned deterministic engineering-context snapshot contract
+- repository-relative file fingerprints
+- repository `HEAD` capture when Git metadata is available
+- working-tree dirty/change-path state
+- stable snapshot digest
+- deterministic snapshot-to-snapshot diffing for added, removed, and modified files
+- `context-snapshot` CLI command
+- `context-diff` CLI command
+- clean-environment CI verification of snapshot and zero-drift diff behavior
+
 ## Grounded evidence
 
 Implemented:
@@ -136,6 +150,7 @@ Implemented CI verification includes:
 - PR Intelligence end-to-end verification
 - Architecture Intelligence end-to-end verification
 - architecture-drift CLI verification
+- engineering-context snapshot/diff verification
 - REST API end-to-end verification
 - Linux x64 validation
 - Windows x64 validation
@@ -146,7 +161,7 @@ The clean-environment workflows are the authoritative execution environment for 
 
 ## Release line
 
-The current `main` branch is validated against the **v0.6.0** release line. This v0.7 engineering-intelligence branch extends the release line without changing the existing version contract.
+The current `main` branch is validated against the **v0.6.0** release line. This v0.8 engineering-intelligence branch extends the release line without changing the existing version contract.
 
 ## Current limitations
 
@@ -160,6 +175,6 @@ The repository currently has important boundaries:
 - autonomous code modification is not implemented;
 - production telemetry integrations are not implemented;
 - organization-wide governance and cross-repository intelligence are not implemented;
-- engineering-context snapshot/diff is planned next and is not yet exposed as a completed feature.
+- context snapshots currently fingerprint repository-scanned source files and do not yet capture the full semantic evidence graph.
 
 This file should be updated when implementation changes materially. It should not describe unimplemented features as if they already exist.

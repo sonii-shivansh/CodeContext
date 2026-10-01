@@ -156,6 +156,27 @@ jobs:
           assert drift["changes"] == []
           PY
 
+      - name: Verify Engineering Context CLI
+        shell: bash
+        run: |
+          rm -f output/engineering-context.json output/engineering-context-diff.json
+          ./build/install/codecontext/bin/codecontext context-snapshot . --json
+          test -s output/engineering-context.json
+          cp output/engineering-context.json output/engineering-context-baseline.json
+          ./build/install/codecontext/bin/codecontext context-diff output/engineering-context-baseline.json output/engineering-context.json --json
+          test -s output/engineering-context-diff.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          snapshot = json.loads(Path("output/engineering-context.json").read_text())
+          diff = json.loads(Path("output/engineering-context-diff.json").read_text())
+          assert snapshot["schemaVersion"] == "1.0"
+          assert snapshot["totalFiles"] > 0
+          assert snapshot["snapshotDigest"]
+          assert diff["summary"] == {"added": 0, "removed": 0, "modified": 0, "unchanged": snapshot["totalFiles"]}
+          assert diff["changes"] == []
+          PY
+
       - name: Start server
         shell: bash
         run: |
