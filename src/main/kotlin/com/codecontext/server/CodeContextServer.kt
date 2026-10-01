@@ -7,6 +7,8 @@ import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.CodeContextConfig
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
+import com.codecontext.core.intelligence.ChangeImpactEngine
+import com.codecontext.core.intelligence.ChangeImpactResult
 import com.codecontext.core.scanner.OptimizedGitAnalyzer
 import com.codecontext.core.scanner.RepositoryScanner
 import io.ktor.serialization.kotlinx.json.*
@@ -18,18 +20,19 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.UUID
 import kotlinx.serialization.Serializable
 
 @Serializable data class AnalysisRequest(val repoPath: String)
 @Serializable data class AskRequest(val repoPath: String, val question: String)
+@Serializable data class ImpactRequest(val repoPath: String, val changedPaths: List<String>)
 @Serializable data class AnalysisResponse(val fileCount: Int, val hotspots: List<HotspotInfo>, val reportUrl: String)
 @Serializable data class HotspotInfo(val file: String, val score: Double)
 @Serializable data class ApiError(val error: String)
 
 private const val MAX_QUESTION_LENGTH = 16_000
+private const val MAX_CHANGED_PATHS = 100
 
 fun Application.module() {
     install(ContentNegotiation) { json() }
@@ -68,6 +71,35 @@ fun Application.module() {
             } catch (e: Exception) {
                 System.err.println("Analysis failed: ${e::class.simpleName}")
                 call.respond(io.ktor.http.HttpStatusCode.InternalServerError, ApiError("Analysis failed"))
+            }
+        }
+
+        post("/impact") {
+            try {
+                val request = call.receive<ImpactRequest>()
+                require(request.changedPaths.isNotEmpty() && request.changedPaths.size <= MAX_CHANGED_PATHS) {
+                    "Between 1 and $MAX_CHANGED_PATHS changed paths are required"
+                }
+                val path = sanitizePath(request.repoPath)
+                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                val config = ConfigLoader.load()
+                val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
+                val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
+                val pathLookup = enrichedFiles.associateBy { it.file.absolutePath.replace('\\', '/') }
+                val changedAbsolute = request.changedPaths.map { File(path, it).absolutePath.replace('\\', '/') }
+                val result: ChangeImpactResult = ChangeImpactEngine.analyze(
+                    graph = graph.graph,
+                    changedPaths = changedAbsolute,
+                    pageRankScores = graph.pageRankScores,
+                    churnByPath = pathLookup.mapValues { it.value.gitMetadata.changeFrequency },
+                    packageByPath = pathLookup.mapValues { it.value.packageName }
+                )
+                call.respond(result)
+            } catch (e: IllegalArgumentException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: Exception) {
+                System.err.println("Impact analysis failed: ${e::class.simpleName}")
+                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, ApiError("Impact analysis failed"))
             }
         }
 
