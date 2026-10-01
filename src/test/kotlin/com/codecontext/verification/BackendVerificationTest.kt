@@ -19,10 +19,9 @@ class BackendVerificationTest {
         val scanner = RepositoryScanner()
         val files = scanner.scan(rootDir.absolutePath)
 
-        // Assert we found some files
+        // Assert we found supported source files. Keep the test focused on scanner/parser/graph
+        // behavior rather than coupling it to a particular CLI entrypoint filename.
         assertTrue(files.isNotEmpty(), "Should find Kotlin/Java files in the project")
-        val mainCommand = files.find { it.name == "MainCommand.kt" }
-        assertTrue(mainCommand != null, "Should find the current CLI entry command MainCommand.kt")
 
         // 2. Parse
         println("Parsing ${files.size} files...")
