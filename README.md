@@ -42,16 +42,57 @@ Repository facts are produced by deterministic analysis. Grounded evidence prese
 
 ## Quick start
 
+For a released platform archive, extract it and run the launcher. Current release archives bundle the Java runtime, so Java 21/JAVA_HOME configuration is not required for normal use.
+
+```text
+Windows:  bin\\codecontext.bat --version
+Linux/macOS: ./bin/codecontext --version
+```
+
+Then, from the repository you want to analyze:
+
+```text
+codecontext analyze .
+```
+
+The default report is written to `output/index.html` and can be opened without a network connection.
+
+For source development:
+
 ```bash
 git clone https://github.com/sonii-shivansh/CodeContext.git
 cd CodeContext
 ./gradlew clean test
 ./gradlew installDist
 ./build/install/codecontext/bin/codecontext --version
-./build/install/codecontext/bin/codecontext analyze .
 ```
 
-The default report is written to `output/index.html` and can be opened without a network connection.
+## AI setup — no manual config file required
+
+AI is optional. When `ask` needs AI and no credential is configured, CodeContext can guide you through setup directly in the terminal:
+
+```text
+codecontext ask "What are the main architectural hotspots in this repository?"
+
+CodeContext AI setup required.
+Gemini is the default AI provider.
+Add your Gemini API key now? [Y/n]:
+Gemini API key: ********
+✓ Gemini API key validated and saved securely.
+```
+
+The key is stored in the user's CodeContext configuration directory, not in the repository's `.codecontext.json`. The exact location is platform-specific. You can also use `GEMINI_API_KEY` or `GOOGLE_API_KEY` as environment variables for CI and non-interactive environments.
+
+Use:
+
+```bash
+codecontext setup
+codecontext doctor
+```
+
+`setup` interactively validates and stores a Gemini credential. `doctor` checks the Java runtime, repository, configuration source, and Gemini connectivity without printing the secret.
+
+If you prefer project-specific configuration, `.codecontext.json` remains supported as an advanced override. Never commit API keys.
 
 ## CLI commands
 
@@ -83,16 +124,8 @@ codecontext prepare "add payment validation" --path /path/to/repository
 # Verify the implementation against the generated plan
 codecontext verify --path /path/to/repository --plan output/engineering-plan.json
 
-# Export reusable grounded evidence for engineering planning
-codecontext repo-qa "which files are the main architectural hotspots?" \
-  --path /path/to/repository \
-  --evidence-output output/grounded-evidence.json
-codecontext plan "add payment validation" \
-  --evidence output/grounded-evidence.json \
-  --output output/engineering-plan.json
-
-# Optional AI assistance
-codecontext ai-assistant /path/to/repository
+# Optional AI assistance — interactive setup happens automatically if needed
+codecontext ask "What are the main architectural hotspots in this repository?"
 
 # Git evolution
 codecontext evolution /path/to/repository
@@ -128,14 +161,7 @@ CodeContext can expose deterministic engineering intelligence to MCP-compatible 
 codecontext mcp
 ```
 
-The MCP server currently exposes:
-
-- `codecontext_analyze_repository` — repository structure, graph size, and hotspots
-- `codecontext_impact_analysis` — dependency impact for changed files
-- `codecontext_architecture_analysis` — architecture intelligence and boundaries
-- `codecontext_pr_intelligence` — working-tree or revision-to-revision change intelligence
-
-All repository paths go through the same local path-safety boundary used by the REST API. The MCP server does not expose remote repository URLs and does not provide authentication or tenant isolation; use it as a trusted local integration.
+The MCP server currently exposes deterministic repository analysis, impact, architecture, and PR-intelligence tools. All repository paths go through the same local path-safety boundary used by the REST API. The MCP server does not expose remote repository URLs and does not provide authentication or tenant isolation; use it as a trusted local integration.
 
 See [docs/MCP.md](docs/MCP.md) for agent configuration guidance and protocol details.
 
@@ -167,7 +193,7 @@ Q&A          Planner
 
 ## Configuration
 
-Create a local configuration file when needed:
+The recommended path is to use `codecontext setup` or environment variables. A repository-local configuration file is still supported for advanced settings:
 
 ```bash
 cp .codecontext.json.template .codecontext.json
@@ -206,7 +232,7 @@ The server does not currently provide authentication, tenant isolation, or deplo
 ./gradlew --no-daemon build installDist
 ```
 
-GitHub Actions is the project's authoritative clean-environment verification path. CI validates compilation, tests, CLI flows, generated artifacts, intelligence flows, architecture contracts, server health, API input boundaries, cross-platform distribution smoke tests, and report portability.
+GitHub Actions is the project's authoritative clean-environment verification path. CI validates compilation, tests, CLI flows, generated artifacts, intelligence flows, architecture contracts, server health, API input boundaries, cross-platform distribution smoke tests, and onboarding flows. Release packaging also validates that platform distributions can launch with an invalid system `JAVA_HOME` because the bundled runtime is used.
 
 See:
 
