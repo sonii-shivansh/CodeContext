@@ -4,6 +4,7 @@ package com.codecontext
 import com.codecontext.cli.AIAssistantCommand
 import com.codecontext.cli.EvolutionCommand
 import com.codecontext.cli.ImprovedAnalyzeCommand
+import com.codecontext.cli.ImpactCommand
 import com.codecontext.cli.MainCommand
 import com.codecontext.cli.ServerCommand
 import com.github.ajalt.clikt.core.subcommands
@@ -14,6 +15,7 @@ fun main(args: Array<String>) {
         MainCommand()
                 .subcommands(
                         ImprovedAnalyzeCommand(),
+                        ImpactCommand(),
                         AIAssistantCommand(),
                         EvolutionCommand(),
                         ServerCommand()
