@@ -1,6 +1,7 @@
 package com.codecontext.cli
 
 import com.codecontext.core.ai.AISetup
+import com.codecontext.core.ai.AISetupResult
 import com.codecontext.core.config.UserConfigStore
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
@@ -40,14 +41,14 @@ class SetupCommand : CliktCommand(
 
         echo("🔐 Validating Gemini credentials...")
         when (val result = AISetup.configureGemini(apiKey, model)) {
-            AISetup.Success -> {
+            AISetupResult.Success -> {
                 echo("✓ Gemini API key validated")
                 echo("✓ Saved securely for this user")
                 echo("  Config: ${UserConfigStore.configFile().absolutePath}")
                 echo("\nYou can now run:")
                 echo("  codecontext ask \"What is the architecture of this repository?\"")
             }
-            is AISetup.Failure -> {
+            is AISetupResult.Failure -> {
                 echo("❌ ${result.message}")
                 echo("   Nothing was saved.")
             }
