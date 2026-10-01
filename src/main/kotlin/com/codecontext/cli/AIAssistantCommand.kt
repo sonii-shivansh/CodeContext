@@ -1,7 +1,7 @@
 package com.codecontext.cli
 
-import com.codecontext.core.ai.AICodeAnalyzer
 import com.codecontext.core.ai.CodebaseContext
+import com.codecontext.core.ai.GeminiAskService
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.scanner.RepositoryScanner
@@ -51,8 +51,31 @@ class AIAssistantCommand :
             )
 
             try {
-                val aiAnalyzer = AICodeAnalyzer(config.ai.apiKey, config.ai.model, config.ai.provider)
-                val response = aiAnalyzer.askQuestion(question, context)
+                val prompt = """
+You are an expert guide for this codebase.
+
+CODEBASE OVERVIEW:
+- Total files: ${context.totalFiles}
+- Languages: ${context.languages.joinToString(", ")}
+- Top hotspots: ${context.hotspots.take(5).joinToString(", ") { File(it).name }}
+
+DEVELOPER QUESTION: "${question.replace("\"", "\\\"")}"
+
+Respond with JSON:
+{
+  "answer": "Clear, helpful answer (2-3 sentences)",
+  "suggestedFiles": ["file1.kt", "file2.java"],
+  "confidence": 0.0-1.0
+}
+
+Be concise and actionable. If you don't know, say so.
+""".trimIndent()
+
+                val response = if (config.ai.provider.equals("gemini", ignoreCase = true)) {
+                    GeminiAskService(config.ai.apiKey, config.ai.model).ask(prompt)
+                } else {
+                    throw IllegalArgumentException("Interactive ask currently requires the Gemini provider")
+                }
 
                 echo("\n💡 ${response.answer}\n")
                 if (response.suggestedFiles.isNotEmpty()) {
