@@ -9,7 +9,7 @@ CodeContext exposes a CLI and a local REST API. The REST API is implemented by `
 ./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
 ```
 
-Keep the default bind address on loopback for local use. Deployments beyond loopback must provide authentication, trusted-origin controls, TLS, request quotas, report authorization, and tenant isolation at the deployment boundary.
+Keep the default bind address on loopback for local use. Deployments beyond loopback must provide authentication, trusted-origin controls, TLS, quotas, report authorization, and tenant isolation at the deployment boundary.
 
 ## CLI
 
@@ -25,28 +25,28 @@ codecontext evolution <path>
 codecontext server [--host <address>] [--port <number>]
 ```
 
-Run `codecontext <command> --help` for the exact options in the installed version.
+Run `codecontext <command> --help` for the exact installed options.
 
-## Deterministic intelligence contract
+## Deterministic intelligence
 
-The analysis layer is designed to produce machine-readable artifacts that can be consumed by CI and later AI layers. Deterministic artifacts are authoritative for repository facts.
+The analysis layer produces machine-readable artifacts consumed by CI and downstream intelligence features. Deterministic artifacts are authoritative for repository facts.
 
 Important principles:
 
 - repository-relative paths are preferred in public evidence;
-- output schemas are versioned where they cross subsystem boundaries;
-- findings describe evidence and rules rather than claiming runtime certainty;
-- unknown and insufficient-evidence states must remain explicit.
+- cross-subsystem output schemas are versioned where applicable;
+- findings describe evidence and analysis rules rather than runtime certainty;
+- unknown and insufficient-evidence states remain explicit.
 
 ## Repository Q&A
 
-`repo-qa` retrieves grounded evidence for a developer question. It does not require an external AI provider.
+`repo-qa` retrieves grounded evidence for a developer question without requiring an external AI provider.
 
 ```bash
 codecontext repo-qa "why is PaymentService risky?" --path /workspace/example --max-results 8
 ```
 
-The output contains the classified intent and ranked evidence. The retriever is bounded to prevent unbounded context growth.
+The output contains the classified intent and ranked evidence. Retrieval is bounded.
 
 ## Engineering planning
 
@@ -58,22 +58,13 @@ codecontext plan "add payment validation" \
   --output output/engineering-plan.json
 ```
 
-The plan is read-only and may include:
-
-- affected components;
-- risk level;
-- implementation steps;
-- evidence IDs;
-- verification criteria;
-- uncertainties.
-
-It is intentionally provider-independent.
+The current plan contract includes affected components, risk, implementation steps, evidence IDs, verification criteria, and uncertainties. The planner is read-only and provider-independent.
 
 ## REST endpoints
 
 ### `GET /`
 
-Returns a plain-text service banner.
+Returns a service banner.
 
 ### `GET /health`
 
@@ -93,7 +84,7 @@ Remote URLs are rejected. The request path must resolve to a readable directory 
 
 ### `GET /reports/{id}.html`
 
-Serves a generated report. Report retention and authorization remain deployment responsibilities.
+Serves a generated report. Retention and authorization remain deployment responsibilities.
 
 ### `POST /ask`
 
@@ -106,19 +97,19 @@ Answers a repository question using the configured AI provider and repository-de
 }
 ```
 
-AI must be explicitly enabled. The provider may receive repository-derived prompt context. Use only providers and data-handling arrangements approved for the source code involved.
+AI must be explicitly enabled. Provider data-handling requirements must be considered before sending source-derived context outside the local environment.
 
 ### `POST /analyze-org`
 
 Analyzes multiple local repositories with bounded concurrency. At most 20 repositories may be submitted per request, and each repository is subject to `maxFilesAnalyze`.
 
-### Change and PR intelligence
+## Change and PR intelligence
 
-The application also exposes local change-impact and PR Intelligence flows. See [PR_INTELLIGENCE.md](PR_INTELLIGENCE.md) for the deterministic result model and rules.
+Local change-impact and PR Intelligence flows are exposed through the application and CLI. See [PR_INTELLIGENCE.md](PR_INTELLIGENCE.md) for the deterministic result model and rules.
 
 ## Path security
 
-The server resolves paths with `Path.toRealPath()` and accepts only readable directories that are equal to or descendants of an allowed root.
+The server resolves paths with `Path.toRealPath()` and accepts only readable directories equal to or descendants of a configured allowed root.
 
 Allowed roots are configured with `CODECONTEXT_ALLOWED_PATHS`, separated by the platform path separator. Configure the smallest practical set of roots.
 
@@ -136,17 +127,13 @@ Rate limiting is enabled by default. Configuration includes:
 }
 ```
 
-The server returns standard rate-limit headers where applicable.
-
 ## AI boundary
 
 AI is an optional reasoning layer. It must not be treated as the source of repository facts. Grounded evidence is deterministic and bounded before it is included in an AI request.
 
-Do not place secrets, credentials, or unapproved confidential source code in AI prompts. Provider failures are sanitized before reaching public API clients.
+Do not place secrets, credentials, or unapproved confidential source code in AI prompts. Provider and internal failures are sanitized before public API clients receive them.
 
 ## Error shape
-
-Errors use a small public shape:
 
 ```json
 {
@@ -155,7 +142,3 @@ Errors use a small public shape:
 ```
 
 Provider and internal failures are sanitized before being returned to clients.
-
-## Future API direction
-
-Planned platform endpoints include policy evaluation, Change Proof artifacts, architecture snapshots, simulation results, provenance records, and controlled agent execution. These should remain separate from the deterministic analysis contracts and require explicit authentication/authorization in remote deployments.
