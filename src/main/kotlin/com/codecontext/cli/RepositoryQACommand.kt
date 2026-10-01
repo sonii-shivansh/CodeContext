@@ -11,7 +11,7 @@ import com.codecontext.core.scanner.OptimizedGitAnalyzer
 import com.codecontext.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
-import com.github.ajalt.clikt.parameters.arguments.default
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import java.io.File
@@ -26,7 +26,7 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
 
     override fun run() {
         if (question.isBlank()) throw com.github.ajalt.clikt.core.PrintHelpMessage(currentContext)
-        val root = File(path).absoluteFile.normalize()
+        val root = File(path).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $path" }
         require(maxResults in 1..32) { "--max-results must be between 1 and 32" }
 
