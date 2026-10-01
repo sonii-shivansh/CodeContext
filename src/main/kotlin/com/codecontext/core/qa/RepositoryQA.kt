@@ -49,12 +49,12 @@ object RepositoryQuestionClassifier {
         require(question.length <= 2000) { "question must not exceed 2000 characters" }
         val normalized = question.lowercase()
         val intent = when {
-            prWords.any(normalized::contains) -> QuestionIntent.PR_CHANGE
-            architectureWords.any(normalized::contains) -> QuestionIntent.ARCHITECTURE
-            impactWords.any(normalized::contains) -> QuestionIntent.IMPACT
-            riskWords.any(normalized::contains) -> QuestionIntent.RISK
-            dependencyWords.any(normalized::contains) -> QuestionIntent.DEPENDENCY
-            testWords.any(normalized::contains) -> QuestionIntent.TEST
+            prWords.any { normalized.contains(it) } -> QuestionIntent.PR_CHANGE
+            architectureWords.any { normalized.contains(it) } -> QuestionIntent.ARCHITECTURE
+            impactWords.any { normalized.contains(it) } -> QuestionIntent.IMPACT
+            riskWords.any { normalized.contains(it) } -> QuestionIntent.RISK
+            dependencyWords.any { normalized.contains(it) } -> QuestionIntent.DEPENDENCY
+            testWords.any { normalized.contains(it) } -> QuestionIntent.TEST
             normalized.isNotBlank() -> QuestionIntent.GENERAL
             else -> QuestionIntent.UNKNOWN
         }
@@ -79,8 +79,7 @@ class RepositoryEvidenceRetriever {
     }
 
     private fun score(intent: QuestionIntent, entity: String?, citation: EvidenceCitation): Int {
-        var score = 0
-        score += when (intent) {
+        var score = when (intent) {
             QuestionIntent.RISK -> if (citation.type.contains("hotspot") || citation.type.contains("risk")) 50 else 0
             QuestionIntent.DEPENDENCY -> if (citation.type.contains("file-graph") || citation.type.contains("hotspot")) 45 else 0
             QuestionIntent.ARCHITECTURE -> if (citation.type.contains("architecture")) 60 else if (citation.type.contains("file-graph")) 15 else 0
