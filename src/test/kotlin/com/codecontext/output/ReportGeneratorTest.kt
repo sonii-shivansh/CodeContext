@@ -4,7 +4,6 @@ import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.parser.ParsedFile
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotContain
 import java.io.File
 import java.nio.file.Files
 
@@ -13,8 +12,8 @@ class ReportGeneratorTest : StringSpec({
         val tempDir = Files.createTempDirectory("codecontext-report-test").toFile()
         try {
             val parsedFiles = listOf(
-                ParsedFile(File(tempDir, "A.kt"), "example", emptyList(), "A"),
-                ParsedFile(File(tempDir, "B.kt"), "example", emptyList(), "B")
+                ParsedFile(File(tempDir, "A.kt"), "example", emptyList()),
+                ParsedFile(File(tempDir, "B.kt"), "example", emptyList())
             )
             val graph = RobustDependencyGraph()
             graph.build(parsedFiles)
@@ -24,8 +23,8 @@ class ReportGeneratorTest : StringSpec({
             ReportGenerator().generate(graph, report.absolutePath, parsedFiles, emptyList())
             val html = report.readText()
 
-            html shouldNotContain "unpkg.com"
-            html shouldNotContain "https://"
+            ("unpkg.com" in html) shouldBe false
+            ("https://" in html) shouldBe false
             html.contains("CodeContext Analysis Report") shouldBe true
         } finally {
             tempDir.deleteRecursively()
