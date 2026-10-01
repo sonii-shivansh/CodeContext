@@ -17,16 +17,9 @@ class RepositoryScanner(
         // repository being analyzed rather than from CodeContext's process cwd.
         val config = configuredConfig ?: ConfigLoader.loadForRepository(root.path)
         val exclusionSet = config.excludePaths
-            .map { it.trim() }
+            .map { it.trim().trim('/') }
             .filter { it.isNotEmpty() }
-            .map { it.trimStart('.').trim('/') }
             .toSet()
-
-        if (System.getenv("CODECONTEXT_DEBUG_SCANNER") == "true") {
-            println("[scanner-debug] root=${root.path}")
-            println("[scanner-debug] config=${config.excludePaths}")
-            println("[scanner-debug] exclusions=$exclusionSet")
-        }
 
         return root.walkTopDown()
             .filter { it.isFile }
@@ -38,16 +31,16 @@ class RepositoryScanner(
                 val matchesSupportedExtension =
                     name.endsWith(".kt") || name.endsWith(".java")
 
+                // CodeContext owns these root-level directories. They must not be
+                // scanned even when the target repository has no configuration.
+                val isToolGeneratedRootPath = segments.firstOrNull() in setOf(".codecontext", "output")
+
                 val excludedByConfig = segments.any { segment ->
-                    val normalized = segment.trim().trimStart('.').trim('/')
-                    normalized.isNotEmpty() && normalized in exclusionSet
+                    segment in exclusionSet ||
+                        (segment.startsWith('.') && segment.trimStart('.') in exclusionSet)
                 }
 
-                if (System.getenv("CODECONTEXT_DEBUG_SCANNER") == "true" && matchesSupportedExtension) {
-                    println("[scanner-debug] candidate=$relativePath excluded=$excludedByConfig segments=$segments")
-                }
-
-                matchesSupportedExtension && !excludedByConfig
+                matchesSupportedExtension && !isToolGeneratedRootPath && !excludedByConfig
             }
             .toList()
     }
