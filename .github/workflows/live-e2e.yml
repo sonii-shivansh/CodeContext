@@ -18,6 +18,8 @@ jobs:
     name: Real repository E2E
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    env:
+      HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' }}
 
     steps:
       - name: Checkout CodeContext
@@ -95,7 +97,7 @@ jobs:
           test -s output/architecture.json
           SOURCE_FILE="$(find src -type f -name '*.java' | head -1)"
           "$CLI" impact . "$SOURCE_FILE" --json
-          test -s output/impact.json
+          test -s output/change-impact.json
 
       - name: Architecture drift and contract
         working-directory: ${{ runner.temp }}/real-project
@@ -132,8 +134,7 @@ jobs:
         working-directory: ${{ runner.temp }}/real-project
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
-          "$CLI" evolution .
-          test -s output/evolution.json
+          "$CLI" evolution
           "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
           test -s output/pr-intelligence.json
 
@@ -157,7 +158,7 @@ jobs:
           test -s output/verify.json
 
       - name: Live Gemini repository Q&A
-        if: ${{ secrets.GEMINI_API_KEY != '' }}
+        if: ${{ env.HAS_GEMINI == 'true' }}
         working-directory: ${{ runner.temp }}/real-project
         timeout-minutes: 5
         env:
