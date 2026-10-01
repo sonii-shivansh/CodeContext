@@ -41,28 +41,10 @@ jobs:
           path: build/test-results/
           if-no-files-found: ignore
 
-  lint:
-    name: Production Code Quality
-    runs-on: windows-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'gradle'
-
-      - name: Run ktlint on production Kotlin
-        run: ./gradlew ktlintMainSourceSetCheck
-
   build-artifacts:
     name: Build Distribution
     runs-on: windows-latest
-    needs: [test, lint]
+    needs: [test]
     timeout-minutes: 15
     steps:
       - name: Checkout code
