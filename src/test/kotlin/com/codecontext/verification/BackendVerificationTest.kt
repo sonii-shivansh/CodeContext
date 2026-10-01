@@ -13,15 +13,14 @@ class BackendVerificationTest {
 
     @Test
     fun `verify backend logic on self`() {
-        val rootDir = File(".").absoluteFile
-        // 1. Scan
+        val rootDir = File("src/main/kotlin").absoluteFile
+        // 1. Scan the actual source tree explicitly. Gradle test working directories can vary
+        // across runners, so this avoids coupling the verification to an implicit cwd.
         println("Scanning $rootDir...")
         val scanner = RepositoryScanner()
         val files = scanner.scan(rootDir.absolutePath)
 
-        // Assert we found supported source files. Keep the test focused on scanner/parser/graph
-        // behavior rather than coupling it to a particular CLI entrypoint filename.
-        assertTrue(files.isNotEmpty(), "Should find Kotlin/Java files in the project")
+        assertTrue(files.isNotEmpty(), "Should find Kotlin/Java files in the source tree")
 
         // 2. Parse
         println("Parsing ${files.size} files...")
@@ -34,7 +33,6 @@ class BackendVerificationTest {
         assertTrue(parsedMain != null, "Should have parsed ImprovedAnalyzeCommand.kt")
 
         // Verify imports are extracted (using Regex parser for Kotlin)
-        // ImprovedAnalyzeCommand imports com.codecontext.core.graph.RobustDependencyGraph
         val hasGraphImport =
             parsedMain?.imports?.any { it.contains("RobustDependencyGraph") } == true
         assertTrue(hasGraphImport, "ImprovedAnalyzeCommand should import RobustDependencyGraph")
@@ -51,7 +49,6 @@ class BackendVerificationTest {
         assertTrue(graph.vertexSet().isNotEmpty(), "Graph should not be empty")
 
         // Verify specific edge: ImprovedAnalyzeCommand -> RobustDependencyGraph
-        // The graph uses absolute paths as vertices
         val sourceFile = parsedMain!!.file.absolutePath
         val targetParsed = parsedFiles.find { it.file.name == "RobustDependencyGraph.kt" }
         assertTrue(targetParsed != null, "Should have parsed RobustDependencyGraph.kt")
@@ -64,7 +61,6 @@ class BackendVerificationTest {
             "Target FQCN should be: ${targetParsed.packageName}.${targetParsed.file.nameWithoutExtension}"
         )
 
-        // Check if edge exists
         val hasEdge = graph.containsEdge(sourceFile, targetFile)
 
         if (!hasEdge) {
@@ -82,7 +78,6 @@ class BackendVerificationTest {
                 }
             }
 
-            // Debug imports again
             println("Imports of ImprovedAnalyzeCommand:")
             parsedMain.imports.forEach { println("  - $it") }
 
