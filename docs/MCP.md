@@ -1,0 +1,106 @@
+# MCP / AI-agent integration
+
+CodeContext can expose deterministic engineering intelligence to MCP-compatible AI agents through a local stdio server.
+
+## Start the server
+
+Build/install CodeContext, then run:
+
+```bash
+codecontext mcp
+```
+
+The process communicates using newline-delimited JSON-RPC messages over stdin/stdout. Do not pipe human-readable CLI output into the MCP process; stdout is reserved for protocol messages.
+
+## Tools
+
+### `codecontext_analyze_repository`
+
+Returns repository-relative engineering facts including parsed file count, dependency graph size, and top dependency/PageRank hotspots.
+
+```json
+{"repoPath":"/absolute/path/to/repository"}
+```
+
+### `codecontext_impact_analysis`
+
+Calculates deterministic reverse-dependency impact for changed repository-relative paths. The current server accepts at most 100 changed paths per call.
+
+```json
+{
+  "repoPath":"/absolute/path/to/repository",
+  "changedPaths":["src/main/kotlin/com/example/PaymentService.kt"]
+}
+```
+
+### `codecontext_architecture_analysis`
+
+Returns the repository's current Architecture Intelligence result, including configured architectural signals and boundaries.
+
+```json
+{"repoPath":"/absolute/path/to/repository"}
+```
+
+### `codecontext_pr_intelligence`
+
+Analyzes the working tree, or a specific Git revision pair when both revisions are supplied.
+
+Working tree:
+
+```json
+{"repoPath":"/absolute/path/to/repository"}
+```
+
+Revision pair:
+
+```json
+{
+  "repoPath":"/absolute/path/to/repository",
+  "baseRevision":"main",
+  "headRevision":"feature/payment-retry"
+}
+```
+
+## Agent workflow
+
+The intended workflow is:
+
+```text
+Understand repository
+        ↓
+Analyze architecture / dependencies
+        ↓
+Calculate change impact
+        ↓
+Inspect PR intelligence
+        ↓
+Plan or modify code
+        ↓
+Run tests / verification
+```
+
+CodeContext is deliberately the **evidence layer**, not the coding agent. An agent can use these tools to ground decisions before changing a repository.
+
+## Security boundary
+
+The MCP server is intended for trusted local use.
+
+- Repository paths must resolve to readable directories permitted by `CODECONTEXT_ALLOWED_PATHS`, the current working directory, or the system temporary directory.
+- Remote repository URLs are rejected.
+- The MCP transport does not implement authentication or tenant isolation.
+- The server does not expose arbitrary filesystem reads; tools invoke CodeContext's existing repository analysis boundaries.
+
+For a shared or remote deployment, put an authenticated service boundary in front of CodeContext rather than exposing the stdio process directly.
+
+## Compatibility
+
+The current implementation uses the **2025-11-25 MCP legacy handshake era**, which is the latest revision using `initialize`. It implements `initialize`, `notifications/initialized`, `ping`, `tools/list`, and `tools/call` for the current tool surface. Modern `2026-07-28` MCP lifecycle support is intentionally deferred until the server can implement its stateless discovery/request model correctly rather than advertising unsupported behavior.
+
+Client configuration differs between agent products. Configure the client to launch the installed CodeContext executable with the `mcp` argument, for example:
+
+```text
+command: /absolute/path/to/codecontext
+args: ["mcp"]
+```
+
+Do not copy a client-specific configuration file into a repository unless that client format is actually required by your team; the executable and `mcp` argument are the stable CodeContext interface.

@@ -8,6 +8,7 @@ import com.codecontext.cli.EvolutionCommand
 import com.codecontext.cli.ImprovedAnalyzeCommand
 import com.codecontext.cli.ImpactCommand
 import com.codecontext.cli.MainCommand
+import com.codecontext.cli.McpCommand
 import com.codecontext.cli.PRIntelligenceCommand
 import com.codecontext.cli.RepositoryQACommand
 import com.codecontext.cli.ServerCommand
@@ -25,7 +26,8 @@ fun main(args: Array<String>) {
                 EngineeringPlanCommand(),
                 AIAssistantCommand(),
                 EvolutionCommand(),
-                ServerCommand()
+                ServerCommand(),
+                McpCommand()
             )
             .main(args)
     } catch (e: Throwable) {

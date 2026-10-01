@@ -4,7 +4,7 @@
 
 [🌐 Explore the CodeContext website](https://sonii-shivansh.github.io/CodeContext-Website/) · [📚 Documentation](https://github.com/sonii-shivansh/CodeContext/tree/main/docs) · [🚀 Releases](https://github.com/sonii-shivansh/CodeContext/releases)
 
-CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A and evidence-backed engineering planning.
+CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, and a local MCP interface for AI agents.
 
 ## Current status
 
@@ -24,6 +24,7 @@ The `main` branch is validated against the **v0.6.0** release line. The reposito
 - deterministic, evidence-backed engineering planning
 - optional AI assistance over bounded repository-derived context
 - local Ktor REST API
+- local MCP stdio server for AI-agent integration
 - path validation and rate limiting
 - clean-environment end-to-end verification
 - cross-platform distribution smoke verification for Linux x64, Windows x64, macOS x64, and macOS ARM64
@@ -34,7 +35,7 @@ Generated reports are self-contained and do not require a browser CDN request fo
 
 **Deterministic evidence first, AI reasoning second.**
 
-Repository facts are produced by deterministic analysis. Grounded evidence preserves those facts for downstream Q&A and planning. AI is optional and is not treated as the authoritative source of repository truth.
+Repository facts are produced by deterministic analysis. Grounded evidence preserves those facts for downstream Q&A, planning, and agent workflows. AI is optional and is not treated as the authoritative source of repository truth.
 
 ## Quick start
 
@@ -84,9 +85,31 @@ codecontext evolution /path/to/repository
 
 # Local REST server
 codecontext server --host 127.0.0.1 --port 8080
+
+# AI-agent integration over MCP stdio
+codecontext mcp
 ```
 
 Use `codecontext <command> --help` for the exact options in the installed version.
+
+## MCP / AI-agent integration
+
+CodeContext can expose deterministic engineering intelligence to MCP-compatible AI agents through a local stdio server:
+
+```bash
+codecontext mcp
+```
+
+The MCP server currently exposes:
+
+- `codecontext_analyze_repository` — repository structure, graph size, and hotspots
+- `codecontext_impact_analysis` — dependency impact for changed files
+- `codecontext_architecture_analysis` — architecture intelligence and boundaries
+- `codecontext_pr_intelligence` — working-tree or revision-to-revision change intelligence
+
+All repository paths go through the same local path-safety boundary used by the REST API. The MCP server does not expose remote repository URLs and does not provide authentication or tenant isolation; use it as a trusted local integration.
+
+See [docs/MCP.md](docs/MCP.md) for agent configuration guidance and protocol details.
 
 ## Architecture
 
@@ -107,7 +130,7 @@ Q&A          Planner
    ↘          ↙
  Optional AI reasoning
        ↓
- CLI / REST / CI
+ CLI / REST / MCP / CI
 ```
 
 ## Configuration
@@ -151,6 +174,7 @@ See:
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [API reference](docs/API.md)
+- [MCP / AI-agent integration](docs/MCP.md)
 - [Data & Privacy](docs/DATA_PRIVACY.md)
 - [PR Intelligence](docs/PR_INTELLIGENCE.md)
 - [Development guide](docs/DEVELOPMENT.md)
