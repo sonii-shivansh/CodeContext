@@ -9,6 +9,7 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -31,7 +32,9 @@ class PRIntelligenceCommand : CliktCommand(
         } else {
             GitChangeSetBuilder.fromWorkingTree(root.path)
         }
-        val result: PRIntelligenceResult = PRIntelligenceAnalyzer.analyze(root.path, changeSet, config)
+        val result: PRIntelligenceResult = runBlocking {
+            PRIntelligenceAnalyzer.analyze(root.path, changeSet, config)
+        }
 
         if (jsonOutput) {
             val output = File("output/pr-intelligence.json")
