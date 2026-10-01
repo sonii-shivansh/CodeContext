@@ -15,7 +15,7 @@
 ./gradlew --no-daemon installDist
 ```
 
-The project's authoritative validation environment is GitHub Actions. When local hardware is unavailable, use CI to validate the full application and inspect actual workflow logs before declaring a change complete.
+GitHub Actions is the authoritative validation environment. When local hardware is unavailable, use CI to validate the application and inspect workflow logs before declaring a change complete.
 
 ## Run the CLI
 
@@ -33,7 +33,7 @@ The project's authoritative validation environment is GitHub Actions. When local
 curl --fail http://127.0.0.1:8080/health
 ```
 
-Keep the server bound to loopback for local development. Do not expose it publicly without authentication, authorization, TLS, trusted-origin controls, request quotas, and report-retention controls.
+Keep the server bound to loopback for local development. Do not expose it publicly without authentication, authorization, TLS, trusted-origin controls, quotas, and report-retention controls.
 
 ## Configuration
 
@@ -68,12 +68,8 @@ src/main/kotlin/com/codecontext/
   enterprise/                Multi-repository analysis
   output/                    HTML report generation
   server/                    Ktor API and security controls
-src/test/kotlin/com/codecontext/
-  core/                      Parser, graph, cache, intelligence, QA, planner tests
-  server/                    Rate-limit and path-security tests
-  verification/              Backend verification tests
-  E2ETest.kt                 End-to-end coverage
-docs/                        Product, architecture, API, roadmap, and development docs
+tests and verification       Unit, property, CLI, server, and E2E validation
+docs/                        Architecture, API, development, PR, security, and status docs
 ```
 
 ## Engineering boundaries
@@ -81,10 +77,10 @@ docs/                        Product, architecture, API, roadmap, and developmen
 - deterministic analysis is the source of repository facts;
 - evidence is bounded and repository-relative;
 - AI is optional and must not overwrite deterministic facts;
-- planner output is read-only until an explicitly isolated execution layer exists;
+- planner output is read-only;
 - external input is validated at the boundary;
-- no source execution is performed by analysis;
-- public APIs must not expose stack traces, provider bodies, credentials, or absolute server paths.
+- source is not executed by analysis;
+- public APIs must not expose stack traces, provider bodies, credentials, or unnecessary absolute server paths.
 
 ## Adding deterministic intelligence
 
@@ -114,7 +110,7 @@ docs/                        Product, architecture, API, roadmap, and developmen
 
 ## Adding AI behavior
 
-AI features must follow the evidence-first boundary:
+AI features follow the evidence-first boundary:
 
 ```text
 Deterministic analysis
@@ -145,14 +141,7 @@ Before opening a pull request:
 
 Then run the complete GitHub Actions verification matrix and inspect the complete diff against `main`. Pull requests should describe behavior changes, security impact, configuration changes, schema changes, and validation results.
 
-For AI or agentic features, additionally document:
-
-- evidence sources;
-- model/provider boundary;
-- permissions and data exposure;
-- failure/uncertainty behavior;
-- rollback or isolation strategy;
-- CI verification requirements.
+For AI-assisted features, additionally document evidence sources, model/provider boundaries, data exposure, uncertainty behavior, and CI verification requirements.
 
 ## Release checklist
 
