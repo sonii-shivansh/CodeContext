@@ -5,14 +5,17 @@ import com.codecontext.core.config.ConfigLoader
 import java.io.File
 
 class RepositoryScanner(
-    private val config: CodeContextConfig = ConfigLoader.load()
+    private val configuredConfig: CodeContextConfig? = null
 ) {
     fun scan(rootPath: String): List<File> {
-        val root = File(rootPath)
+        val root = File(rootPath).canonicalFile
         if (!root.exists() || !root.isDirectory) {
             throw IllegalArgumentException("Invalid repository path: $rootPath")
         }
 
+        // When callers do not explicitly supply configuration, resolve it from the
+        // repository being analyzed rather than from CodeContext's process cwd.
+        val config = configuredConfig ?: ConfigLoader.loadForRepository(root.path)
         val exclusionSet = config.excludePaths
             .map { it.trim() }
             .filter { it.isNotEmpty() }
