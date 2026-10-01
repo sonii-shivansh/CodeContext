@@ -71,6 +71,7 @@ object EngineeringContextEngine {
                 val status = git.status().call()
                 val changed = (status.added + status.changed + status.removed + status.modified + status.missing + status.untracked)
                     .map { it.replace(File.separatorChar, '/') }
+                    .filterNot(::isGeneratedPath)
                     .distinct().sorted()
                 commit to changed
             }
@@ -127,6 +128,9 @@ object EngineeringContextEngine {
 
     fun encode(snapshot: EngineeringContextSnapshot): String = json.encodeToString(EngineeringContextSnapshot.serializer(), snapshot)
     fun encode(diff: EngineeringContextDiff): String = json.encodeToString(EngineeringContextDiff.serializer(), diff)
+
+    private fun isGeneratedPath(path: String): Boolean =
+        path == ".codecontext" || path.startsWith(".codecontext/")
 
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
     private fun sha256(value: String): String = sha256(value.toByteArray(StandardCharsets.UTF_8))

@@ -13,7 +13,7 @@ class SetupCommand : CliktCommand(
     help = "Set up CodeContext AI credentials securely on this machine"
 ) {
     private val provider by option("--provider", help = "AI provider (currently: gemini)").default("gemini")
-    private val model by option("--model", help = "Gemini model to use").default("gemini-2.5-flash")
+    private val model by option("--model", help = "Gemini model to use").default(AISetup.DEFAULT_GEMINI_MODEL)
     private val force by option("--force", help = "Replace an existing saved credential").flag()
 
     override fun run() {

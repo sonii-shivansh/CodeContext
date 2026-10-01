@@ -1,7 +1,7 @@
 package com.codecontext.cli
 
-import com.codecontext.core.ai.AICodeAnalyzer
 import com.codecontext.core.ai.CodebaseContext
+import com.codecontext.core.ai.GeminiQuestionService
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.scanner.RepositoryScanner
@@ -51,8 +51,11 @@ class AIAssistantCommand :
             )
 
             try {
-                val aiAnalyzer = AICodeAnalyzer(config.ai.apiKey, config.ai.model, config.ai.provider)
-                val response = aiAnalyzer.askQuestion(question, context)
+                val response = if (config.ai.provider.equals("gemini", ignoreCase = true)) {
+                    GeminiQuestionService(config.ai.apiKey, config.ai.model).ask(question, context)
+                } else {
+                    throw IllegalArgumentException("Unsupported AI provider for ask: ${config.ai.provider}")
+                }
 
                 echo("\n💡 ${response.answer}\n")
                 if (response.suggestedFiles.isNotEmpty()) {
@@ -62,7 +65,8 @@ class AIAssistantCommand :
                 echo("\n🎯 Confidence: ${(response.confidence * 100).toInt()}%")
             } catch (e: Exception) {
                 if (e is com.codecontext.core.exceptions.CodeContextException) throw e
-                throw com.codecontext.core.exceptions.AIProviderException("Failed to get AI response", e)
+                val detail = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName.orEmpty()
+                throw com.codecontext.core.exceptions.AIProviderException("Failed to get AI response: $detail", e)
             }
         }
     }

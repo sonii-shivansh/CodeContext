@@ -25,6 +25,7 @@ object GitChangeSetBuilder {
 
                 git.status().call().untracked
                     .filter { it !in trackedPaths }
+                    .filterNot(::isGeneratedPath)
                     .sorted()
                     .forEach { path ->
                         changes += ChangedFile(path, ChangeType.ADDED, additions = countLines(File(repository.workTree, path)))
@@ -101,6 +102,9 @@ object GitChangeSetBuilder {
             }
             .sortedWith(compareBy<ChangedFile> { it.path }.thenBy { it.changeType.name })
     }
+
+    private fun isGeneratedPath(path: String): Boolean =
+        path == ".codecontext" || path.startsWith(".codecontext/")
 
     private fun resolveTree(repository: Repository, revision: String): ObjectId =
         repository.resolve("$revision^{tree}") ?: throw IllegalArgumentException("Invalid revision: $revision")

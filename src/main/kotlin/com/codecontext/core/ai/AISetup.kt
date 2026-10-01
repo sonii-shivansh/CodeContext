@@ -14,11 +14,13 @@ sealed class AISetupResult {
 }
 
 object AISetup {
+    const val DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+
     private val client = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
         .build()
 
-    fun configureGemini(apiKey: String, model: String = "gemini-2.5-flash", persist: Boolean = true): AISetupResult {
+    fun configureGemini(apiKey: String, model: String = DEFAULT_GEMINI_MODEL, persist: Boolean = true): AISetupResult {
         val key = apiKey.trim()
         if (key.isBlank()) return AISetupResult.Failure("API key cannot be empty.")
 
@@ -29,7 +31,7 @@ object AISetup {
         return AISetupResult.Success
     }
 
-    fun validateGemini(apiKey: String, model: String = "gemini-2.5-flash"): AISetupResult {
+    fun validateGemini(apiKey: String, model: String = DEFAULT_GEMINI_MODEL): AISetupResult {
         val request = runCatching {
             HttpRequest.newBuilder()
                 .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/$model"))
