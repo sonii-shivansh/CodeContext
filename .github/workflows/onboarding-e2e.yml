@@ -1,0 +1,103 @@
+name: Onboarding E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  onboarding:
+    name: Zero-setup CLI E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "gradle"
+
+      - name: Build distribution
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+
+      - name: Verify help exposes onboarding commands
+        shell: bash
+        run: |
+          CLI=./build/install/codecontext/bin/codecontext
+          "$CLI" --help > help.txt
+          grep -q "setup" help.txt
+          grep -q "doctor" help.txt
+          "$CLI" setup --help
+          "$CLI" doctor --help
+
+      - name: Verify clean checkout diagnostics
+        shell: bash
+        run: |
+          CLI=./build/install/codecontext/bin/codecontext
+          "$CLI" doctor | tee doctor.txt
+          grep -q "CodeContext doctor" doctor.txt
+          grep -q "Java runtime" doctor.txt
+          grep -q "Repository" doctor.txt
+          grep -q "AI credentials" doctor.txt
+
+      - name: Create a real Git fixture repository
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/codecontext-fixture"
+          mkdir -p "$RUNNER_TEMP/codecontext-fixture/src/main/java/example"
+          cd "$RUNNER_TEMP/codecontext-fixture"
+          git init -q
+          git config user.name "CodeContext E2E"
+          git config user.email "e2e@example.com"
+          cat > src/main/java/example/Service.java <<'JAVA'
+          package example;
+          public class Service {
+              public String greet(String name) { return "Hello " + name; }
+          }
+          JAVA
+          cat > README.md <<'MD'
+          # CodeContext E2E Fixture
+          MD
+          git add .
+          git commit -qm "initial fixture"
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          "$CLI" analyze .
+          test -s output/index.html
+          test -s output/analysis-snapshot.json
+          "$CLI" architecture . --json
+          test -s output/architecture.json
+          "$CLI" repo-qa "what are the main files?" --path . > output/repo-qa.json
+          test -s output/repo-qa.json
+          "$CLI" prepare "refactor the greeting service safely" --json > output/prepare.json
+          test -s output/prepare.json
+          "$CLI" verify --json > output/verify.json
+          test -s output/verify.json
+
+      - name: Verify no project secret file is required
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/codecontext-fixture"
+          test ! -f .codecontext.json
+          test ! -f .codecontext.json.template
+
+      - name: Verify environment-based credential discovery without persisting it
+        shell: bash
+        env:
+          GEMINI_API_KEY: "e2e-placeholder-key"
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          "$CLI" doctor | tee env-doctor.txt
+          grep -q "GEMINI_API_KEY environment variable" env-doctor.txt
+          test ! -f .codecontext.json
