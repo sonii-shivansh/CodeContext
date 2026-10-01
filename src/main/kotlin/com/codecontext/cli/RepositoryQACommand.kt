@@ -2,7 +2,6 @@ package com.codecontext.cli
 
 import com.codecontext.core.ai.GroundedEvidenceBuilder
 import com.codecontext.core.cache.CacheManager
-import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.intelligence.AnalysisSnapshotBuilder
 import com.codecontext.core.parser.ParsedFile
@@ -13,6 +12,8 @@ import com.codecontext.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.int
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
@@ -20,8 +21,8 @@ import kotlinx.serialization.json.Json
 
 class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grounded repository evidence for a developer question") {
     private val question by argument("question", help = "Question about the repository").default("")
-    private val path by com.github.ajalt.clikt.parameters.options.option("--path", help = "Repository path").default(".")
-    private val maxResults by com.github.ajalt.clikt.parameters.options.option("--max-results", help = "Maximum evidence items").int().default(8)
+    private val path by option("--path", help = "Repository path").default(".")
+    private val maxResults by option("--max-results", help = "Maximum evidence items").int().default(8)
 
     override fun run() {
         if (question.isBlank()) throw com.github.ajalt.clikt.core.PrintHelpMessage(currentContext)
