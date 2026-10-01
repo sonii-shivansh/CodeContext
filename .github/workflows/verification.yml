@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CODECONTEXT_DEBUG_SCANNER: "true"
+
 jobs:
   verify:
     name: Build, test, and end-to-end verify
