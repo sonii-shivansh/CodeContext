@@ -15,31 +15,24 @@ class OptimizedGitAnalyzer {
     fun analyze(repoPath: String, files: List<ParsedFile>): List<ParsedFile> {
         val gitDir = File(repoPath, ".git")
         if (!gitDir.exists()) {
-            println("⚠️ No .git directory found. Skipping Git analysis.")
-            // Return original files if no git
+            System.err.println("⚠️ No .git directory found. Skipping Git analysis.")
             return files
         }
 
         try {
             val repository: Repository =
                     FileRepositoryBuilder().setGitDir(gitDir).readEnvironment().findGitDir().build()
-
             val git = Git(repository)
-
-            // OPTIMIZATION: Single pass through all commits
             val fileStats = mutableMapOf<String, FileChangeStats>()
-
-            // FIX: Load commit limit from config
             val config = ConfigLoader.load()
             val commitLimit = config.gitCommitLimit
-
             val commits = git.log().call().take(commitLimit).toList()
             val totalCommits = commits.size
 
-            println("🔍 Analyzing $totalCommits commits (limit: $commitLimit)...")
+            System.err.println("🔍 Analyzing $totalCommits commits (limit: $commitLimit)...")
 
             if (totalCommits == commitLimit) {
-                println(
+                System.err.println(
                         "⚠️  Reached commit limit. Consider increasing gitCommitLimit in config for complete history."
                 )
             }
@@ -47,17 +40,13 @@ class OptimizedGitAnalyzer {
             commits.forEachIndexed { index, commit ->
                 if (index % 100 == 0 && index > 0) {
                     val progress = (index * 100) / totalCommits
-                    println("   Progress: $progress% ($index/$totalCommits commits)")
+                    System.err.println("   Progress: $progress% ($index/$totalCommits commits)")
                 }
 
-                // Get parent to compare changes
                 val parent = if (commit.parentCount > 0) commit.getParent(0) else null
-
                 if (parent != null) {
                     val oldTree = parent.tree
                     val newTree = commit.tree
-
-                    // Use TreeWalk to efficiently compare trees
                     val diffs =
                             git.diff()
                                     .setOldTree(prepareTreeParser(repository, oldTree))
@@ -65,15 +54,12 @@ class OptimizedGitAnalyzer {
                                     .call()
 
                     diffs.forEach { diff ->
-                        // diff.newPath is usually the path unless deleted
                         val path =
                                 if (diff.changeType == DiffEntry.ChangeType.DELETE) diff.oldPath
                                 else diff.newPath
                         val stats = fileStats.getOrPut(path) { FileChangeStats() }
-
                         stats.changes++
-                        stats.lastModified =
-                                maxOf(stats.lastModified, commit.commitTime.toLong() * 1000)
+                        stats.lastModified = maxOf(stats.lastModified, commit.commitTime.toLong() * 1000)
                         stats.authors.add(commit.authorIdent.name)
                         stats.messages.add(commit.shortMessage)
                     }
@@ -82,12 +68,9 @@ class OptimizedGitAnalyzer {
 
             repository.close()
 
-            // Map results back to files
             return files.map { parsed ->
                 val relativePath = getRelativePath(File(repoPath), parsed.file)
-                // Try direct match or forward slash match
                 val stats = fileStats[relativePath] ?: fileStats[relativePath.replace("\\", "/")]
-
                 if (stats != null) {
                     val topAuthors =
                             stats.authors
@@ -97,7 +80,6 @@ class OptimizedGitAnalyzer {
                                     .sortedByDescending { it.value }
                                     .take(3)
                                     .map { it.key }
-
                     parsed.copy(
                             gitMetadata =
                                     GitMetadata(
@@ -113,12 +95,10 @@ class OptimizedGitAnalyzer {
             }
         } catch (e: Exception) {
             System.err.println("Git analysis failed: ${e.message}")
-            // Return original files on error
             return files
         }
     }
 
-    // Helper to prepare tree parser for Diff
     private fun prepareTreeParser(
             repository: Repository,
             tree: org.eclipse.jgit.lib.ObjectId
@@ -134,7 +114,7 @@ class OptimizedGitAnalyzer {
     private fun getRelativePath(base: File, file: File): String {
         return file.absolutePath
                 .substring(base.absolutePath.length + 1)
-                .replace("\\", "/") // Git uses forward slashes
+                .replace("\\", "/")
     }
 
     private data class FileChangeStats(
