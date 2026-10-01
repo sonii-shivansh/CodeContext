@@ -62,6 +62,15 @@ jobs:
           echo "$version"
           echo "$version" | grep -F '0.6.0'
 
+      - name: Verify self-analysis workspace
+        shell: bash
+        run: |
+          pwd
+          test -d src
+          count="$(find src -type f \( -name '*.kt' -o -name '*.java' \) | wc -l)"
+          echo "Source files visible to CI: $count"
+          test "$count" -gt 0
+
       - name: Run self-analysis end-to-end
         run: |
           rm -rf output
