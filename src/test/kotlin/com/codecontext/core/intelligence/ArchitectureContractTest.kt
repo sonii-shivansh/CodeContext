@@ -25,7 +25,7 @@ class ArchitectureContractTest : FunSpec({
             emptyList(),
             mapOf("api" to 1, "domain" to 2)
         )
-        val contract = ArchitectureContract(maxFindings = 0)
+        val contract = ArchitectureContract(maxFindings = 0, allowedSeverities = listOf("LOW", "MEDIUM"))
         val result = ArchitectureContractEngine.evaluate(architecture, contract)
         result.passed shouldBe false
         result.violations.map { it.ruleId } shouldBe listOf("CONTRACT-FINDING-LIMIT", "CONTRACT-SEVERITY-001")
