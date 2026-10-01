@@ -114,6 +114,21 @@ Implemented:
 - repository `HEAD` capture through read-only Git metadata when available
 - explicit unknown-Git state instead of fabricated provenance
 - provenance attached to prepare and verify workflow results
+- architecture contract decision records with idempotent persistence
+
+## Temporal intelligence
+
+Implemented:
+
+- Git-history evolution analysis
+- deterministic time-based commit sampling
+- exact committed Java/Kotlin/Kotlin-script source line counts read directly from Git objects
+- cumulative source-file change-frequency hotspots
+- deterministic fallback hotspots based on historical file size when no touch history exists
+- safe analysis of dirty working trees without destructive checkout operations
+- no mutation of the repository working tree during temporal analysis
+
+Temporal analysis currently provides source-history metrics; it does not reconstruct full semantic dependency graphs for arbitrary historical commits.
 
 ## AI integration
 
@@ -167,7 +182,7 @@ The clean-environment workflows are the authoritative execution environment for 
 
 ## Release line
 
-The current `main` branch is validated against the **v0.6.0** release line. The v0.10 engineering-intelligence branch extends the release line without changing the existing version contract.
+The current `main` branch is validated against the **v0.6.0** release line. Engineering-intelligence work extends the release line without changing the existing version contract unless a release-specific change is intentionally made.
 
 ## Current limitations
 
@@ -182,6 +197,7 @@ The repository currently has important boundaries:
 - production telemetry integrations are not implemented;
 - organization-wide governance and cross-repository intelligence are not implemented;
 - context snapshots currently fingerprint repository-scanned source files and do not yet capture the full semantic evidence graph;
+- temporal archaeology provides deterministic source-history metrics but does not yet reconstruct full semantic dependency graphs for arbitrary historical commits;
 - architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not yet implemented.
 
 This file should be updated when implementation changes materially. It should not describe unimplemented features as if they already exist.

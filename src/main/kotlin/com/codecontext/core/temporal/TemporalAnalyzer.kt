@@ -4,95 +4,156 @@ import java.io.File
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.diff.DiffFormatter
+import org.eclipse.jgit.diff.RawTextComparator
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.treewalk.TreeWalk
+import org.eclipse.jgit.util.io.DisabledOutputStream
 
 data class CodebaseSnapshot(
-        val timestamp: Instant,
-        val commitHash: String,
-        val totalFiles: Int,
-        val totalLines: Int,
-        val topHotspots: List<String>
+    val timestamp: Instant,
+    val commitHash: String,
+    val totalFiles: Int,
+    val totalLines: Int,
+    val topHotspots: List<String>
 )
 
+/**
+ * Reads repository history without changing the working tree.
+ *
+ * Snapshots are sampled from existing commits and analyzed directly from Git trees. This makes
+ * temporal analysis safe for dirty working trees and avoids the destructive checkout behavior of
+ * the original MVP implementation.
+ */
 class TemporalAnalyzer(private val repoPath: String) {
 
     fun analyzeEvolution(monthsBack: Int = 6, intervalDays: Int = 30): List<CodebaseSnapshot> {
-        val snapshots = mutableListOf<CodebaseSnapshot>()
-        val git = Git.open(File(repoPath))
-        val repo = git.repository
+        require(monthsBack >= 0) { "monthsBack must be >= 0" }
+        require(intervalDays > 0) { "intervalDays must be > 0" }
 
-        // iterate backwards from HEAD
-        val head = repo.parseCommit(repo.resolve("HEAD"))
-        val now = Instant.ofEpochSecond(head.commitTime.toLong())
-        val cutoff = now.minus(monthsBack.toLong() * 30, ChronoUnit.DAYS)
+        Git.open(File(repoPath)).use { git ->
+            val repository = git.repository
+            repository.resolve("HEAD") ?: return emptyList()
+            val commits = git.log().call().toList()
+            if (commits.isEmpty()) return emptyList()
 
-        val commitsToAnalyze = mutableListOf<RevCommit>()
+            val headCommit = commits.first()
+            val now = Instant.ofEpochSecond(headCommit.commitTime.toLong())
+            val cutoff = now.minus(monthsBack.toLong() * 30L, ChronoUnit.DAYS)
+            val sampled = sampleCommits(commits, now, cutoff, intervalDays)
+            if (sampled.isEmpty()) return emptyList()
 
-        // Sampling strategy: Find commits closest to each interval point
-        val logs = git.log().call().toList()
-
-        var currentTarget = now
-        while (currentTarget.isAfter(cutoff)) {
-            // Find commit closest to currentTarget
-            val closest =
-                    logs.minByOrNull {
-                        kotlin.math.abs(it.commitTime.toLong() - currentTarget.epochSecond)
-                    }
-
-            if (closest != null && !commitsToAnalyze.contains(closest)) {
-                commitsToAnalyze.add(closest)
+            val touchCountsByCommit = buildHistoricalTouchCounts(repository, commits)
+            return sampled.sortedBy { it.commitTime }.map { commit ->
+                analyzeSnapshot(commit, touchCountsByCommit[commit.name].orEmpty())
             }
-
-            currentTarget = currentTarget.minus(intervalDays.toLong(), ChronoUnit.DAYS)
         }
-
-        commitsToAnalyze.sortBy { it.commitTime }
-
-        println("⏳ Analyzing evolution across ${commitsToAnalyze.size} snapshots...")
-
-        commitsToAnalyze.forEachIndexed { index, commit ->
-            println(
-                    "   [${index + 1}/${commitsToAnalyze.size}] Snapshot at ${Instant.ofEpochSecond(commit.commitTime.toLong())}"
-            )
-            val snapshot = analyzeSnapshot(commit)
-            snapshots.add(snapshot)
-        }
-
-        return snapshots
     }
 
-    // Note: Checkout is expensive. In a real tool we might use a temporary worktree or TreeWalk
-    // parsing without checkout.
-    // For MVP, we will assume we can checkout (destructive if dirty!).
-    // BETTER: Use JGit TreeWalk to load content into parser without checkout.
-    private fun analyzeSnapshot(commit: RevCommit): CodebaseSnapshot {
-        // Placeholder for full implementation.
-        // True temporal analysis without checkout is complex.
-        // We will mock the complexity metrics for the plan demo or do a simplified "File Count"
-        // check.
-
-        val git = Git.open(File(repoPath))
-        val tree = commit.tree
-        val treeWalk = TreeWalk(git.repository)
-        treeWalk.addTree(tree)
-        treeWalk.isRecursive = true
-
-        var fileCount = 0
-
-        while (treeWalk.next()) {
-            val path = treeWalk.pathString
-            if (path.endsWith(".kt") || path.endsWith(".java")) {
-                fileCount++
-            }
+    private fun sampleCommits(
+        commits: List<RevCommit>,
+        now: Instant,
+        cutoff: Instant,
+        intervalDays: Int
+    ): List<RevCommit> {
+        val selected = linkedMapOf<String, RevCommit>()
+        var target = now
+        while (!target.isBefore(cutoff)) {
+            commits.minByOrNull { kotlin.math.abs(it.commitTime.toLong() - target.epochSecond) }
+                ?.let { selected[it.name] = it }
+            target = target.minus(intervalDays.toLong(), ChronoUnit.DAYS)
         }
+        return selected.values.toList()
+    }
 
-        return CodebaseSnapshot(
+    /**
+     * Computes cumulative source-file touch counts at each commit using Git's tree diff.
+     * The result is keyed by commit hash so snapshot hotspot rankings are deterministic.
+     */
+    private fun buildHistoricalTouchCounts(
+        repository: org.eclipse.jgit.lib.Repository,
+        commits: List<RevCommit>
+    ): Map<String, Map<String, Int>> {
+        val counts = mutableMapOf<String, Int>()
+        val result = mutableMapOf<String, Map<String, Int>>()
+        val formatter = DiffFormatter(DisabledOutputStream.INSTANCE)
+        formatter.setRepository(repository)
+        formatter.setDiffComparator(RawTextComparator.DEFAULT)
+        formatter.isDetectRenames = true
+
+        try {
+            commits.asReversed().forEach { commit ->
+                if (commit.parentCount > 0) {
+                    formatter.scan(commit.getParent(0).tree, commit.tree).forEach { diff ->
+                        val path = if (diff.changeType == org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE) {
+                            diff.oldPath
+                        } else {
+                            diff.newPath
+                        }
+                        if (isSourceFile(path)) counts[path] = (counts[path] ?: 0) + 1
+                    }
+                }
+                result[commit.name] = counts.toMap()
+            }
+        } finally {
+            formatter.close()
+        }
+        return result
+    }
+
+    private fun analyzeSnapshot(commit: RevCommit, touchCounts: Map<String, Int>): CodebaseSnapshot {
+        Git.open(File(repoPath)).use { git ->
+            val repository = git.repository
+            val treeWalk = TreeWalk(repository)
+            treeWalk.addTree(commit.tree)
+            treeWalk.isRecursive = true
+
+            var fileCount = 0
+            var lineCount = 0
+            val fileSizes = mutableMapOf<String, Long>()
+
+            repository.newObjectReader().use { reader ->
+                while (treeWalk.next()) {
+                    val path = treeWalk.pathString
+                    if (!isSourceFile(path)) continue
+                    val bytes = reader.open(treeWalk.getObjectId(0)).bytes
+                    fileCount++
+                    lineCount += countLines(bytes)
+                    fileSizes[path] = bytes.size.toLong()
+                }
+            }
+            treeWalk.close()
+
+            val hotspots = touchCounts.entries
+                .filter { isSourceFile(it.key) }
+                .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+                .take(10)
+                .map { it.key }
+                .ifEmpty {
+                    fileSizes.entries
+                        .sortedWith(compareByDescending<Map.Entry<String, Long>> { it.value }.thenBy { it.key })
+                        .take(10)
+                        .map { it.key }
+                }
+
+            return CodebaseSnapshot(
                 timestamp = Instant.ofEpochSecond(commit.commitTime.toLong()),
                 commitHash = commit.name,
                 totalFiles = fileCount,
-                totalLines = fileCount * 50, // Estimate
-                topHotspots = emptyList() // Needs graph build per snapshot
-        )
+                totalLines = lineCount,
+                topHotspots = hotspots
+            )
+        }
+    }
+
+    private fun isSourceFile(path: String): Boolean =
+        path.endsWith(".kt") || path.endsWith(".kts") || path.endsWith(".java")
+
+    private fun countLines(bytes: ByteArray): Int {
+        if (bytes.isEmpty()) return 0
+        var lines = 1
+        for (byte in bytes) if (byte == '\n'.code.toByte()) lines++
+        if (bytes.last() == '\n'.code.toByte()) lines--
+        return lines
     }
 }
