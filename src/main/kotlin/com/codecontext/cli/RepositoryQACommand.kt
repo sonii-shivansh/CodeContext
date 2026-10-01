@@ -23,6 +23,10 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
     private val question by argument("question", help = "Question about the repository")
     private val path by option("--path", help = "Repository path").default(".")
     private val maxResults by option("--max-results", help = "Maximum evidence items").int().default(8)
+    private val evidenceOutput by option(
+        "--evidence-output",
+        help = "Optional path for the reusable GroundedEvidence JSON artifact used by the plan command"
+    )
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -55,6 +59,11 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         val result = RepositoryEvidenceRetriever().retrieve(parsedQuestion, grounded, maxResults)
 
         val json = Json { prettyPrint = true; encodeDefaults = true }
+        if (evidenceOutput != null) {
+            val output = File(evidenceOutput!!)
+            output.parentFile?.mkdirs()
+            output.writeText(json.encodeToString(grounded))
+        }
         echo(json.encodeToString(result))
     }
 }
