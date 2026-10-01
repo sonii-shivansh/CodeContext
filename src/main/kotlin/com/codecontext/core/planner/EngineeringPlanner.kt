@@ -124,8 +124,11 @@ class EngineeringPlanner {
 
     private fun normalizePath(path: String): String = path.replace('\\', '/').trim().removePrefix("./")
 
-    private fun isGeneratedPath(path: String): Boolean =
-        path == ".codecontext" || path.startsWith(".codecontext/") ||
-            path == "build" || path.startsWith("build/") ||
-            path == "target" || path.startsWith("target/")
+    private fun isGeneratedPath(path: String): Boolean {
+        val normalized = normalizePath(path).trimStart('/')
+        return normalized == ".codecontext" || normalized.startsWith(".codecontext/") ||
+            normalized == "output" || normalized.startsWith("output/") ||
+            normalized == "build" || normalized.startsWith("build/") ||
+            normalized == "target" || normalized.startsWith("target/")
+    }
 }
