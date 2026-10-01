@@ -15,71 +15,77 @@ jobs:
   test:
     name: Test on Windows
     runs-on: windows-latest
-        
+    timeout-minutes: 20
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: 'gradle'
-        
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Build with Gradle
-      run: ./gradlew build
-      
-    - name: Run tests
-      run: ./gradlew test
-      
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-windows
-        path: build/test-results/
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Run tests
+        run: ./gradlew test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-windows
+          path: build/test-results/
+          if-no-files-found: ignore
 
   lint:
     name: Code Quality
     runs-on: windows-latest
-    
+    timeout-minutes: 15
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: 'gradle'
-        
-    - name: Run ktlint
-      run: ./gradlew ktlintCheck || true
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Run ktlint
+        run: ./gradlew ktlintCheck
+
   build-artifacts:
     name: Build Distribution
     runs-on: windows-latest
-    needs: [test]
-    
+    needs: [test, lint]
+    timeout-minutes: 15
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: 'gradle'
-        
-    - name: Build distribution
-      run: ./gradlew installDist
-      
-    - name: Upload distribution
-      uses: actions/upload-artifact@v4
-      with:
-        name: codecontext-dist
-        path: build/install/codecontext/
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Build distribution
+        run: ./gradlew installDist
+
+      - name: Verify installed CLI
+        shell: pwsh
+        run: |
+          $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
+          if ($version -notmatch '0\.6\.0') { throw "Unexpected CLI version: $version" }
+
+      - name: Upload distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: codecontext-dist-windows
+          path: build/install/codecontext/
