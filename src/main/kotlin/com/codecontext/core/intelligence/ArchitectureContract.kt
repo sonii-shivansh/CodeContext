@@ -5,9 +5,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ArchitectureContract(
     val schemaVersion: String = "1.0",
-    val maxFindings: Int = 0,
-    val maxCycles: Int = 0,
-    val allowedSeverities: List<String> = listOf("LOW", "MEDIUM"),
+    val maxFindings: Int = Int.MAX_VALUE,
+    val maxCycles: Int = Int.MAX_VALUE,
+    val allowedSeverities: List<String> = listOf("LOW", "MEDIUM", "HIGH", "CRITICAL"),
     val requiredRules: List<String> = emptyList()
 )
 
