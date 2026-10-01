@@ -3,6 +3,7 @@ package com.codecontext
 /** The entry point of the application. Configures the CLI commands and executes the pipeline. */
 import com.codecontext.cli.AIAssistantCommand
 import com.codecontext.cli.ArchitectureCommand
+import com.codecontext.cli.EngineeringPlanCommand
 import com.codecontext.cli.EvolutionCommand
 import com.codecontext.cli.ImprovedAnalyzeCommand
 import com.codecontext.cli.ImpactCommand
@@ -21,6 +22,7 @@ fun main(args: Array<String>) {
                 ArchitectureCommand(),
                 PRIntelligenceCommand(),
                 RepositoryQACommand(),
+                EngineeringPlanCommand(),
                 AIAssistantCommand(),
                 EvolutionCommand(),
                 ServerCommand()
