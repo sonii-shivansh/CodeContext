@@ -5,7 +5,7 @@ import com.codecontext.core.ai.AISetupResult
 import com.codecontext.core.config.UserConfigStore
 
 object AISetupPrompter {
-    fun ensureConfigured(model: String = "gemini-2.5-flash"): Boolean {
+    fun ensureConfigured(model: String = "gemini-3.8-flash"): Boolean {
         val environmentKey = System.getenv("GEMINI_API_KEY")?.trim().orEmpty()
             .ifBlank { System.getenv("GOOGLE_API_KEY")?.trim().orEmpty() }
         if (environmentKey.isNotBlank()) {
