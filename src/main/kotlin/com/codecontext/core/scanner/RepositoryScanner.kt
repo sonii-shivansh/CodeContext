@@ -22,6 +22,12 @@ class RepositoryScanner(
             .map { it.trimStart('.').trim('/') }
             .toSet()
 
+        if (System.getenv("CODECONTEXT_DEBUG_SCANNER") == "true") {
+            println("[scanner-debug] root=${root.path}")
+            println("[scanner-debug] config=${config.excludePaths}")
+            println("[scanner-debug] exclusions=$exclusionSet")
+        }
+
         return root.walkTopDown()
             .filter { it.isFile }
             .filter { file ->
@@ -35,6 +41,10 @@ class RepositoryScanner(
                 val excludedByConfig = segments.any { segment ->
                     val normalized = segment.trim().trimStart('.').trim('/')
                     normalized.isNotEmpty() && normalized in exclusionSet
+                }
+
+                if (System.getenv("CODECONTEXT_DEBUG_SCANNER") == "true" && matchesSupportedExtension) {
+                    println("[scanner-debug] candidate=$relativePath excluded=$excludedByConfig segments=$segments")
                 }
 
                 matchesSupportedExtension && !excludedByConfig
