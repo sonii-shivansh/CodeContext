@@ -40,11 +40,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.11.0")
 
     // ===== Ktor Server (local API) =====
-    implementation("io.ktor:ktor-server-core-jvm:2.3.12")
-    implementation("io.ktor:ktor-server-netty-jvm:2.3.12")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.12")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.12")
-    implementation("io.ktor:ktor-server-cors-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-core-jvm:3.6.0")
+    implementation("io.ktor:ktor-server-netty-jvm:3.6.0")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.6.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.6.0")
+    implementation("io.ktor:ktor-server-cors-jvm:3.6.0")
 
     // ===== Testing =====
     testImplementation(kotlin("test"))
