@@ -101,7 +101,7 @@ object GroundedEvidenceBuilder {
             )
         }
 
-        return GroundedEvidence(citations.take(maxCitations))
+        return GroundedEvidence(citations = citations.take(maxCitations))
     }
 
     private fun repositoryRelativePath(repository: String, file: String): String {
