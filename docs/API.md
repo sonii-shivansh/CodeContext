@@ -17,6 +17,7 @@ Keep the default bind address on loopback for local use. Deployments beyond loop
 codecontext analyze <path>
 codecontext impact <path> <changed-files...>
 codecontext architecture <path>
+codecontext architecture-drift <path> --baseline <architecture-json> [--json]
 codecontext pr-intelligence <path>
 codecontext repo-qa <question> [--path <path>] [--max-results <n>] [--evidence-output <file>]
 codecontext plan <change-summary> [--evidence <file>] [--output <file>]
@@ -26,6 +27,17 @@ codecontext server [--host <address>] [--port <number>]
 ```
 
 Run `codecontext <command> --help` for the exact installed options.
+
+## Architecture drift
+
+`architecture-drift` compares a previously generated `ArchitectureIntelligenceResult` with the current deterministic architecture analysis. It reports added/removed findings, new/removed cycles, and changed layer counts.
+
+```bash
+codecontext architecture . --json
+codecontext architecture-drift . --baseline output/architecture-baseline.json --json
+```
+
+The baseline must be a valid versioned architecture artifact. Drift comparison is deterministic and does not invoke an AI provider.
 
 ## Deterministic intelligence
 
