@@ -92,15 +92,20 @@ jobs:
       - name: Generate grounded repository evidence
         run: |
           rm -f output/grounded-evidence.json
-          ./build/install/codecontext/bin/codecontext repo-qa "which files are the main architectural hotspots?" --path . > output/grounded-evidence.json
+          ./build/install/codecontext/bin/codecontext repo-qa "which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json > output/repo-qa.json
+          test -s output/repo-qa.json
           test -s output/grounded-evidence.json
           python3 - <<'PY'
           import json
           from pathlib import Path
+          result = json.loads(Path("output/repo-qa.json").read_text())
           evidence = json.loads(Path("output/grounded-evidence.json").read_text())
-          assert "question" in evidence
-          assert "evidence" in evidence
-          assert isinstance(evidence["evidence"], list)
+          assert "question" in result
+          assert "evidence" in result
+          assert isinstance(result["evidence"], list)
+          assert evidence["schemaVersion"] == "1.0"
+          assert isinstance(evidence["citations"], list)
+          assert evidence["citations"]
           PY
 
       - name: Generate evidence-backed engineering plan
@@ -112,7 +117,9 @@ jobs:
           import json
           from pathlib import Path
           plan = json.loads(Path("output/engineering-plan.json").read_text())
-          assert isinstance(plan, dict)
+          assert plan["schemaVersion"] == "1.0"
+          assert plan["steps"]
+          assert plan["evidenceIds"]
           PY
 
       - name: Verify PR Intelligence CLI
