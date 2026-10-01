@@ -1,6 +1,7 @@
 package com.codecontext.cli
 
 import com.codecontext.core.ai.AISetup
+import com.codecontext.core.ai.AISetupResult
 import com.codecontext.core.config.UserConfigStore
 
 object AISetupPrompter {
@@ -8,8 +9,8 @@ object AISetupPrompter {
         val environmentKey = System.getenv("GEMINI_API_KEY")?.trim().orEmpty()
         if (environmentKey.isNotBlank()) {
             return when (AISetup.validateGemini(environmentKey, model)) {
-                AISetup.Success -> true
-                is AISetup.Failure -> false
+                AISetupResult.Success -> true
+                is AISetupResult.Failure -> false
             }
         }
 
@@ -30,12 +31,12 @@ object AISetupPrompter {
 
         echo("🔐 Validating Gemini credentials...")
         return when (val result = AISetup.configureGemini(key, model)) {
-            AISetup.Success -> {
+            AISetupResult.Success -> {
                 echo("✓ Gemini API key validated and saved securely.")
                 echo("  Config: ${UserConfigStore.configFile().absolutePath}")
                 true
             }
-            is AISetup.Failure -> {
+            is AISetupResult.Failure -> {
                 echo("❌ ${result.message}")
                 echo("   Nothing was saved.")
                 false
