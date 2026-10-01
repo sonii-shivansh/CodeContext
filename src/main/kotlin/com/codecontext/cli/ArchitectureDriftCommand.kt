@@ -4,6 +4,7 @@ import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.intelligence.ArchitectureDriftEngine
+import com.codecontext.core.intelligence.ArchitectureDriftResult
 import com.codecontext.core.intelligence.ArchitectureIntelligenceEngine
 import com.codecontext.core.intelligence.ArchitectureIntelligenceResult
 import com.codecontext.core.scanner.RepositoryScanner
@@ -11,8 +12,10 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
 import java.io.File
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class ArchitectureDriftCommand : CliktCommand(
@@ -24,9 +27,9 @@ class ArchitectureDriftCommand : CliktCommand(
     private val jsonOutput by option("--json", help = "Write machine-readable drift JSON").flag()
 
     override fun run() {
-        val root = File(path).absoluteFile.normalize()
+        val root = File(path).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $path" }
-        val baselineFile = File(baseline).absoluteFile.normalize()
+        val baselineFile = File(baseline).canonicalFile
         require(baselineFile.isFile) { "Architecture baseline does not exist: $baseline" }
 
         val json = Json { ignoreUnknownKeys = false }
@@ -47,8 +50,8 @@ class ArchitectureDriftCommand : CliktCommand(
         if (jsonOutput) {
             val output = File("output/architecture-drift.json")
             output.parentFile.mkdirs()
-            output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(ArchitectureDriftResult.serializer(), drift))
-            echo("🏛️ Architecture drift report: ${output.absolutePath}")
+            output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(drift))
+            echo("🏛️ Architecture drift report: ${output.canonicalPath}")
         }
 
         echo("🏛️ Architecture Drift")
