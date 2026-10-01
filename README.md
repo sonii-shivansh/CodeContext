@@ -8,7 +8,7 @@ CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source 
 
 ## Current status
 
-The current release candidate targets **v0.6.0**. The repository implements:
+The `main` branch is validated against the **v0.6.0** release line. The repository implements:
 
 - Java and Kotlin source analysis
 - dependency graph construction
@@ -25,7 +25,8 @@ The current release candidate targets **v0.6.0**. The repository implements:
 - optional AI assistance over bounded repository-derived context
 - local Ktor REST API
 - path validation and rate limiting
-- Linux and Windows CI verification
+- clean-environment end-to-end verification
+- cross-platform distribution smoke verification for Linux x64, Windows x64, macOS x64, and macOS ARM64
 
 Generated reports are self-contained and do not require a browser CDN request for their visualization code.
 
@@ -67,7 +68,7 @@ codecontext architecture /path/to/repository --json
 # Grounded repository Q&A
 codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
 
-# Export reusable evidence for engineering planning
+# Export reusable grounded evidence for engineering planning
 codecontext repo-qa "which files are the main architectural hotspots?" \
   --path /path/to/repository \
   --evidence-output output/grounded-evidence.json
@@ -153,7 +154,7 @@ See:
 - [Data & Privacy](docs/DATA_PRIVACY.md)
 - [PR Intelligence](docs/PR_INTELLIGENCE.md)
 - [Development guide](docs/DEVELOPMENT.md)
-- [Enterprise implementation status](docs/ENTERPRISE_ROADMAP.md)
+- [Current implementation status](docs/ENTERPRISE_ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
