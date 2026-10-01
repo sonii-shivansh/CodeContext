@@ -97,7 +97,7 @@ jobs:
           test -s output/architecture.json
           SOURCE_FILE="$(find src -type f -name '*.java' | head -1)"
           "$CLI" impact . "$SOURCE_FILE" --json
-          test -s output/impact.json
+          test -s output/change-impact.json
 
       - name: Architecture drift and contract
         working-directory: ${{ runner.temp }}/real-project
