@@ -20,11 +20,15 @@ object GitChangeSetBuilder {
                 val entries = mutableListOf<DiffEntry>()
                 entries += git.diff().setCached(true).call()
                 entries += git.diff().setCached(false).call()
-                val changes = entries.map { toChangedFile(it, repository) }.toMutableList()
+                val changes = entries
+                    .map { toChangedFile(it, repository) }
+                    .filterNot { isInternalPath(it.path) }
+                    .toMutableList()
                 val trackedPaths = changes.flatMap { listOfNotNull(it.path, it.oldPath) }.toSet()
 
                 git.status().call().untracked
                     .filter { it !in trackedPaths }
+                    .filterNot(::isInternalPath)
                     .sorted()
                     .forEach { path ->
                         changes += ChangedFile(path, ChangeType.ADDED, additions = countLines(File(repository.workTree, path)))
@@ -100,6 +104,11 @@ object GitChangeSetBuilder {
                 )
             }
             .sortedWith(compareBy<ChangedFile> { it.path }.thenBy { it.changeType.name })
+    }
+
+    private fun isInternalPath(path: String): Boolean {
+        val normalized = path.replace('\\', '/').trimStart('/')
+        return normalized == ".codecontext" || normalized.startsWith(".codecontext/")
     }
 
     private fun resolveTree(repository: Repository, revision: String): ObjectId =
