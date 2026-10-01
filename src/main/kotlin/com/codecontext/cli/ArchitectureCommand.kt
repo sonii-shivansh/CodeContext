@@ -32,7 +32,7 @@ class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze 
         if (jsonOutput) {
             val output = File("output/architecture.json")
             output.parentFile.mkdirs()
-            output.writeText(Json { prettyPrint = true }.encodeToString(result))
+            output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(result))
             echo("🏛️ Architecture report: ${output.absolutePath}")
         }
         echo("🏛️ Architecture Intelligence")
