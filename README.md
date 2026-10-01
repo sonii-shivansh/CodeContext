@@ -4,7 +4,7 @@
 
 [🌐 Explore the CodeContext website](https://sonii-shivansh.github.io/CodeContext-Website/) · [📚 Documentation](https://github.com/sonii-shivansh/CodeContext/tree/main/docs) · [🚀 Releases](https://github.com/sonii-shivansh/CodeContext/releases)
 
-CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, and a local MCP interface for AI agents.
+CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a prepare→change→verify safety loop.
 
 ## Current status
 
@@ -22,6 +22,8 @@ The `main` branch is validated against the **v0.6.0** release line. The reposito
 - versioned analysis/evidence artifacts
 - grounded repository Q&A retrieval
 - deterministic, evidence-backed engineering planning
+- evidence-first `prepare` workflow
+- deterministic `verify` workflow for planned change scope, impact, PR, and architecture signals
 - optional AI assistance over bounded repository-derived context
 - local Ktor REST API
 - local MCP stdio server for AI-agent integration
@@ -35,7 +37,7 @@ Generated reports are self-contained and do not require a browser CDN request fo
 
 **Deterministic evidence first, AI reasoning second.**
 
-Repository facts are produced by deterministic analysis. Grounded evidence preserves those facts for downstream Q&A, planning, and agent workflows. AI is optional and is not treated as the authoritative source of repository truth.
+Repository facts are produced by deterministic analysis. Grounded evidence preserves those facts for downstream Q&A, planning, agent workflows, and verification. AI is optional and is not treated as the authoritative source of repository truth.
 
 ## Quick start
 
@@ -69,6 +71,12 @@ codecontext architecture /path/to/repository --json
 # Grounded repository Q&A
 codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
 
+# Evidence-backed change preparation
+codecontext prepare "add payment validation" --path /path/to/repository
+
+# Verify the implementation against the generated plan
+codecontext verify --path /path/to/repository --plan output/engineering-plan.json
+
 # Export reusable grounded evidence for engineering planning
 codecontext repo-qa "which files are the main architectural hotspots?" \
   --path /path/to/repository \
@@ -90,7 +98,21 @@ codecontext server --host 127.0.0.1 --port 8080
 codecontext mcp
 ```
 
+The recommended developer loop is:
+
+```text
+codecontext prepare "<change>"
+        ↓
+implement the change
+        ↓
+codecontext verify
+        ↓
+run tests / review findings
+```
+
 Use `codecontext <command> --help` for the exact options in the installed version.
+
+See [docs/CHANGE_SAFETY.md](docs/CHANGE_SAFETY.md) for the workflow contract.
 
 ## MCP / AI-agent integration
 
@@ -129,6 +151,8 @@ Grounded Evidence
 Q&A          Planner
    ↘          ↙
  Optional AI reasoning
+       ↓
+ Prepare → Change → Verify
        ↓
  CLI / REST / MCP / CI
 ```
@@ -175,6 +199,7 @@ See:
 - [Architecture](docs/ARCHITECTURE.md)
 - [API reference](docs/API.md)
 - [MCP / AI-agent integration](docs/MCP.md)
+- [Change Safety Loop](docs/CHANGE_SAFETY.md)
 - [Data & Privacy](docs/DATA_PRIVACY.md)
 - [PR Intelligence](docs/PR_INTELLIGENCE.md)
 - [Development guide](docs/DEVELOPMENT.md)
