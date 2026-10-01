@@ -79,10 +79,8 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-
           snapshot = json.loads(Path("output/analysis-snapshot.json").read_text())
           risks = json.loads(Path("output/engineering-risks.json").read_text())
-
           assert snapshot["schemaVersion"] == "1.0"
           assert snapshot["metrics"]["totalFiles"] > 0
           assert snapshot["metrics"]["totalNodes"] >= snapshot["metrics"]["totalFiles"]
@@ -91,13 +89,31 @@ jobs:
           assert all(0 <= item["score"] <= 100 for item in risks)
           PY
 
-      - name: Verify repository Q&A and engineering plan
+      - name: Generate grounded repository evidence
         run: |
-          rm -f output/grounded-evidence.json output/engineering-plan.json
+          rm -f output/grounded-evidence.json
           ./build/install/codecontext/bin/codecontext repo-qa "which files are the main architectural hotspots?" --path . > output/grounded-evidence.json
           test -s output/grounded-evidence.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          evidence = json.loads(Path("output/grounded-evidence.json").read_text())
+          assert "question" in evidence
+          assert "evidence" in evidence
+          assert isinstance(evidence["evidence"], list)
+          PY
+
+      - name: Generate evidence-backed engineering plan
+        run: |
+          rm -f output/engineering-plan.json
           ./build/install/codecontext/bin/codecontext plan "improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
           test -s output/engineering-plan.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          plan = json.loads(Path("output/engineering-plan.json").read_text())
+          assert isinstance(plan, dict)
+          PY
 
       - name: Verify PR Intelligence CLI
         run: |
