@@ -2,11 +2,14 @@
 
 Thank you for contributing to CodeContext. Contributions should improve analysis accuracy, developer experience, reliability, or security without weakening the project's local-first safety model.
 
+CodeContext is intentionally open to community contributions. The source is released under the MIT License, and community contributors retain ownership of their contributions while licensing them under the project's terms. See [DCO.md](DCO.md) for the contribution provenance policy.
+
 ## Before you start
 
 1. Search existing issues and pull requests.
 2. For significant behavior or API changes, open an issue or discussion first.
 3. Never include credentials, private source code, generated reports, `.codecontext/`, or build output in a contribution.
+4. For security vulnerabilities, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
 
 ## Development setup
 
@@ -28,15 +31,32 @@ cd CodeContext
 2. Implement the smallest coherent change.
 3. Add or update tests, especially for public APIs and security boundaries.
 4. Update documentation when behavior, configuration, or output changes.
-5. Run the local validation commands.
-6. Push the branch and open a pull request.
+5. Sign every contribution commit off with `git commit -s`.
+6. Run the local validation commands.
+7. Push the branch and open a pull request.
 
 ```bash
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon build installDist
 ```
 
-The Verification workflow must pass before merging.
+The Verification and DCO workflows must pass before merging.
+
+## Developer Certificate of Origin
+
+Every contribution commit must contain a `Signed-off-by:` trailer confirming that the contributor has the right to submit the work under the project's licensing terms.
+
+```bash
+git commit -s -m "Describe the change"
+```
+
+If a commit was created without the sign-off, amend it before opening or updating the pull request:
+
+```bash
+git commit --amend -s
+```
+
+See [DCO.md](DCO.md) for details.
 
 ## Coding expectations
 
@@ -64,9 +84,11 @@ Security-sensitive changes should include tests for traversal, sibling-prefix pa
 
 - [ ] The change is focused and documented.
 - [ ] Tests cover the changed behavior.
+- [ ] Every contribution commit has a `Signed-off-by:` trailer.
 - [ ] `./gradlew --no-daemon clean test` passes.
 - [ ] `./gradlew --no-daemon build installDist` passes.
 - [ ] The Verification workflow passes.
+- [ ] The DCO workflow passes.
 - [ ] No secrets or generated files are included.
 - [ ] API, architecture, changelog, and security documentation are updated when applicable.
 - [ ] The complete diff against `main` has been reviewed.
