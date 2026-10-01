@@ -20,12 +20,15 @@ object GitChangeSetBuilder {
                 val entries = mutableListOf<DiffEntry>()
                 entries += git.diff().setCached(true).call()
                 entries += git.diff().setCached(false).call()
-                val changes = entries.map { toChangedFile(it, repository) }.toMutableList()
+                val changes = entries
+                    .map { toChangedFile(it, repository) }
+                    .filterNot { isToolGeneratedPath(it.path) }
+                    .toMutableList()
                 val trackedPaths = changes.flatMap { listOfNotNull(it.path, it.oldPath) }.toSet()
 
                 git.status().call().untracked
                     .filter { it !in trackedPaths }
-                    .filterNot(::isGeneratedPath)
+                    .filterNot(::isToolGeneratedPath)
                     .sorted()
                     .forEach { path ->
                         changes += ChangedFile(path, ChangeType.ADDED, additions = countLines(File(repository.workTree, path)))
@@ -103,8 +106,14 @@ object GitChangeSetBuilder {
             .sortedWith(compareBy<ChangedFile> { it.path }.thenBy { it.changeType.name })
     }
 
-    private fun isGeneratedPath(path: String): Boolean =
-        path == ".codecontext" || path.startsWith(".codecontext/")
+    /** Paths owned by CodeContext itself must not become repository change evidence. */
+    private fun isToolGeneratedPath(path: String): Boolean {
+        val normalized = path.replace('\\', '/').trimStart('/')
+        return normalized == ".codecontext" ||
+            normalized.startsWith(".codecontext/") ||
+            normalized == "output" ||
+            normalized.startsWith("output/")
+    }
 
     private fun resolveTree(repository: Repository, revision: String): ObjectId =
         repository.resolve("$revision^{tree}") ?: throw IllegalArgumentException("Invalid revision: $revision")
