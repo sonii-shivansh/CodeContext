@@ -95,6 +95,25 @@ jobs:
           print(f"PR Intelligence validated: {result['changeSummary']['filesChanged']} changed files")
           PY
 
+      - name: Verify Architecture Intelligence CLI
+        shell: bash
+        run: |
+          rm -f output/architecture.json
+          ./build/install/codecontext/bin/codecontext architecture . --json
+          test -s output/architecture.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path("output/architecture.json").read_text())
+          assert result["schemaVersion"] == "1.0"
+          assert result["summary"]["filesAnalyzed"] > 0
+          assert isinstance(result["findings"], list)
+          assert isinstance(result["cycles"], list)
+          assert isinstance(result["layers"], dict)
+          print(f"Architecture Intelligence validated: {result['summary']['findings']} findings")
+          PY
+
       - name: Start server
         shell: bash
         run: |
@@ -141,6 +160,25 @@ jobs:
           print("PR Intelligence REST endpoint validated")
           PY
 
+      - name: Verify Architecture Intelligence REST API
+        shell: bash
+        run: |
+          curl --fail --silent \
+            -H 'Content-Type: application/json' \
+            -d '{"repoPath":"."}' \
+            http://127.0.0.1:18080/architecture > architecture-response.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path("architecture-response.json").read_text())
+          assert result["schemaVersion"] == "1.0"
+          assert result["summary"]["filesAnalyzed"] > 0
+          assert "findings" in result
+          assert "cycles" in result
+          print("Architecture Intelligence REST endpoint validated")
+          PY
+
       - name: Stop server
         if: always()
         shell: bash
@@ -160,3 +198,4 @@ jobs:
             server.log
             response.txt
             pr-intelligence-response.json
+            architecture-response.json
