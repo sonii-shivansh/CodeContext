@@ -29,6 +29,8 @@ The command creates:
 
 The plan is deterministic. It identifies affected components from repository evidence, highlights architecture/hotspot concerns, records uncertainties, and supplies verification commands.
 
+Each prepare result also contains a `provenance` contract. It records the operation, analysis schema version, repository `HEAD` commit when available, the evidence IDs used by the plan, and a stable SHA-256 provenance ID. If Git metadata cannot be read, the result explicitly records that the repository commit is unavailable rather than inventing one.
+
 ## 2. Change the code
 
 Implement the requested change using your normal workflow or an AI coding agent.
@@ -59,6 +61,7 @@ Verification combines:
 - PR Intelligence
 - Architecture Intelligence
 - the plan's recommended verification commands
+- provenance for the verification operation and evidence context
 
 ### Statuses
 
