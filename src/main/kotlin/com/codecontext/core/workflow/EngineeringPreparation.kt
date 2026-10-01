@@ -5,14 +5,14 @@ import com.codecontext.core.ai.GroundedEvidence
 import com.codecontext.core.ai.GroundedEvidenceBuilder
 import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.ConfigLoader
+import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.intelligence.AnalysisSnapshotBuilder
 import com.codecontext.core.intelligence.ChangeSet
-import com.codecontext.core.intelligence.EngineeringPlan
+import com.codecontext.core.planner.EngineeringPlan
 import com.codecontext.core.planner.EngineeringPlanRequest
 import com.codecontext.core.planner.EngineeringPlanner
 import com.codecontext.core.scanner.OptimizedGitAnalyzer
 import com.codecontext.core.scanner.RepositoryScanner
-import com.codecontext.core.graph.RobustDependencyGraph
 import java.io.File
 import kotlinx.serialization.Serializable
 
@@ -57,6 +57,11 @@ object EngineeringPreparation {
                 evidence = evidence
             )
         )
-        return EngineeringPreparationResult(root.path, changeSet, evidence, plan)
+        return EngineeringPreparationResult(
+            repository = root.path,
+            changeSet = changeSet,
+            evidence = evidence,
+            plan = plan
+        )
     }
 }
