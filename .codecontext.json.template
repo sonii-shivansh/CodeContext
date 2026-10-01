@@ -3,6 +3,8 @@
     ".git",
     ".idea",
     ".gradle",
+    ".codecontext",
+    "output",
     "build",
     "target",
     "node_modules",
@@ -21,7 +23,7 @@
     "enabled": false,
     "provider": "gemini",
     "apiKey": "",
-    "model": "gemini-2.5-flash"
+    "model": "gemini-3.8-flash"
   },
   "rateLimit": {
     "enabled": true,
