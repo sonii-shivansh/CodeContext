@@ -122,9 +122,16 @@ Implemented CI verification includes:
 - PR Intelligence end-to-end verification
 - Architecture Intelligence end-to-end verification
 - REST API end-to-end verification
-- Linux and Windows validation
+- Linux x64 validation
+- Windows x64 validation
+- macOS x64 validation
+- macOS ARM64 validation
 
-CI is the authoritative execution environment for the repository.
+The clean-environment workflows are the authoritative execution environment for release verification.
+
+## Release line
+
+The current `main` branch is validated against the **v0.6.0** release line. Release verification covers the CLI, deterministic intelligence flows, generated artifacts, REST smoke checks, security input boundaries, and the supported cross-platform distribution matrix.
 
 ## Current limitations
 
