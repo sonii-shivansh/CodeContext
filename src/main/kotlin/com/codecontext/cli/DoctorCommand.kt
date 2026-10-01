@@ -2,6 +2,7 @@ package com.codecontext.cli
 
 import com.codecontext.core.Version
 import com.codecontext.core.ai.AISetup
+import com.codecontext.core.ai.AISetupResult
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.config.UserConfigStore
 import com.github.ajalt.clikt.core.CliktCommand
@@ -48,8 +49,8 @@ class DoctorCommand : CliktCommand(
         if (effective.ai.provider.equals("gemini", ignoreCase = true) && effective.ai.apiKey.isNotBlank()) {
             echo("   Validating Gemini credentials...")
             when (val result = AISetup.validateGemini(effective.ai.apiKey, effective.ai.model)) {
-                AISetup.Success -> echo("✓ Gemini API — reachable and credentials accepted")
-                is AISetup.Failure -> {
+                AISetupResult.Success -> echo("✓ Gemini API — reachable and credentials accepted")
+                is AISetupResult.Failure -> {
                     failures++
                     echo("❌ Gemini API — ${result.message}")
                 }
@@ -57,9 +58,8 @@ class DoctorCommand : CliktCommand(
         }
 
         echo("")
-        if (failures == 0) {
-            echo("✓ CodeContext is ready to use.")
-        } else {
+        if (failures == 0) echo("✓ CodeContext is ready to use.")
+        else {
             echo("❌ $failures check(s) need attention.")
             echo("   Run 'codecontext setup' for interactive AI setup.")
         }
