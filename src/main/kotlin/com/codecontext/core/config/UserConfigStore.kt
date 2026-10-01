@@ -22,6 +22,7 @@ data class UserConfig(
 /** Stores credentials outside the repository so secrets never need to live in .codecontext.json. */
 object UserConfigStore {
     private const val CONFIG_HOME_ENV = "CODECONTEXT_CONFIG_HOME"
+    private const val CONFIG_HOME_PROPERTY = "codecontext.config.home"
 
     private val json = Json {
         prettyPrint = true
@@ -47,8 +48,11 @@ object UserConfigStore {
     fun delete(): Boolean = configFile().delete()
 
     private fun configDirectory(): File {
-        val explicit = System.getenv(CONFIG_HOME_ENV)?.trim().orEmpty()
-        if (explicit.isNotEmpty()) return File(explicit)
+        val explicitProperty = System.getProperty(CONFIG_HOME_PROPERTY)?.trim().orEmpty()
+        if (explicitProperty.isNotEmpty()) return File(explicitProperty)
+
+        val explicitEnvironment = System.getenv(CONFIG_HOME_ENV)?.trim().orEmpty()
+        if (explicitEnvironment.isNotEmpty()) return File(explicitEnvironment)
 
         val os = System.getProperty("os.name", "").lowercase()
         return when {
@@ -62,13 +66,11 @@ object UserConfigStore {
     }
 
     private fun restrictPermissions(file: File) {
-        // POSIX permissions are available on Linux/macOS. Windows relies on the user's profile ACL.
         runCatching {
-            val permissions = setOf(
-                PosixFilePermission.OWNER_READ,
-                PosixFilePermission.OWNER_WRITE
+            Files.setPosixFilePermissions(
+                file.toPath(),
+                setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
             )
-            Files.setPosixFilePermissions(file.toPath(), permissions)
         }
     }
 }
