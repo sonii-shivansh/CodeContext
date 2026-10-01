@@ -6,6 +6,27 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Added
 
+- Launch-hardening verification for CLI, repository Q&A, engineering planning, REST health, intelligence endpoints, and security input boundaries.
+- A single application version contract used by the build and REST health endpoint.
+- Self-contained HTML report visualization with no runtime CDN dependency.
+
+### Changed
+
+- Project version is aligned to the v0.6.0 release candidate.
+- CI quality gates now fail on ktlint errors instead of ignoring them.
+- Clean-environment verification now validates the installed CLI version and exercises the current deterministic intelligence flows.
+- Documentation now reflects the current local-first implementation and offline report behavior.
+
+### Security
+
+- Generated report scripts escape data before embedding it in HTML.
+- Verification covers unsafe repository URLs, traversal-like paths, and incomplete Git revision pairs.
+- Security support policy is aligned with the current release line.
+
+## [0.5.0]
+
+### Added
+
 - Deterministic Change Impact Intelligence and PR Intelligence.
 - Architecture Intelligence and architecture evidence.
 - Versioned `AnalysisSnapshot` and grounded `EvidenceCitation` contracts.
@@ -15,8 +36,8 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Changed
 
-- Documentation now describes the implemented evidence-first architecture and current command/API surface.
-- AI is documented as an optional reasoning layer rather than a repository source of truth.
+- Documentation describes the implemented evidence-first architecture and current command/API surface.
+- AI is an optional reasoning layer rather than a repository source of truth.
 
 ### Security
 
@@ -24,7 +45,7 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 - AI context remains bounded and opt-in.
 - Server path validation and rate limiting remain enabled for the local API.
 
-## [0.2.0] - 2026-09-19
+## [0.2.0]
 
 ### Added
 
@@ -40,7 +61,7 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 - Added server-side path validation and configurable resource limits.
 - Improved local distribution and release validation.
 
-## [0.1.0] - 2025-12-14
+## [0.1.0]
 
 ### Added
 
@@ -55,11 +76,10 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Known limitations
 
-- Kotlin parsing may miss complex constructs.
-- Reports currently depend on a browser visualization asset loaded from a CDN.
 - The server does not provide authentication, tenant isolation, or report retention.
 - AI analysis requires external provider access and explicit configuration.
 
-[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.5.0
 [0.2.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.2.0
 [0.1.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.1.0
