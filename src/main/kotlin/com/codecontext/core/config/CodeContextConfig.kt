@@ -1,6 +1,7 @@
 package com.codecontext.core.config
 
 import com.codecontext.core.exceptions.ConfigurationException
+import com.codecontext.core.intelligence.ArchitectureRuleConfig
 import java.io.File
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -29,7 +30,8 @@ data class CodeContextConfig(
         val hotspotCount: Int = 15,
         val learningPathLength: Int = 20,
         val ai: AIConfig = AIConfig(),
-        val rateLimit: RateLimitConfig = RateLimitConfig()
+        val rateLimit: RateLimitConfig = RateLimitConfig(),
+        val architecture: ArchitectureRuleConfig = ArchitectureRuleConfig()
 )
 
 @Serializable
@@ -55,7 +57,6 @@ object ConfigLoader {
 
         return if (file.exists()) {
             try {
-                // Ignore unknown keys for forward compatibility
                 val json = Json { ignoreUnknownKeys = true }
                 json.decodeFromString<CodeContextConfig>(file.readText())
             } catch (e: Exception) {
