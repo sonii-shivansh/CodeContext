@@ -67,9 +67,13 @@ codecontext architecture /path/to/repository --json
 # Grounded repository Q&A
 codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
 
-# Evidence-backed engineering plan
-codecontext repo-qa "which files are the main architectural hotspots?" --path /path/to/repository > output/grounded-evidence.json
-codecontext plan "add payment validation" --evidence output/grounded-evidence.json
+# Export reusable evidence for engineering planning
+codecontext repo-qa "which files are the main architectural hotspots?" \
+  --path /path/to/repository \
+  --evidence-output output/grounded-evidence.json
+codecontext plan "add payment validation" \
+  --evidence output/grounded-evidence.json \
+  --output output/engineering-plan.json
 
 # Optional AI assistance
 codecontext ai-assistant /path/to/repository
@@ -137,11 +141,10 @@ The server does not currently provide authentication, tenant isolation, or deplo
 
 ```bash
 ./gradlew --no-daemon clean test
-./gradlew --no-daemon ktlintCheck
 ./gradlew --no-daemon build installDist
 ```
 
-GitHub Actions is the project's authoritative clean-environment verification path. CI validates compilation, tests, code quality, CLI flows, generated artifacts, intelligence flows, server health, API input boundaries, and report portability.
+GitHub Actions is the project's authoritative clean-environment verification path. CI validates compilation, tests, CLI flows, generated artifacts, intelligence flows, server health, API input boundaries, cross-platform distribution smoke tests, and report portability.
 
 See:
 
