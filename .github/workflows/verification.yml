@@ -156,6 +156,31 @@ jobs:
           assert drift["changes"] == []
           PY
 
+      - name: Verify Architecture Contract CLI
+        shell: bash
+        run: |
+          rm -f output/architecture-contract.json
+          cat > .codecontext-architecture-contract.json <<'JSON'
+          {
+            "schemaVersion": "1.0",
+            "maxFindings": 100000,
+            "maxCycles": 100000,
+            "allowedSeverities": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            "requiredRules": []
+          }
+          JSON
+          ./build/install/codecontext/bin/codecontext architecture-contract . --json
+          test -s output/architecture-contract.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          contract = json.loads(Path("output/architecture-contract.json").read_text())
+          assert contract["schemaVersion"] == "1.0"
+          assert contract["passed"] is True
+          assert contract["violations"] == []
+          PY
+          rm -f .codecontext-architecture-contract.json
+
       - name: Verify Engineering Context CLI
         shell: bash
         run: |

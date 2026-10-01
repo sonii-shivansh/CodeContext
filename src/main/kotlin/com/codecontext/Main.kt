@@ -3,6 +3,7 @@ package com.codecontext
 /** The entry point of the application. Configures the CLI commands and executes the pipeline. */
 import com.codecontext.cli.AIAssistantCommand
 import com.codecontext.cli.ArchitectureCommand
+import com.codecontext.cli.ArchitectureContractCommand
 import com.codecontext.cli.ArchitectureDriftCommand
 import com.codecontext.cli.EngineeringContextDiffCommand
 import com.codecontext.cli.EngineeringContextSnapshotCommand
@@ -27,6 +28,7 @@ fun main(args: Array<String>) {
                 ImpactCommand(),
                 ArchitectureCommand(),
                 ArchitectureDriftCommand(),
+                ArchitectureContractCommand(),
                 EngineeringContextSnapshotCommand(),
                 EngineeringContextDiffCommand(),
                 PRIntelligenceCommand(),

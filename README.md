@@ -18,8 +18,9 @@ The `main` branch is validated against the **v0.6.0** release line. The reposito
 - learning-path generation
 - deterministic change-impact analysis
 - deterministic PR Intelligence
-- Architecture Intelligence
+- Architecture Intelligence and deterministic architecture contracts
 - versioned analysis/evidence artifacts
+- deterministic engineering-context snapshots and diffs
 - grounded repository Q&A retrieval
 - deterministic, evidence-backed engineering planning
 - evidence-first `prepare` workflow
@@ -65,8 +66,13 @@ codecontext impact /path/to/repository src/main/Service.kt --json
 codecontext pr-intelligence /path/to/repository --json
 codecontext pr-intelligence /path/to/repository --base main --head feature/my-change --json
 
-# Architecture intelligence
+# Architecture intelligence and governance
 codecontext architecture /path/to/repository --json
+codecontext architecture-contract /path/to/repository --contract /path/to/.codecontext-architecture-contract.json --json
+
+# Engineering context
+codecontext context-snapshot /path/to/repository --json
+codecontext context-diff output/before.json output/after.json --json
 
 # Grounded repository Q&A
 codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
@@ -145,6 +151,8 @@ Dependency Graph + Analysis Snapshot
 Deterministic Intelligence
  ┌─────┼─────┬──────┬──────────────┐
 Risk  Impact  PR  Architecture  Evolution
+                   ↓
+             Architecture Contract
        ↓
 Grounded Evidence
    ↙          ↘
@@ -165,7 +173,13 @@ Create a local configuration file when needed:
 cp .codecontext.json.template .codecontext.json
 ```
 
-Important settings include source exclusions, file-count limits, Git history limits, caching, parallel parsing, reporting limits, AI configuration, and rate limiting. Never commit API keys.
+For architecture governance, copy the contract template and customize its limits:
+
+```bash
+cp .codecontext-architecture-contract.json.template .codecontext-architecture-contract.json
+```
+
+Important settings include source exclusions, file-count limits, Git history limits, caching, parallel parsing, reporting limits, AI configuration, architecture rules, and rate limiting. Never commit API keys.
 
 The server also supports `CODECONTEXT_ALLOWED_PATHS`. Keep allowed roots as narrow as practical.
 
@@ -192,7 +206,7 @@ The server does not currently provide authentication, tenant isolation, or deplo
 ./gradlew --no-daemon build installDist
 ```
 
-GitHub Actions is the project's authoritative clean-environment verification path. CI validates compilation, tests, CLI flows, generated artifacts, intelligence flows, server health, API input boundaries, cross-platform distribution smoke tests, and report portability.
+GitHub Actions is the project's authoritative clean-environment verification path. CI validates compilation, tests, CLI flows, generated artifacts, intelligence flows, architecture contracts, server health, API input boundaries, cross-platform distribution smoke tests, and report portability.
 
 See:
 
