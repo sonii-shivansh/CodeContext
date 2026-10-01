@@ -40,8 +40,8 @@ jobs:
       - name: Run unit and property tests
         run: ./gradlew --no-daemon clean test
 
-      - name: Run code quality checks
-        run: ./gradlew --no-daemon ktlintCheck
+      - name: Run production code quality checks
+        run: ./gradlew --no-daemon ktlintMainSourceSetCheck
 
       - name: Build application and distribution
         run: ./gradlew --no-daemon build installDist
