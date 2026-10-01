@@ -59,6 +59,6 @@ object PRIntelligenceAnalyzer {
     }
 
     private fun relative(root: File, path: String): String = runCatching {
-        root.toPath().relativize(File(path).toPath()).invariantSeparatorsPath
+        root.toPath().relativize(File(path).toPath()).toString().replace('\\', '/')
     }.getOrDefault(path.replace('\\', '/'))
 }
