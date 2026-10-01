@@ -62,7 +62,8 @@ class AIAssistantCommand :
                 echo("\n🎯 Confidence: ${(response.confidence * 100).toInt()}%")
             } catch (e: Exception) {
                 if (e is com.codecontext.core.exceptions.CodeContextException) throw e
-                throw com.codecontext.core.exceptions.AIProviderException("Failed to get AI response", e)
+                val detail = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName ?: "unknown error"
+                throw com.codecontext.core.exceptions.AIProviderException("Failed to get AI response: $detail", e)
             }
         }
     }
