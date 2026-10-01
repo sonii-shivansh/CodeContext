@@ -47,6 +47,9 @@ object ChangeImpactEngine {
         packageByPath: Map<String, String> = emptyMap()
     ): ChangeImpactResult {
         val vertexByNormalizedPath = graph.vertexSet().associateBy(::normalize)
+        val pageRankByNormalizedPath = pageRankScores.mapKeys { normalize(it.key) }
+        val churnByNormalizedPath = churnByPath.mapKeys { normalize(it.key) }
+        val packageByNormalizedPath = packageByPath.mapKeys { normalize(it.key) }
         val normalizedChanges = changedPaths.map(::normalize).filter(vertexByNormalizedPath::containsKey).distinct().sorted()
         val changedVertices = normalizedChanges.map { vertexByNormalizedPath.getValue(it) }
         val distances = linkedMapOf<String, Int>()
@@ -73,6 +76,7 @@ object ChangeImpactEngine {
         val nodes = distances.entries
             .sortedWith(compareBy<Map.Entry<String, Int>> { it.value }.thenBy { normalize(it.key) })
             .map { (path, depth) ->
+                val normalizedPath = normalize(path)
                 val changed = depth == 0
                 val testCandidate = path in testPaths
                 val relationship = when {
@@ -85,19 +89,19 @@ object ChangeImpactEngine {
                     if (changed) add("explicitly changed")
                     if (depth == 1) add("direct dependent of a changed file")
                     if (depth > 1) add("transitively depends on a changed file")
-                    if ((pageRankScores[path] ?: 0.0) >= 0.02) add("notable dependency centrality")
-                    if ((churnByPath[path] ?: 0) >= 10) add("frequently changed file")
+                    if ((pageRankByNormalizedPath[normalizedPath] ?: 0.0) >= 0.02) add("notable dependency centrality")
+                    if ((churnByNormalizedPath[normalizedPath] ?: 0) >= 10) add("frequently changed file")
                     if (testCandidate) add("likely test coverage candidate")
                 }.ifEmpty { listOf("reachable through dependency graph") }
-                val score = score(depth, pageRankScores[path] ?: 0.0, churnByPath[path] ?: 0)
+                val score = score(depth, pageRankByNormalizedPath[normalizedPath] ?: 0.0, churnByNormalizedPath[normalizedPath] ?: 0)
                 ImpactNode(path, relationship, depth, score, reasons)
             }
 
         val impactedNonChanged = nodes.filter { it.relationship != ImpactRelationship.CHANGED }
-        val impactedPackages = impactedNonChanged.mapNotNull { packageByPath[it.path] }.filter { it.isNotBlank() }.toSet().size
-        val changedPackages = changedVertices.mapNotNull { packageByPath[it] }.filter { it.isNotBlank() }.toSet()
+        val impactedPackages = impactedNonChanged.mapNotNull { packageByNormalizedPath[normalize(it.path)] }.filter { it.isNotBlank() }.toSet().size
+        val changedPackages = normalizedChanges.mapNotNull { packageByNormalizedPath[it] }.filter { it.isNotBlank() }.toSet()
         val crossPackageImpacts = impactedNonChanged.count {
-            val pkg = packageByPath[it.path]
+            val pkg = packageByNormalizedPath[normalize(it.path)]
             pkg != null && pkg.isNotBlank() && pkg !in changedPackages
         }
 
