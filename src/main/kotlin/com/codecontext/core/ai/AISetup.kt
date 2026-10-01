@@ -1,5 +1,6 @@
 package com.codecontext.core.ai
 
+import com.codecontext.core.Version
 import com.codecontext.core.config.UserConfigStore
 import java.net.URI
 import java.net.http.HttpClient
@@ -36,7 +37,7 @@ object AISetup {
                 .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/$model"))
                 .timeout(Duration.ofSeconds(15))
                 .header("x-goog-api-key", apiKey)
-                .header("x-goog-api-client", "codecontext/0.6.0")
+                .header("x-goog-api-client", "codecontext/${Version.current}")
                 .GET()
                 .build()
         }.getOrElse { return AISetupResult.Failure("Could not prepare Gemini validation request: ${it.message}") }
