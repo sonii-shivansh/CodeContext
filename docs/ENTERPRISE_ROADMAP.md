@@ -44,6 +44,8 @@ Implemented:
 - deterministic architecture contracts for CI/governance enforcement
 - `architecture-contract` CLI command
 - contract templates with explicit finding/cycle/severity limits
+- deterministic architecture contract decision records with repository commit, contract/result digests, and stable decision IDs
+- idempotent contract decision history persistence via `--record`
 - CI end-to-end verification of architecture analysis, drift, and contract evaluation
 
 ## Engineering context
@@ -165,7 +167,7 @@ The clean-environment workflows are the authoritative execution environment for 
 
 ## Release line
 
-The current `main` branch is validated against the **v0.6.0** release line. The v0.9 engineering-intelligence branch extends the release line without changing the existing version contract.
+The current `main` branch is validated against the **v0.6.0** release line. The v0.10 engineering-intelligence branch extends the release line without changing the existing version contract.
 
 ## Current limitations
 
@@ -180,6 +182,6 @@ The repository currently has important boundaries:
 - production telemetry integrations are not implemented;
 - organization-wide governance and cross-repository intelligence are not implemented;
 - context snapshots currently fingerprint repository-scanned source files and do not yet capture the full semantic evidence graph;
-- architecture contracts currently enforce deterministic architecture findings and limits but do not yet persist historical contract decisions or approvals.
+- architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not yet implemented.
 
 This file should be updated when implementation changes materially. It should not describe unimplemented features as if they already exist.
