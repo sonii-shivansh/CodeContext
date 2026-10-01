@@ -42,14 +42,23 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon installDist
+
+      - name: Verify CLI on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
           ./build/install/codecontext/bin/codecontext --version | grep -Fx '0.6.0'
           ./build/install/codecontext/bin/codecontext --help >/dev/null
 
       - name: Build distribution on Windows
         if: runner.os == 'Windows'
         shell: pwsh
+        run: .\gradlew.bat --no-daemon installDist
+
+      - name: Verify CLI on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          .\gradlew.bat --no-daemon installDist
           $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
           if ($version -ne '0.6.0') { throw "Unexpected CLI version: $version" }
           & .\build\install\codecontext\bin\codecontext.bat --help | Out-Null
