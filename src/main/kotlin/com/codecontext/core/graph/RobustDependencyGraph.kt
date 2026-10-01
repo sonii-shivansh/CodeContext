@@ -41,9 +41,10 @@ class RobustDependencyGraph {
             }
 
             if (graph.vertexSet().isNotEmpty()) {
-                val cycleDetector = CycleDetector(graph)
-                hasCycles = cycleDetector.detectCycles()
-                if (hasCycles) println("⚠️ Warning: Circular dependencies detected (cycles found involving ${cycleDetector.findCycles().size} vertices)")
+                hasCycles = CycleDetector(graph).detectCycles()
+                if (hasCycles) {
+                    println("⚠️ Warning: Circular dependencies detected")
+                }
             }
             Result.success(Unit)
         } catch (e: Exception) {
