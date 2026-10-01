@@ -31,7 +31,7 @@ class ImprovedAnalyzeCommand :
 
     override fun run() {
         echo("🚀 Starting CodeContext analysis for: $path")
-        val rootDir = File(path)
+        val rootDir = File(path).canonicalFile
         if (!rootDir.exists()) {
             echo("❌ Error: Path does not exist: $path")
             return
@@ -41,7 +41,8 @@ class ImprovedAnalyzeCommand :
             return
         }
 
-        val config = ConfigLoader.load()
+        // Resolve project settings from the repository being analyzed.
+        val config = ConfigLoader.loadForRepository(rootDir.path)
         val time = measureTimeMillis {
             try {
                 if (clearCache) {
@@ -50,8 +51,8 @@ class ImprovedAnalyzeCommand :
                 }
 
                 echo("📂 Scanning repository...")
-                val scanner = RepositoryScanner()
-                val files = scanner.scan(path)
+                val scanner = RepositoryScanner(config)
+                val files = scanner.scan(rootDir.path)
                 echo("   Found ${files.size} files")
 
                 if (files.isEmpty()) {
@@ -79,7 +80,7 @@ class ImprovedAnalyzeCommand :
 
                 echo("📜 Analyzing Git history...")
                 val enrichedFiles = try {
-                    OptimizedGitAnalyzer().analyze(File(path).absolutePath, parsedFiles)
+                    OptimizedGitAnalyzer().analyze(rootDir.path, parsedFiles)
                 } catch (e: Exception) {
                     echo("   ⚠️  Git analysis failed: ${e.message}")
                     if (verbose) println(e.stackTraceToString())
@@ -110,7 +111,7 @@ class ImprovedAnalyzeCommand :
                 }
 
                 val snapshot = AnalysisSnapshotBuilder.build(
-                    repositoryPath = rootDir.absoluteFile.normalize().path,
+                    repositoryPath = rootDir.path,
                     parsedFiles = enrichedFiles,
                     graph = graph.graph,
                     pageRankScores = graph.pageRankScores,
