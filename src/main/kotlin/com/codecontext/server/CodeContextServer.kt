@@ -7,6 +7,8 @@ import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.CodeContextConfig
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
+import com.codecontext.core.intelligence.ArchitectureIntelligenceEngine
+import com.codecontext.core.intelligence.ArchitectureIntelligenceResult
 import com.codecontext.core.intelligence.ChangeImpactEngine
 import com.codecontext.core.intelligence.ChangeImpactResult
 import com.codecontext.core.intelligence.GitChangeSetBuilder
@@ -30,6 +32,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class AnalysisRequest(val repoPath: String)
 @Serializable data class AskRequest(val repoPath: String, val question: String)
 @Serializable data class ImpactRequest(val repoPath: String, val changedPaths: List<String>)
+@Serializable data class ArchitectureRequest(val repoPath: String)
 @Serializable data class PRIntelligenceRequest(val repoPath: String, val baseRevision: String? = null, val headRevision: String? = null)
 @Serializable data class AnalysisResponse(val fileCount: Int, val hotspots: List<HotspotInfo>, val reportUrl: String)
 @Serializable data class HotspotInfo(val file: String, val score: Double)
@@ -54,20 +57,14 @@ fun Application.module() {
             try {
                 val request = call.receive<AnalysisRequest>()
                 require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
-                require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) {
-                    "Remote repositories are not supported by this local endpoint"
-                }
-                val path = sanitizePath(request.repoPath)
-                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) { "Remote repositories are not supported by this local endpoint" }
+                val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
                 val config = ConfigLoader.load()
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
                 val reportId = UUID.randomUUID().toString()
                 val reportFile = File("output/$reportId.html").apply { parentFile.mkdirs() }
-                com.codecontext.output.ReportGenerator().generate(
-                    graph, reportFile.absolutePath, enrichedFiles,
-                    com.codecontext.core.generator.LearningPathGenerator().generate(graph)
-                )
+                com.codecontext.output.ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, com.codecontext.core.generator.LearningPathGenerator().generate(graph))
                 val hotspots = graph.getTopHotspots(5).map { HotspotInfo(File(it.first).name, it.second) }
                 call.respond(AnalysisResponse(parsedFiles.size, hotspots, "/reports/$reportId.html"))
             } catch (e: IllegalArgumentException) {
@@ -81,23 +78,14 @@ fun Application.module() {
         post("/impact") {
             try {
                 val request = call.receive<ImpactRequest>()
-                require(request.changedPaths.isNotEmpty() && request.changedPaths.size <= MAX_CHANGED_PATHS) {
-                    "Between 1 and $MAX_CHANGED_PATHS changed paths are required"
-                }
-                val path = sanitizePath(request.repoPath)
-                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                require(request.changedPaths.isNotEmpty() && request.changedPaths.size <= MAX_CHANGED_PATHS) { "Between 1 and $MAX_CHANGED_PATHS changed paths are required" }
+                val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
                 val config = ConfigLoader.load()
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
                 val pathLookup = enrichedFiles.associateBy { it.file.absolutePath.replace('\\', '/') }
                 val changedAbsolute = request.changedPaths.map { File(path, it).absolutePath.replace('\\', '/') }
-                val result: ChangeImpactResult = ChangeImpactEngine.analyze(
-                    graph = graph.graph,
-                    changedPaths = changedAbsolute,
-                    pageRankScores = graph.pageRankScores,
-                    churnByPath = pathLookup.mapValues { it.value.gitMetadata.changeFrequency },
-                    packageByPath = pathLookup.mapValues { it.value.packageName }
-                )
+                val result: ChangeImpactResult = ChangeImpactEngine.analyze(graph.graph, changedAbsolute, graph.pageRankScores, pathLookup.mapValues { it.value.gitMetadata.changeFrequency }, pathLookup.mapValues { it.value.packageName })
                 call.respond(result)
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
@@ -107,22 +95,32 @@ fun Application.module() {
             }
         }
 
+        post("/architecture") {
+            try {
+                val request = call.receive<ArchitectureRequest>()
+                require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
+                val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                val config = ConfigLoader.load()
+                val (graph, _, _) = AnalysisLogic.analyze(path, config)
+                val result: ArchitectureIntelligenceResult = ArchitectureIntelligenceEngine.analyze(graph.graph, File(path), config.architecture)
+                call.respond(result)
+            } catch (e: IllegalArgumentException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: Exception) {
+                System.err.println("Architecture analysis failed: ${e::class.simpleName}")
+                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, ApiError("Architecture analysis failed"))
+            }
+        }
+
         post("/pr-intelligence") {
             try {
                 val request = call.receive<PRIntelligenceRequest>()
                 require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
                 require(request.repoPath.length <= 4096) { "Repository path is invalid" }
-                require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) {
-                    "Remote repositories are not supported by this local endpoint"
-                }
+                require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) { "Remote repositories are not supported by this local endpoint" }
                 validateRevisionPair(request.baseRevision, request.headRevision)
-                val path = sanitizePath(request.repoPath)
-                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
-                val changeSet = if (request.baseRevision != null) {
-                    GitChangeSetBuilder.fromRevisions(path, request.baseRevision, request.headRevision!!)
-                } else {
-                    GitChangeSetBuilder.fromWorkingTree(path)
-                }
+                val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                val changeSet = if (request.baseRevision != null) GitChangeSetBuilder.fromRevisions(path, request.baseRevision, request.headRevision!!) else GitChangeSetBuilder.fromWorkingTree(path)
                 val result: PRIntelligenceResult = PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.load())
                 call.respond(result)
             } catch (e: IllegalArgumentException) {
@@ -138,8 +136,7 @@ fun Application.module() {
                 val request = call.receive<AskRequest>()
                 require(request.question.isNotBlank() && request.question.length <= MAX_QUESTION_LENGTH) { "Question is invalid" }
                 val config = ConfigLoader.load()
-                val path = sanitizePath(request.repoPath)
-                    ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
                 if (!config.ai.enabled) return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("AI disabled in config"))
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val context = CodebaseContext(parsedFiles.size, listOf("Kotlin/Java"), graph.getTopHotspots(10).map { it.first }, emptyList())
@@ -169,9 +166,7 @@ fun Application.module() {
 
 fun validateRevisionPair(baseRevision: String?, headRevision: String?) {
     require((baseRevision == null) == (headRevision == null)) { "baseRevision and headRevision must be supplied together" }
-    listOfNotNull(baseRevision, headRevision).forEach { revision ->
-        require(revision.isNotBlank() && revision.length <= MAX_REVISION_LENGTH) { "Git revision is invalid" }
-    }
+    listOfNotNull(baseRevision, headRevision).forEach { revision -> require(revision.isNotBlank() && revision.length <= MAX_REVISION_LENGTH) { "Git revision is invalid" } }
 }
 
 object AnalysisLogic {
@@ -193,9 +188,7 @@ fun sanitizePath(inputPath: String): String? {
         val candidate = Paths.get(inputPath).toRealPath()
         if (!Files.isDirectory(candidate) || !Files.isReadable(candidate)) return null
         val configured = System.getenv("CODECONTEXT_ALLOWED_PATHS")
-        val roots = (configured?.split(File.pathSeparator)?.filter { it.isNotBlank() }
-            ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir")))
-            .mapNotNull { runCatching { Paths.get(it).toRealPath() }.getOrNull() }
+        val roots = (configured?.split(File.pathSeparator)?.filter { it.isNotBlank() } ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir"))).mapNotNull { runCatching { Paths.get(it).toRealPath() }.getOrNull() }
         if (roots.any { root -> candidate == root || candidate.startsWith(root) }) candidate.toString() else null
     } catch (_: Exception) { null }
 }
