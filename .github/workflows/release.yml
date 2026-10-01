@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version without v prefix, for example 0.2.0"
+        description: "Release version without v prefix, for example 0.6.0"
         required: true
         type: string
   push:
@@ -15,11 +15,11 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Build and publish GitHub Release
+  resolve-version:
+    name: Resolve and verify release version
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,15 +34,6 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Run tests
-        run: ./gradlew --no-daemon clean test
-
-      - name: Build distribution
-        run: ./gradlew --no-daemon build installDist
-
-      - name: Verify installed CLI
-        run: ./build/install/codecontext/bin/codecontext --help
-
       - name: Determine version
         id: version
         shell: bash
@@ -52,32 +43,110 @@ jobs:
           else
             VERSION="${{ inputs.version }}"
           fi
+          test -n "$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Package Linux distribution
+      - name: Verify Gradle version matches release version
+        shell: bash
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          tar -czf "codecontext-${VERSION}-linux.tar.gz" -C build/install codecontext
+          declared="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
+          test "$declared" = "${{ steps.version.outputs.version }}"
 
-      - name: Package Windows-compatible ZIP
+      - name: Run release test suite
+        run: ./gradlew --no-daemon clean test
+
+  package:
+    name: Package ${{ matrix.name }}
+    needs: resolve-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            runner: ubuntu-24.04
+            archive: tar.gz
+          - name: windows-x64
+            runner: windows-2025
+            archive: zip
+          - name: macos-x64
+            runner: macos-13
+            archive: tar.gz
+          - name: macos-arm64
+            runner: macos-14
+            archive: tar.gz
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "gradle"
+
+      - name: Build distribution on Unix
+        if: runner.os != 'Windows'
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          cd build/install
-          zip -r "../../codecontext-${VERSION}-windows.zip" codecontext
+          chmod +x ./gradlew
+          ./gradlew --no-daemon installDist
+          ./build/install/codecontext/bin/codecontext --version | grep -Fx '${{ needs.resolve-version.outputs.version }}'
+
+      - name: Build distribution on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          .\gradlew.bat --no-daemon installDist
+          $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
+          if ($version -ne '${{ needs.resolve-version.outputs.version }}') { throw "Unexpected version: $version" }
+
+      - name: Package Unix artifact
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          VERSION='${{ needs.resolve-version.outputs.version }}'
+          tar -czf "codecontext-${VERSION}-${{ matrix.name }}.tar.gz" -C build/install codecontext
+
+      - name: Package Windows artifact
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = '${{ needs.resolve-version.outputs.version }}'
+          Compress-Archive -Path .\build\install\codecontext -DestinationPath "codecontext-$version-${{ matrix.name }}.zip"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codecontext-${{ matrix.name }}
+          path: codecontext-*-${{ matrix.name }}.*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [resolve-version, package]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: codecontext-*
+          path: release-assets
+          merge-multiple: true
 
       - name: Generate checksums
+        working-directory: release-assets
         run: |
-          sha256sum codecontext-*.tar.gz codecontext-*.zip > SHA256SUMS
+          sha256sum codecontext-* > SHA256SUMS
           cat SHA256SUMS
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: CodeContext v${{ steps.version.outputs.version }}
+          tag_name: v${{ needs.resolve-version.outputs.version }}
+          name: CodeContext v${{ needs.resolve-version.outputs.version }}
           generate_release_notes: true
           files: |
-            codecontext-*.tar.gz
-            codecontext-*.zip
-            SHA256SUMS
+            release-assets/codecontext-*
+            release-assets/SHA256SUMS
