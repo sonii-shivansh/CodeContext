@@ -134,6 +134,28 @@ jobs:
           ./build/install/codecontext/bin/codecontext architecture . --json
           test -s output/architecture.json
 
+      - name: Verify Architecture Drift CLI
+        shell: bash
+        run: |
+          cp output/architecture.json output/architecture-baseline.json
+          rm -f output/architecture-drift.json
+          ./build/install/codecontext/bin/codecontext architecture-drift . --baseline output/architecture-baseline.json --json
+          test -s output/architecture-drift.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          drift = json.loads(Path("output/architecture-drift.json").read_text())
+          assert drift["schemaVersion"] == "1.0"
+          assert drift["summary"] == {
+              "addedFindings": 0,
+              "removedFindings": 0,
+              "newCycles": 0,
+              "removedCycles": 0,
+              "changedLayers": 0,
+          }
+          assert drift["changes"] == []
+          PY
+
       - name: Start server
         shell: bash
         run: |
