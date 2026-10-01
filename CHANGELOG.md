@@ -4,18 +4,24 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ## [Unreleased]
 
+_No unreleased changes are documented yet._
+
+## [0.6.0]
+
 ### Added
 
 - Launch-hardening verification for CLI, repository Q&A, engineering planning, REST health, intelligence endpoints, and security input boundaries.
 - A single application version contract used by the build and REST health endpoint.
 - Self-contained HTML report visualization with no runtime CDN dependency.
+- Cross-platform distribution smoke verification for Linux x64, Windows x64, macOS x64, and macOS ARM64.
 
 ### Changed
 
-- Project version is aligned to the v0.6.0 release candidate.
+- Project version is aligned to the v0.6.0 release line.
 - CI quality gates now fail on ktlint errors instead of ignoring them.
-- Clean-environment verification now validates the installed CLI version and exercises the current deterministic intelligence flows.
-- Documentation now reflects the current local-first implementation and offline report behavior.
+- Clean-environment verification validates the installed CLI version and exercises the deterministic intelligence flows.
+- Documentation reflects the current local-first implementation and offline report behavior.
+- Release verification covers CLI behavior and distribution artifacts across the supported platform matrix.
 
 ### Security
 
@@ -79,7 +85,8 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 - The server does not provide authentication, tenant isolation, or report retention.
 - AI analysis requires external provider access and explicit configuration.
 
-[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.6.0
 [0.5.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.5.0
 [0.2.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.2.0
 [0.1.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.1.0
