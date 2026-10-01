@@ -56,14 +56,21 @@ object EngineeringVerification {
         val impact = ChangeImpactEngine.analyze(graph.graph, changedAbsolute, graph.pageRankScores, churn, packages)
         val snapshot = AnalysisSnapshotBuilder.build(root.path, enriched, graph.graph, graph.pageRankScores, graph.hasCycles)
         val risks = com.codecontext.core.intelligence.EngineeringRiskEngine.calculate(snapshot)
-        val tests = impact.nodes.filter { it.relationship == com.codecontext.core.intelligence.ImpactRelationship.TEST_CANDIDATE }.map { root.toPath().relativize(File(it.path).toPath()).toString().replace('\\', '/') }
+        val toRelativePath: (String) -> String = { path ->
+            val candidate = File(path).toPath()
+            val absolute = if (candidate.isAbsolute) candidate else root.toPath().resolve(candidate)
+            root.toPath().relativize(absolute.normalize()).toString().replace('\\', '/')
+        }
+        val tests = impact.nodes
+            .filter { it.relationship == com.codecontext.core.intelligence.ImpactRelationship.TEST_CANDIDATE }
+            .map { toRelativePath(it.path) }
         val pr = com.codecontext.core.intelligence.PRIntelligenceEngine.analyze(
             changeSet = changeSet,
             impact = impact,
             risks = risks,
             packageByPath = packageByPath,
             testCandidates = tests,
-            pathMapper = { path -> root.toPath().relativize(File(path).toPath()).toString().replace('\\', '/') }
+            pathMapper = toRelativePath
         )
         val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
         val status = when {
