@@ -13,14 +13,19 @@ class ConfigLoaderTest {
 
     @BeforeTest
     fun setUp() {
+        ConfigTestLock.lock.lock()
         tempDir = createTempDirectory("codecontext-config-loader-test")
         System.setProperty("codecontext.config.home", tempDir.toString())
     }
 
     @AfterTest
     fun tearDown() {
-        System.clearProperty("codecontext.config.home")
-        tempDir.toFile().deleteRecursively()
+        try {
+            System.clearProperty("codecontext.config.home")
+            tempDir.toFile().deleteRecursively()
+        } finally {
+            ConfigTestLock.lock.unlock()
+        }
     }
 
     @Test
