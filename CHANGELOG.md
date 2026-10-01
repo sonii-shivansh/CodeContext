@@ -11,20 +11,18 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 - Versioned `AnalysisSnapshot` and grounded `EvidenceCitation` contracts.
 - Grounded repository Q&A retrieval through the `repo-qa` CLI command.
 - Evidence-backed engineering planning through the `plan` CLI command.
-- 2027–2028 product vision and engineering evidence platform strategy.
-- Focused roadmap for governance, Change Proof, simulation, migration safety, provenance, and controlled agent execution.
+- Linux and Windows CI verification for the current intelligence flows.
 
 ### Changed
 
-- Documentation now treats deterministic evidence as the authoritative repository-fact layer.
+- Documentation now describes the implemented evidence-first architecture and current command/API surface.
 - AI is documented as an optional reasoning layer rather than a repository source of truth.
-- Development guidance now requires explicit evidence, permissions, isolation, uncertainty, and CI verification for future AI/agentic features.
 
 ### Security
 
 - Grounded evidence exposes repository-relative paths instead of absolute filesystem paths.
 - AI context remains bounded and opt-in.
-- Future agentic execution is required to use isolation, explicit policy checks, bounded permissions, and CI verification.
+- Server path validation and rate limiting remain enabled for the local API.
 
 ## [0.2.0] - 2026-09-19
 
@@ -57,7 +55,7 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Known limitations
 
-- Kotlin parsing is regex-based and may miss complex constructs.
+- Kotlin parsing may miss complex constructs.
 - Reports currently depend on a browser visualization asset loaded from a CDN.
 - The server does not provide authentication, tenant isolation, or report retention.
 - AI analysis requires external provider access and explicit configuration.
