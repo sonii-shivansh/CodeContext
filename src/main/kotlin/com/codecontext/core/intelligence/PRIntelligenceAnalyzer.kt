@@ -8,11 +8,10 @@ import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.scanner.OptimizedGitAnalyzer
 import com.codecontext.core.scanner.RepositoryScanner
 import java.io.File
-import kotlinx.coroutines.runBlocking
 
 /** Orchestrates existing deterministic analyzers into one PR Intelligence result. */
 object PRIntelligenceAnalyzer {
-    fun analyze(
+    suspend fun analyze(
         repoPath: String,
         changeSet: ChangeSet,
         config: CodeContextConfig = ConfigLoader.load()
@@ -21,7 +20,7 @@ object PRIntelligenceAnalyzer {
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
-        val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(files) }
+        val parsed = CodeParallelParser(CacheManager()).parseFiles(files)
         val enriched = OptimizedGitAnalyzer().analyze(root.path, parsed)
         val graph = RobustDependencyGraph()
         graph.build(enriched).getOrThrow()
