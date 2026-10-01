@@ -5,20 +5,19 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import kotlinx.serialization.json.Json
 
 /** Small, typed Gemini client used by the interactive repository Q&A path. */
 class GeminiAskService(
     private val apiKey: String,
-    private val model: String = "gemini-2.5-flash"
+    private val model: String = "gemini-3.8-flash"
 ) {
     private val client = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(20))
@@ -36,9 +35,6 @@ class GeminiAskService(
                 })
             }
             putJsonObject("generationConfig") {
-                put("temperature", 0.7)
-                put("topK", 40)
-                put("topP", 0.95)
                 put("maxOutputTokens", 2048)
             }
         }
@@ -75,8 +71,8 @@ class GeminiAskService(
             if (start >= 0 && end > start) raw.substring(start, end + 1) else raw
         }
         return runCatching {
-            json.decodeFromString<AIConversationResponse>(payload)
-                .copy(confidence = json.decodeFromString<AIConversationResponse>(payload).confidence.coerceIn(0.0, 1.0))
+            val parsed = json.decodeFromString<AIConversationResponse>(payload)
+            parsed.copy(confidence = parsed.confidence.coerceIn(0.0, 1.0))
         }.getOrElse {
             AIConversationResponse(
                 answer = response.trim().take(2000),
