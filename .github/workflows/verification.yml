@@ -14,11 +14,13 @@ jobs:
   verify:
     name: Build, test, and end-to-end verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -76,6 +78,23 @@ jobs:
           print(f"Validated {snapshot['metrics']['totalFiles']} files and {len(risks)} risk records")
           PY
 
+      - name: Verify PR Intelligence CLI
+        shell: bash
+        run: |
+          rm -f output/pr-intelligence.json
+          ./build/install/codecontext/bin/codecontext pr-intelligence . --base HEAD~1 --head HEAD --json
+          test -s output/pr-intelligence.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path("output/pr-intelligence.json").read_text())
+          assert result["schemaVersion"] == "1.0"
+          assert result["changeSummary"]["filesChanged"] >= 1
+          assert result["aggregateSeverity"] in {"INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"}
+          print(f"PR Intelligence validated: {result['changeSummary']['filesChanged']} changed files")
+          PY
+
       - name: Start server
         shell: bash
         run: |
@@ -104,6 +123,24 @@ jobs:
           curl --fail --silent http://127.0.0.1:18080/health/live | grep -F '"status":"live"'
           curl --fail --silent http://127.0.0.1:18080/health/ready | grep -F '"status":"ready"'
 
+      - name: Verify PR Intelligence REST API
+        shell: bash
+        run: |
+          curl --fail --silent \
+            -H 'Content-Type: application/json' \
+            -d '{"repoPath":".","baseRevision":"HEAD~1","headRevision":"HEAD"}' \
+            http://127.0.0.1:18080/pr-intelligence > pr-intelligence-response.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path("pr-intelligence-response.json").read_text())
+          assert result["schemaVersion"] == "1.0"
+          assert "changeSummary" in result
+          assert "findings" in result
+          print("PR Intelligence REST endpoint validated")
+          PY
+
       - name: Stop server
         if: always()
         shell: bash
@@ -122,3 +159,4 @@ jobs:
             output/
             server.log
             response.txt
+            pr-intelligence-response.json

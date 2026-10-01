@@ -1,19 +1,24 @@
 # CodeContext
 
-CodeContext is a Kotlin/JVM command-line and local REST application for understanding Java and Kotlin codebases. It scans source files, extracts dependency metadata, analyzes graph centrality and Git history, and produces an interactive HTML report to support onboarding, architecture review, and knowledge-risk analysis.
+CodeContext is a Kotlin/JVM command-line and local REST application for understanding Java and Kotlin codebases. It scans source files, extracts dependency metadata, analyzes graph centrality and Git history, and produces deterministic engineering intelligence plus an interactive HTML report.
 
 ## Status
 
 - Java and Kotlin analysis is supported.
 - CLI analysis and local REST serving are supported.
-- Reports are generated locally under `output/`.
+- Reports and machine-readable intelligence artifacts are generated locally under `output/`.
+- Change Impact Intelligence and PR Intelligence are deterministic and provider-independent.
 - AI assistance is optional and sends only the configured prompt context to the selected provider.
-- The REST server accepts local paths within configured workspace roots. Remote repository URLs are not accepted by the current server endpoint.
+- The REST server accepts local paths within configured workspace roots. Remote repository URLs are not accepted by the current server endpoints.
 
 ## Features
 
 - Dependency graph construction from package and import metadata
 - PageRank-based knowledge hotspots
+- Deterministic engineering-risk signals
+- Change-impact and dependency blast-radius analysis
+- PR Intelligence for Git diffs: risk, architecture, tests, and change-size signals
+- Versioned JSON intelligence artifacts suitable for CI and future AI grounding
 - Cycle detection and dependency visualization
 - Learning-path generation for onboarding
 - Git authorship, churn, and recent-change metadata
@@ -38,25 +43,23 @@ cd CodeContext
 ./build/install/codecontext/bin/codecontext analyze .
 ```
 
-The default CLI report is written to:
-
-```text
-output/index.html
-```
-
-Open it with the appropriate command for your platform:
-
-```bash
-open output/index.html       # macOS
-xdg-open output/index.html   # Linux
-start output/index.html      # Windows
-```
+The default CLI report is written to `output/index.html`.
 
 ## CLI commands
 
 ```bash
 # Analyze a repository
 ./build/install/codecontext/bin/codecontext analyze /path/to/repository
+
+# Analyze current working-tree changes
+./build/install/codecontext/bin/codecontext pr-intelligence /path/to/repository --json
+
+# Analyze two Git revisions
+./build/install/codecontext/bin/codecontext pr-intelligence /path/to/repository \
+  --base main --head feature/my-change --json
+
+# Analyze explicit changed files
+./build/install/codecontext/bin/codecontext impact /path/to/repository src/main/Service.kt --json
 
 # Start the local API server
 ./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
@@ -68,12 +71,14 @@ start output/index.html      # Windows
 ./build/install/codecontext/bin/codecontext evolution /path/to/repository
 ```
 
+PR Intelligence writes `output/pr-intelligence.json` when `--json` is supplied. See [PR Intelligence](docs/PR_INTELLIGENCE.md) for the data model and rules.
+
 The exact command options are available through:
 
 ```bash
 ./build/install/codecontext/bin/codecontext --help
-./build/install/codecontext/bin/codecontext analyze --help
-./build/install/codecontext/bin/codecontext server --help
+./build/install/codecontext/bin/codecontext pr-intelligence --help
+./build/install/codecontext/bin/codecontext impact --help
 ```
 
 ## Configuration
@@ -100,12 +105,7 @@ Important configuration fields include:
 | `ai.apiKey` | empty | Provider credential; never commit it |
 | `ai.model` | provider-specific | Provider model identifier |
 
-The server also supports these environment variables:
-
-- `CODECONTEXT_ALLOWED_PATHS`: path-separated roots accepted by server path validation.
-- `CODECONTEXT_ALLOWED_GIT_HOSTS`: reserved for deployments that add a controlled remote-clone implementation.
-
-Do not place API keys in source control, reports, logs, or issue descriptions.
+The server also supports `CODECONTEXT_ALLOWED_PATHS`. Do not place API keys in source control, reports, logs, or issue descriptions.
 
 ## REST server
 
@@ -115,44 +115,34 @@ Start the server locally:
 ./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
 ```
 
-The server exposes health endpoints and local analysis routes. See [docs/API.md](docs/API.md) for request and response details.
+The server exposes health, analysis, change-impact, and PR Intelligence routes. See [docs/API.md](docs/API.md) and [docs/PR_INTELLIGENCE.md](docs/PR_INTELLIGENCE.md).
 
 The server is intended to run behind an authenticated, trusted deployment boundary. It does not provide user authentication, tenant isolation, report expiration, or multi-tenant authorization by itself.
 
 ## Architecture
 
 ```text
-src/main/kotlin/com/codecontext/
-  Main.kt                    Application entry point
-  cli/                       Clikt commands and parallel parsing
-  core/
-    ai/                      Optional AI provider integration
-    cache/                   Content-addressed parse cache
-    config/                  JSON configuration loading
-    generator/               Learning-path generation
-    graph/                   Dependency graph and PageRank
-    parser/                  Java AST and Kotlin parsing
-    scanner/                 Source discovery and Git analysis
-    temporal/                Codebase evolution analysis
-  enterprise/                Multi-repository analysis and licensing
-  output/                    HTML and graph report generation
-  server/                    Ktor routes, validation, and rate limiting
-src/test/kotlin/              Unit, integration, security, and verification tests
-docs/                         Architecture, API, and development documentation
+Source + Git
+    ↓
+RepositoryScanner → Parser → Git metadata
+    ↓
+Unified dependency graph
+    ↓
+┌───────────────────────────────────────┐
+│ deterministic intelligence            │
+│                                       │
+│ PageRank / Risk / Change Impact       │
+│ Architecture / Test / PR Intelligence │
+└───────────────────────────────────────┘
+    ↓
+Versioned evidence JSON
+    ↓
+CLI / REST / CI
+    ↓
+Future: GitHub integration + grounded AI
 ```
 
-The main analysis pipeline is:
-
-```text
-CLI or REST request
-  -> configuration and path validation
-  -> RepositoryScanner
-  -> CodeParallelParser
-  -> OptimizedGitAnalyzer
-  -> RobustDependencyGraph
-  -> LearningPathGenerator
-  -> ReportGenerator
-```
+The key design principle is **deterministic evidence first, AI reasoning second**. AI should explain or reason over computed repository facts rather than replace them.
 
 ## Development
 
@@ -161,26 +151,30 @@ CLI or REST request
 ./gradlew --no-daemon build installDist
 ```
 
-The GitHub verification workflow additionally checks CLI startup, self-analysis, generated report content, and server startup.
+GitHub Actions additionally verifies CLI startup, CodeContext self-analysis, generated intelligence artifacts, PR Intelligence CLI and REST flows, and server health. The CI pipeline is the authoritative execution environment for the project.
 
 See:
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [API reference](docs/API.md)
+- [PR Intelligence](docs/PR_INTELLIGENCE.md)
 - [Development guide](docs/DEVELOPMENT.md)
+- [Enterprise roadmap](docs/ENTERPRISE_ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
-- [Changelog](CHANGELOG.md)
 
 ## Roadmap
 
-- TypeScript, JavaScript, Python, and Go parsers
-- More accurate Kotlin parsing using a dedicated syntax model
+- Architecture rules and drift detection
+- GitHub PR comments and status checks
+- Configurable engineering governance policies
+- Grounded AI repository Q&A and evidence citations
+- AI-assisted change planning and PR review
 - Incremental and watch-mode analysis
-- Report retention and authenticated deployment support
-- Plugin APIs for custom analyzers
-- IDE integrations
-- Package-manager and container distribution
+- Ownership and knowledge-concentration intelligence
+- Cross-repository impact analysis
+- TypeScript, JavaScript, Python, and Go parsers
+- IDE integrations and package/container distribution
 
 ## License
 

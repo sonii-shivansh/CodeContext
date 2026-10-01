@@ -1,9 +1,10 @@
 package com.codecontext.core.intelligence
 
 import java.io.File
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.Serializable
 import org.jgrapht.graph.DefaultDirectedGraph
 import org.jgrapht.graph.DefaultEdge
-import kotlinx.serialization.Serializable
 
 @Serializable
 enum class ImpactRelationship { CHANGED, DIRECT_DEPENDENT, TRANSITIVE_DEPENDENT, TEST_CANDIDATE }
@@ -29,17 +30,14 @@ data class ImpactSummary(
 
 @Serializable
 data class ChangeImpactResult(
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val schemaVersion: String = "1.0",
     val changedPaths: List<String>,
     val nodes: List<ImpactNode>,
     val summary: ImpactSummary
 )
 
-/**
- * Deterministic reverse-dependency analysis. The dependency graph points from a
- * source file to the files it imports, so impact travels through incoming edges.
- * No LLM is involved; the result is suitable for CI gates and AI grounding.
- */
+/** Deterministic reverse-dependency analysis suitable for CI and AI grounding. */
 object ChangeImpactEngine {
     fun analyze(
         graph: DefaultDirectedGraph<String, DefaultEdge>,
@@ -48,11 +46,16 @@ object ChangeImpactEngine {
         churnByPath: Map<String, Int> = emptyMap(),
         packageByPath: Map<String, String> = emptyMap()
     ): ChangeImpactResult {
-        val normalizedChanges = changedPaths.map(::normalize).filter { graph.containsVertex(it) }.distinct().sorted()
+        val vertexByNormalizedPath = graph.vertexSet().associateBy(::normalize)
+        val pageRankByNormalizedPath = pageRankScores.mapKeys { normalize(it.key) }
+        val churnByNormalizedPath = churnByPath.mapKeys { normalize(it.key) }
+        val packageByNormalizedPath = packageByPath.mapKeys { normalize(it.key) }
+        val normalizedChanges = changedPaths.map(::normalize).filter(vertexByNormalizedPath::containsKey).distinct().sorted()
+        val changedVertices = normalizedChanges.map { vertexByNormalizedPath.getValue(it) }
         val distances = linkedMapOf<String, Int>()
         val queue = ArrayDeque<String>()
 
-        normalizedChanges.forEach {
+        changedVertices.forEach {
             distances[it] = 0
             queue.addLast(it)
         }
@@ -69,10 +72,11 @@ object ChangeImpactEngine {
             }
         }
 
-        val testPaths = findTestCandidates(graph.vertexSet(), normalizedChanges, distances)
+        val testPaths = findTestCandidates(graph.vertexSet(), normalizedChanges)
         val nodes = distances.entries
-            .sortedWith(compareBy<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+            .sortedWith(compareBy<Map.Entry<String, Int>> { it.value }.thenBy { normalize(it.key) })
             .map { (path, depth) ->
+                val normalizedPath = normalize(path)
                 val changed = depth == 0
                 val testCandidate = path in testPaths
                 val relationship = when {
@@ -85,20 +89,19 @@ object ChangeImpactEngine {
                     if (changed) add("explicitly changed")
                     if (depth == 1) add("direct dependent of a changed file")
                     if (depth > 1) add("transitively depends on a changed file")
-                    if ((pageRankScores[path] ?: 0.0) >= 0.02) add("notable dependency centrality")
-                    if ((churnByPath[path] ?: 0) >= 10) add("frequently changed file")
+                    if ((pageRankByNormalizedPath[normalizedPath] ?: 0.0) >= 0.02) add("notable dependency centrality")
+                    if ((churnByNormalizedPath[normalizedPath] ?: 0) >= 10) add("frequently changed file")
                     if (testCandidate) add("likely test coverage candidate")
                 }.ifEmpty { listOf("reachable through dependency graph") }
-
-                val score = score(depth, pageRankScores[path] ?: 0.0, churnByPath[path] ?: 0)
+                val score = score(depth, pageRankByNormalizedPath[normalizedPath] ?: 0.0, churnByNormalizedPath[normalizedPath] ?: 0)
                 ImpactNode(path, relationship, depth, score, reasons)
             }
 
         val impactedNonChanged = nodes.filter { it.relationship != ImpactRelationship.CHANGED }
-        val impactedPackages = impactedNonChanged.mapNotNull { packageByPath[it.path] }.filter { it.isNotBlank() }.toSet().size
-        val changedPackages = normalizedChanges.mapNotNull { packageByPath[it] }.filter { it.isNotBlank() }.toSet()
+        val impactedPackages = impactedNonChanged.mapNotNull { packageByNormalizedPath[normalize(it.path)] }.filter { it.isNotBlank() }.toSet().size
+        val changedPackages = normalizedChanges.mapNotNull { packageByNormalizedPath[it] }.filter { it.isNotBlank() }.toSet()
         val crossPackageImpacts = impactedNonChanged.count {
-            val pkg = packageByPath[it.path]
+            val pkg = packageByNormalizedPath[normalize(it.path)]
             pkg != null && pkg.isNotBlank() && pkg !in changedPackages
         }
 
@@ -116,15 +119,12 @@ object ChangeImpactEngine {
         )
     }
 
-    private fun findTestCandidates(
-        vertices: Set<String>,
-        changedPaths: List<String>,
-        distances: Map<String, Int>
-    ): Set<String> {
+    private fun findTestCandidates(vertices: Set<String>, changedPaths: List<String>): Set<String> {
         val changedNames = changedPaths.map { File(it).nameWithoutExtension.removeSuffix("Test").removeSuffix("Tests") }.toSet()
         return vertices.filter { path ->
-            val name = File(path).nameWithoutExtension
-            val looksLikeTest = name.endsWith("Test") || name.endsWith("Tests") || path.contains("/test/") || path.contains("\\test\\")
+            val normalized = normalize(path)
+            val name = File(normalized).nameWithoutExtension
+            val looksLikeTest = name.endsWith("Test") || name.endsWith("Tests") || normalized.contains("/test/")
             looksLikeTest && changedNames.any { name.contains(it) }
         }.toSet()
     }

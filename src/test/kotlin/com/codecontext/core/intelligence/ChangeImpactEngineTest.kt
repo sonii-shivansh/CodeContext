@@ -48,11 +48,7 @@ class ChangeImpactEngineTest {
 
     @Test
     fun `test candidates are identified deterministically`() {
-        val result = ChangeImpactEngine.analyze(
-            graph = graph(),
-            changedPaths = listOf("/repo/b/Repository.kt")
-        )
-
+        val result = ChangeImpactEngine.analyze(graph(), listOf("/repo/b/Repository.kt"))
         assertEquals(1, result.summary.testCandidates)
         val candidate = result.nodes.single { it.relationship == ImpactRelationship.TEST_CANDIDATE }
         assertTrue(candidate.path.endsWith("RepositoryTest.kt"))
@@ -60,13 +56,22 @@ class ChangeImpactEngineTest {
 
     @Test
     fun `unknown changed files are ignored without corrupting analysis`() {
-        val result = ChangeImpactEngine.analyze(
-            graph = graph(),
-            changedPaths = listOf("/repo/missing.kt", "/repo/a/Service.kt")
-        )
-
+        val result = ChangeImpactEngine.analyze(graph(), listOf("/repo/missing.kt", "/repo/a/Service.kt"))
         assertEquals(listOf("/repo/a/Service.kt"), result.changedPaths)
         assertEquals(5, result.nodes.size)
+    }
+
+    @Test
+    fun `windows separators resolve to the same graph vertices`() {
+        val windowsGraph = DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge::class.java)
+        windowsGraph.addVertex("C:\\repo\\Service.kt")
+        windowsGraph.addVertex("C:\\repo\\Controller.kt")
+        windowsGraph.addEdge("C:\\repo\\Controller.kt", "C:\\repo\\Service.kt")
+
+        val result = ChangeImpactEngine.analyze(windowsGraph, listOf("C:/repo/Service.kt"))
+
+        assertEquals(listOf("C:/repo/Service.kt"), result.changedPaths)
+        assertTrue(result.nodes.any { it.path.endsWith("Controller.kt") && it.depth == 1 })
     }
 
     @Test
