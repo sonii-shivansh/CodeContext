@@ -10,20 +10,13 @@ Build/install CodeContext, then run:
 codecontext mcp
 ```
 
-The process communicates using newline-delimited JSON-RPC messages over stdin/stdout. Do not pipe human-readable CLI output into the MCP process.
+The process communicates using newline-delimited JSON-RPC messages over stdin/stdout. Do not pipe human-readable CLI output into the MCP process; stdout is reserved for protocol messages.
 
 ## Tools
 
 ### `codecontext_analyze_repository`
 
-Returns repository-relative engineering facts including:
-
-- parsed file count
-- dependency graph node/edge counts
-- top dependency/PageRank hotspots
-- analysis schema version
-
-Arguments:
+Returns repository-relative engineering facts including parsed file count, dependency graph size, and top dependency/PageRank hotspots.
 
 ```json
 {"repoPath":"/absolute/path/to/repository"}
@@ -31,9 +24,7 @@ Arguments:
 
 ### `codecontext_impact_analysis`
 
-Calculates deterministic reverse-dependency impact for changed repository-relative paths.
-
-Arguments:
+Calculates deterministic reverse-dependency impact for changed repository-relative paths. The current server accepts at most 100 changed paths per call.
 
 ```json
 {
@@ -42,13 +33,9 @@ Arguments:
 }
 ```
 
-The current server accepts at most 100 changed paths per call.
-
 ### `codecontext_architecture_analysis`
 
 Returns the repository's current Architecture Intelligence result, including configured architectural signals and boundaries.
-
-Arguments:
 
 ```json
 {"repoPath":"/absolute/path/to/repository"}
@@ -107,7 +94,7 @@ For a shared or remote deployment, put an authenticated service boundary in fron
 
 ## Compatibility
 
-The server advertises MCP protocol version `2025-06-18` and implements the MCP initialization handshake plus the `tools/list`, `tools/call`, and `ping` methods needed for the current tool surface.
+The current implementation uses the **2025-11-25 MCP legacy handshake era**, which is the latest revision using `initialize`. It implements `initialize`, `notifications/initialized`, `ping`, `tools/list`, and `tools/call` for the current tool surface. Modern `2026-07-28` MCP lifecycle support is intentionally deferred until the server can implement its stateless discovery/request model correctly rather than advertising unsupported behavior.
 
 Client configuration differs between agent products. Configure the client to launch the installed CodeContext executable with the `mcp` argument, for example:
 
