@@ -26,7 +26,7 @@ A clear description of what actually happened.
 
 ## 📸 Screenshots/Logs
 
-If applicable, add screenshots or error logs to help explain your problem.
+If applicable, add screenshots or error logs to help explain the problem.
 
 ```
 Paste error logs here
@@ -36,7 +36,7 @@ Paste error logs here
 
 - **OS:** [e.g., Windows 11, macOS 14, Ubuntu 22.04]
 - **JDK Version:** [e.g., JDK 21]
-- **CodeContext Version:** [e.g., 0.1.0]
+- **CodeContext Version:** [e.g., 0.6.0]
 - **Repository Size:** [e.g., 100 files, 10k LOC]
 
 ## 📝 Additional Context
