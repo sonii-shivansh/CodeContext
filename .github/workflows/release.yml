@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: codecontext-*
           path: release-assets
