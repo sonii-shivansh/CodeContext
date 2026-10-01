@@ -29,6 +29,8 @@ Implemented:
 - architecture findings
 - test recommendations/signals
 - machine-readable intelligence artifacts
+- evidence-first `prepare → change → verify` workflow
+- deterministic change-safety scope verification
 
 ## Architecture intelligence
 
@@ -37,7 +39,9 @@ Implemented:
 - architecture-oriented findings over the dependency graph
 - cycle/boundary signals
 - deterministic architecture artifacts
-- CI end-to-end verification of the architecture flow
+- architecture drift comparison against an explicit baseline artifact
+- deterministic drift reporting for findings, cycles, and layer counts
+- CI end-to-end verification of the architecture flow and architecture-drift CLI
 
 ## Grounded evidence
 
@@ -82,6 +86,16 @@ Implemented:
 
 The current planner is read-only and does not modify repositories.
 
+## Engineering provenance
+
+Implemented:
+
+- versioned `DecisionProvenance` contract
+- stable SHA-256 provenance IDs
+- repository `HEAD` capture through read-only Git metadata when available
+- explicit unknown-Git state instead of fabricated provenance
+- provenance attached to prepare and verify workflow results
+
 ## AI integration
 
 Implemented:
@@ -121,6 +135,7 @@ Implemented CI verification includes:
 - self-analysis
 - PR Intelligence end-to-end verification
 - Architecture Intelligence end-to-end verification
+- architecture-drift CLI verification
 - REST API end-to-end verification
 - Linux x64 validation
 - Windows x64 validation
@@ -131,7 +146,7 @@ The clean-environment workflows are the authoritative execution environment for 
 
 ## Release line
 
-The current `main` branch is validated against the **v0.6.0** release line. Release verification covers the CLI, deterministic intelligence flows, generated artifacts, REST smoke checks, security input boundaries, and the supported cross-platform distribution matrix.
+The current `main` branch is validated against the **v0.6.0** release line. This v0.7 engineering-intelligence branch extends the release line without changing the existing version contract.
 
 ## Current limitations
 
@@ -144,6 +159,7 @@ The repository currently has important boundaries:
 - the planner is read-only;
 - autonomous code modification is not implemented;
 - production telemetry integrations are not implemented;
-- organization-wide governance and cross-repository intelligence are not implemented.
+- organization-wide governance and cross-repository intelligence are not implemented;
+- engineering-context snapshot/diff is planned next and is not yet exposed as a completed feature.
 
 This file should be updated when implementation changes materially. It should not describe unimplemented features as if they already exist.
