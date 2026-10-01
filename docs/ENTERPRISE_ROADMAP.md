@@ -1,152 +1,162 @@
-# CodeContext — Enterprise Code Intelligence Roadmap
+# CodeContext — Enterprise Engineering Intelligence Roadmap
 
 ## Vision
 
-Evolve CodeContext from a repository analyzer into an engineering-intelligence platform that combines static analysis, dependency intelligence, Git history, architecture rules, AI reasoning, and CI/CD automation.
+CodeContext evolves from a repository analyzer into an **engineering evidence and verification platform** for software built with humans and AI agents.
 
-## Core capabilities
+The product is intentionally different from a generic coding assistant. Its durable value is the structured evidence graph, temporal history, verification system, and governance layer around engineering changes.
 
-1. **Repository Intelligence**
-   - Language-aware parsing
-   - Dependency and call graphs
-   - Module/service boundaries
-   - Architecture discovery
+## Current foundation
 
-2. **Change Intelligence**
-   - PR blast-radius analysis
-   - Change-impact prediction
-   - Hotspot detection
-   - Risk scoring based on graph centrality, churn, ownership, and test coverage
+### Repository Intelligence
 
-3. **Engineering Intelligence**
-   - Ownership and knowledge concentration
-   - Technical debt signals
-   - Architecture drift detection
-   - Dependency-cycle detection
-   - Maintainability trends over time
+- Java and Kotlin parsing
+- dependency and graph analysis
+- PageRank hotspots
+- cycles and architecture signals
+- Git history and evolution
+- learning paths
 
-4. **AI Engineering Layer**
-   - Grounded codebase Q&A
-   - Explain architecture and execution flows
-   - PR review assistance
-   - Change planning
-   - Test-generation recommendations
-   - Evidence-backed answers with file/line references
+### Change Intelligence
 
-5. **CI/CD Intelligence**
-   - Headless analysis in GitHub Actions
-   - Machine-readable JSON/SARIF output
-   - PR comments/checks
-   - Quality gates
-   - Regression detection
+- dependency-aware impact
+- PR Intelligence
+- change-size and risk signals
+- architecture/test findings
 
-6. **Enterprise Platform**
-   - Repository registry
-   - Team/service ownership
-   - Historical snapshots
-   - Organization-wide architecture map
-   - Policy and governance rules
+### Evidence and AI foundation
+
+- versioned analysis snapshots
+- grounded evidence citations
+- repository Q&A retrieval
+- deterministic engineering planning
+- optional grounded AI reasoning
+
+## Strategic capabilities
+
+### 1. Change Proof
+
+A machine-readable proof package linking a change to affected components, architecture boundaries, ownership, policies, tests, CI evidence, and unresolved uncertainty.
+
+### 2. Architecture Constitution
+
+Executable architecture rules that continuously detect dependency and boundary drift.
+
+### 3. Counterfactual Change Simulation
+
+Graph-based scenarios for dependency failure, boundary changes, high-centrality modifications, and migration impact before merge.
+
+### 4. Migration Guardian
+
+Compatibility and rollout analysis for API, schema, framework, and service migrations.
+
+### 5. Knowledge Continuity Graph
+
+Ownership and institutional-knowledge intelligence for critical components, single-expert dependencies, abandoned modules, and onboarding.
+
+### 6. AI Change Provenance
+
+Trace requirement → evidence → plan → patch → CI → review → merge for AI-assisted work.
+
+### 7. Agent Firewall
+
+Policy enforcement for autonomous coding agents: repositories, directories, protected files, operations, change-size limits, required tests, reviewers, and CI gates.
+
+### 8. Production-to-Code Feedback
+
+Optional correlation between runtime symptoms, services, recent changes, ownership, and dependency surfaces.
+
+### 9. Organization Engineering Digital Twin
+
+Versioned cross-repository architecture, dependencies, ownership, policies, and historical change intelligence.
+
+## Delivery sequence
+
+### Phase A — Evidence foundation
+
+- grounded repository Q&A;
+- evidence-backed engineering planning;
+- stable evidence schemas;
+- deterministic CI verification.
+
+### Phase B — Verification and governance
+
+- SARIF and native CI annotations;
+- architecture policy-as-code;
+- architecture snapshots and drift comparison;
+- ownership and knowledge concentration;
+- explainable risk budgets;
+- Change Proof artifacts.
+
+### Phase C — Simulation and migration safety
+
+- counterfactual impact simulation;
+- API/schema compatibility analysis;
+- Migration Guardian;
+- test adequacy and change-to-test traceability;
+- historical regression intelligence.
+
+### Phase D — AI-native engineering
+
+- AI Change Provenance;
+- evidence-validated AI review;
+- isolated patch generation;
+- CI-validated repair loops;
+- Agent Firewall and controlled execution.
+
+### Phase E — Organization scale
+
+- cross-repository dependency graph;
+- organization architecture map;
+- knowledge continuity graph;
+- governance dashboards;
+- runtime-to-code incident correlation.
 
 ## Architectural direction
 
 ```text
-                 +----------------------+
-                 |   Developer / CI     |
-                 +----------+-----------+
-                            |
-                CLI / REST / GitHub App
-                            |
-                 +----------v-----------+
-                 | Analysis Orchestrator|
-                 +----------+-----------+
-                            |
-        +-------------------+-------------------+
-        |                   |                   |
-   Source Analysis      Git Intelligence    Test Signals
-        |                   |                   |
-        +-------------------+-------------------+
-                            |
-                 +----------v-----------+
-                 | Unified Code Model    |
-                 | files/modules/symbols |
-                 | deps/ownership/change |
-                 +----------+-----------+
-                            |
-        +-------------------+-------------------+
-        |                   |                   |
-   Graph Intelligence  Architecture Rules   Risk Engine
-        |                   |                   |
-        +-------------------+-------------------+
-                            |
-                 +----------v-----------+
-                 | Evidence / Context    |
-                 | Retrieval Layer       |
-                 +----------+-----------+
-                            |
-                 +----------v-----------+
-                 | AI Reasoning Layer    |
-                 +----------+-----------+
-                            |
-       +--------------------+--------------------+
-       |                    |                    |
-     Report               JSON/SARIF          PR/CI
+Repository + Git + CI + optional runtime signals
+                     ↓
+            Unified Engineering Model
+                     ↓
+       Versioned Evidence + Snapshots
+                     ↓
+      ┌──────────────┼─────────────────┐
+      ↓              ↓                 ↓
+ Governance      Simulation       Change Proof
+      ↓              ↓                 ↓
+      └──────────────┼─────────────────┘
+                     ↓
+             AI Reasoning Layer
+                     ↓
+        Controlled Agent Execution
+                     ↓
+          Isolated Workspace + CI
+                     ↓
+             Verified Change
 ```
 
 ## Design principles
 
-- Deterministic analysis is the source of truth; AI explains and reasons over evidence.
-- Every AI answer should be traceable to repository evidence whenever possible.
-- Local-first operation remains supported.
-- CI must be able to execute the complete pipeline without a developer laptop.
-- Large repositories require bounded concurrency, incremental work, and persistent caches.
-- Security boundaries must be explicit before remote/enterprise deployment.
-- Backward-compatible CLI behavior should be preserved while adding capabilities.
-
-## Delivery sequence
-
-### Phase 1 — Foundation
-- Unified analysis result model
-- Analysis manifest and metadata
-- Structured logging
-- JSON/SARIF output
-- Deterministic smoke fixtures
-- CI end-to-end verification
-
-### Phase 2 — Change Intelligence
-- Git diff analysis
-- Dependency-aware blast radius
-- PR risk model
-- Changed-file criticality
-- Test-impact recommendations
-
-### Phase 3 — Architecture Intelligence
-- Module/service discovery
-- Architecture rules
-- Drift detection
-- Cycle and boundary violations
-- Architecture snapshots and comparison
-
-### Phase 4 — Grounded AI
-- Repository context index
-- Symbol/file retrieval
-- Evidence citations
-- Architecture Q&A
-- Change-plan generation
-- AI-assisted PR review
-
-### Phase 5 — Enterprise
-- Organization repository registry
-- Historical metrics
-- Ownership/knowledge graph
-- Governance policies
-- GitHub integration
-- Team dashboards
+1. Deterministic evidence is the source of truth.
+2. AI explains and reasons over evidence; it does not replace evidence.
+3. Every important result is versioned and machine-readable.
+4. Uncertainty is explicit.
+5. Results should be reproducible for the same repository snapshot and configuration.
+6. Large repositories require bounded concurrency, incremental work, and persistent caches.
+7. Security boundaries are explicit before remote or agentic deployment.
+8. Local-first operation remains viable.
+9. CI is the authoritative execution environment.
+10. Autonomous code changes require isolation, policy checks, and verification.
 
 ## Definition of done for enterprise maturity
 
-- Every major capability has deterministic tests.
-- CI executes unit, integration, CLI, API, security, performance smoke, and end-to-end checks.
-- Large-repository behavior is bounded and observable.
-- AI output is grounded in analyzed repository evidence rather than unsupported claims.
-- CI can fail a PR on explicitly configured architecture/security/risk policies.
-- Reports are reproducible for the same repository snapshot and configuration.
+- deterministic unit/property tests for every major signal;
+- CI unit, integration, CLI, API, security, performance-smoke, and E2E checks;
+- bounded and observable large-repository behavior;
+- evidence-backed AI outputs with explicit uncertainty;
+- configurable architecture/security/risk governance gates;
+- reproducible analysis for the same snapshot/configuration;
+- auditable AI-assisted change provenance;
+- isolated and CI-verified agent execution;
+- secure multi-tenant controls before organization deployment.
