@@ -20,9 +20,9 @@ class BackendVerificationTest {
         val files = scanner.scan(rootDir.absolutePath)
 
         // Assert we found some files
-        assertTrue(files.isNotEmpty(), "Should find files in the project")
-        val mainKt = files.find { it.name == "Main.kt" }
-        assertTrue(mainKt != null, "Should find Main.kt")
+        assertTrue(files.isNotEmpty(), "Should find Kotlin/Java files in the project")
+        val mainCommand = files.find { it.name == "MainCommand.kt" }
+        assertTrue(mainCommand != null, "Should find the current CLI entry command MainCommand.kt")
 
         // 2. Parse
         println("Parsing ${files.size} files...")
@@ -37,7 +37,7 @@ class BackendVerificationTest {
         // Verify imports are extracted (using Regex parser for Kotlin)
         // ImprovedAnalyzeCommand imports com.codecontext.core.graph.RobustDependencyGraph
         val hasGraphImport =
-                parsedMain?.imports?.any { it.contains("RobustDependencyGraph") } == true
+            parsedMain?.imports?.any { it.contains("RobustDependencyGraph") } == true
         assertTrue(hasGraphImport, "ImprovedAnalyzeCommand should import RobustDependencyGraph")
 
         // 3. Build Graph
@@ -62,7 +62,7 @@ class BackendVerificationTest {
         println("Target File: $targetFile")
         println("Target Package: ${targetParsed.packageName}")
         println(
-                "Target FQCN should be: ${targetParsed.packageName}.${targetParsed.file.nameWithoutExtension}"
+            "Target FQCN should be: ${targetParsed.packageName}.${targetParsed.file.nameWithoutExtension}"
         )
 
         // Check if edge exists
@@ -103,7 +103,5 @@ class BackendVerificationTest {
         hotspots.forEach { (path, score) -> println("${File(path).name}: $score") }
 
         assertTrue(hotspots.isNotEmpty(), "Should have hotspots")
-        // RobustDependencyGraph is likely a hotspot or referenced by commands
-        // or ParsedFile might be a hotspot?
     }
 }
