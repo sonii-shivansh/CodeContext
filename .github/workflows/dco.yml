@@ -1,0 +1,59 @@
+name: DCO
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    name: Check commit sign-offs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify DCO sign-off on pull-request commits
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${BASE_SHA:-}" || -z "${HEAD_SHA:-}" ]]; then
+            echo "DCO check requires a pull request event."
+            exit 1
+          fi
+
+          commits="$(git rev-list --no-merges "${BASE_SHA}..${HEAD_SHA}")"
+          if [[ -z "${commits}" ]]; then
+            echo "No non-merge commits found; DCO check passes."
+            exit 0
+          fi
+
+          failed=0
+          while IFS= read -r commit; do
+            [[ -z "${commit}" ]] && continue
+            message="$(git log -1 --format=%B "${commit}")"
+            author="$(git log -1 --format='%an <%ae>' "${commit}")"
+
+            if ! grep -Eiq '^Signed-off-by: .+ <[^>]+>[[:space:]]*$' <<< "${message}"; then
+              echo "Missing Signed-off-by trailer: ${commit} (${author})"
+              failed=1
+            else
+              echo "DCO sign-off found: ${commit} (${author})"
+            fi
+          done <<< "${commits}"
+
+          if [[ "${failed}" -ne 0 ]]; then
+            echo "One or more commits are missing a DCO sign-off."
+            echo "Create/amend commits with: git commit -s"
+            exit 1
+          fi

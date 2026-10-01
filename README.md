@@ -199,6 +199,14 @@ See [docs/API.md](docs/API.md).
 
 The server does not currently provide authentication, tenant isolation, or deployment-level authorization. Those are responsibilities of any deployment boundary beyond trusted local use.
 
+## Open-source community
+
+CodeContext is intentionally open to community contributions. The source remains available under the MIT License, while contributor provenance is protected through the Developer Certificate of Origin (DCO). Every contribution commit must include a `Signed-off-by:` trailer, and the DCO workflow verifies this automatically for pull requests.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [DCO.md](DCO.md), and [TRADEMARKS.md](TRADEMARKS.md).
+
+Community forks and derivative projects should identify themselves clearly and must not imply that they are official CodeContext releases or endorsed by the project.
+
 ## Development and CI
 
 ```bash
@@ -219,6 +227,8 @@ See:
 - [Development guide](docs/DEVELOPMENT.md)
 - [Current implementation status](docs/ENTERPRISE_ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
+- [DCO](DCO.md)
+- [Branding policy](TRADEMARKS.md)
 - [Security policy](SECURITY.md)
 
 ## License
