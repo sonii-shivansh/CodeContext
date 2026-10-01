@@ -35,7 +35,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-windows
           path: build/test-results/
@@ -67,7 +67,7 @@ jobs:
           if ($version -notmatch '0\.6\.0') { throw "Unexpected CLI version: $version" }
 
       - name: Upload distribution
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: codecontext-dist-windows
           path: build/install/codecontext/
