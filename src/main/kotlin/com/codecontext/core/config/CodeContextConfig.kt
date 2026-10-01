@@ -29,7 +29,7 @@ data class AIConfig(
     val enabled: Boolean = false,
     val provider: String = "gemini",
     val apiKey: String = "",
-    val model: String = "gemini-2.5-flash"
+    val model: String = "gemini-3.8-flash"
 )
 
 @Serializable
@@ -44,6 +44,8 @@ object ConfigLoader {
     private const val GOOGLE_API_KEY = "GOOGLE_API_KEY"
     private const val AI_PROVIDER = "CODECONTEXT_AI_PROVIDER"
     private const val AI_MODEL = "CODECONTEXT_AI_MODEL"
+    private const val LEGACY_GEMINI_MODEL = "gemini-2.5-flash"
+    private const val DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 
     private val logger = KotlinLogging.logger {}
 
@@ -76,8 +78,9 @@ object ConfigLoader {
         val key = environmentKey ?: projectKey ?: userKey.orEmpty()
         val provider = System.getenv(AI_PROVIDER)?.trim()?.takeIf { it.isNotEmpty() }
             ?: if (projectKey == null && user != null) user.provider else project.ai.provider
-        val model = System.getenv(AI_MODEL)?.trim()?.takeIf { it.isNotEmpty() }
+        val configuredModel = System.getenv(AI_MODEL)?.trim()?.takeIf { it.isNotEmpty() }
             ?: if (projectKey == null && user != null) user.model else project.ai.model
+        val model = if (configuredModel == LEGACY_GEMINI_MODEL) DEFAULT_GEMINI_MODEL else configuredModel
 
         return project.copy(
             ai = project.ai.copy(

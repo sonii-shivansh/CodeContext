@@ -74,10 +74,16 @@ jobs:
 
       - name: Diagnose real project
         working-directory: ${{ runner.temp }}/real-project
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           "$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext" doctor | tee doctor.txt
           grep -q "CodeContext doctor" doctor.txt
           grep -q "Repository" doctor.txt
+          if [ "$HAS_GEMINI" = "true" ]; then
+            grep -q "AI credentials.*GEMINI_API_KEY environment variable" doctor.txt
+            grep -q "Gemini API.*reachable and credentials accepted" doctor.txt
+          fi
 
       - name: Analyze real project
         working-directory: ${{ runner.temp }}/real-project
@@ -147,6 +153,7 @@ jobs:
           test -s output/grounded-evidence.json
           "$CLI" plan "Improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
           test -s output/engineering-plan.json
+          ! grep -q '.codecontext/cache' output/engineering-plan.json
           "$CLI" prepare "Improve the repository safely"
           test -s output/engineering-context.json
           test -s output/engineering-plan.json
@@ -165,9 +172,11 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
-          "$CLI" ask "Give a concise evidence-grounded overview of this repository's architecture and identify two files I should inspect first." | tee output/live-gemini-ask.txt
+          "$CLI" ask "Give a concise evidence-grounded overview of this repository's architecture and identify two files I should inspect first." 2>&1 | tee output/live-gemini-ask.txt
           test -s output/live-gemini-ask.txt
           ! grep -q "AI features disabled" output/live-gemini-ask.txt
+          grep -q '💡' output/live-gemini-ask.txt
+          grep -q '🎯 Confidence:' output/live-gemini-ask.txt
 
       - name: Start REST server
         working-directory: ${{ runner.temp }}/real-project
