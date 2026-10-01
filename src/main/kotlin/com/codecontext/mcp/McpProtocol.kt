@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -24,9 +25,8 @@ import java.io.InputStreamReader
 
 private val json = Json { encodeDefaults = true; explicitNulls = false }
 
-/** MCP legacy-era stdio transport for local CodeContext tooling. */
+/** MCP stdio transport for local CodeContext tooling. */
 object McpProtocol {
-    // 2025-11-25 is the latest MCP revision using the initialize handshake.
     private const val PROTOCOL_VERSION = "2025-11-25"
 
     fun handle(request: JsonObject): JsonObject {
@@ -60,13 +60,13 @@ object McpProtocol {
     }
 
     private fun initialize(id: JsonElement?): JsonObject = resultResponse(id, buildJsonObject {
-        put("protocolVersion", PROTOCOL_VERSION)
-        put("capabilities", buildJsonObject { put("tools", buildJsonObject { put("listChanged", false) }) })
+        put("protocolVersion", JsonPrimitive(PROTOCOL_VERSION))
+        put("capabilities", buildJsonObject { put("tools", buildJsonObject { put("listChanged", JsonPrimitive(false)) }) })
         put("serverInfo", buildJsonObject {
-            put("name", "CodeContext")
-            put("version", Version.current)
+            put("name", JsonPrimitive("CodeContext"))
+            put("version", JsonPrimitive(Version.current))
         })
-        put("instructions", "CodeContext provides deterministic, evidence-backed engineering intelligence. Prefer these tools before modifying a repository.")
+        put("instructions", JsonPrimitive("CodeContext provides deterministic, evidence-backed engineering intelligence. Prefer these tools before modifying a repository."))
     })
 
     private fun callTool(id: JsonElement?, params: JsonObject): JsonObject {
@@ -96,16 +96,20 @@ object McpProtocol {
         val graph = result.first
         val parsedFiles = result.second
         val hotspots = graph.getTopHotspots(10).map { (file, score) ->
-            buildJsonObject { put("file", file); put("score", score) }
+            buildJsonObject {
+                put("file", JsonPrimitive(file))
+                put("score", JsonPrimitive(score))
+            }
         }
-        return textResult(json.encodeToString(JsonObject.serializer(), buildJsonObject {
-            put("schemaVersion", "1.0")
-            put("repository", path)
-            put("fileCount", parsedFiles.size)
-            put("nodeCount", graph.graph.vertexSet().size)
-            put("edgeCount", graph.graph.edgeSet().size)
+        val payload = buildJsonObject {
+            put("schemaVersion", JsonPrimitive("1.0"))
+            put("repository", JsonPrimitive(path))
+            put("fileCount", JsonPrimitive(parsedFiles.size))
+            put("nodeCount", JsonPrimitive(graph.graph.vertexSet().size))
+            put("edgeCount", JsonPrimitive(graph.graph.edgeSet().size))
             put("hotspots", JsonArray(hotspots))
-        }))
+        }
+        return textResult(json.encodeToString(JsonObject.serializer(), payload))
     }
 
     private fun impactAnalysis(args: JsonObject): JsonObject {
@@ -147,7 +151,7 @@ object McpProtocol {
         } else {
             GitChangeSetBuilder.fromRevisions(path, base, head!!)
         }
-        val result = PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.load())
+        val result = runBlocking { PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.load()) }
         return textResult(json.encodeToString(com.codecontext.core.intelligence.PRIntelligenceResult.serializer(), result))
     }
 
@@ -160,17 +164,21 @@ object McpProtocol {
     private fun toolDefinitions(): JsonArray = buildJsonArray {
         add(tool("codecontext_analyze_repository", "Analyze a repository and return deterministic structure, graph, and hotspot evidence.", repositorySchema()))
         add(tool("codecontext_impact_analysis", "Calculate deterministic dependency impact for changed repository-relative paths.", buildJsonObject {
-            put("type", "object")
-            put("required", buildJsonArray { add("repoPath"); add("changedPaths") })
+            put("type", JsonPrimitive("object"))
+            put("required", buildJsonArray { add(JsonPrimitive("repoPath")); add(JsonPrimitive("changedPaths")) })
             put("properties", buildJsonObject {
                 put("repoPath", stringProperty("Absolute repository path"))
-                put("changedPaths", buildJsonObject { put("type", "array"); put("items", stringProperty("Repository-relative changed path")); put("maxItems", 100) })
+                put("changedPaths", buildJsonObject {
+                    put("type", JsonPrimitive("array"))
+                    put("items", stringProperty("Repository-relative changed path"))
+                    put("maxItems", JsonPrimitive(100))
+                })
             })
         }))
         add(tool("codecontext_architecture_analysis", "Analyze architecture boundaries, dependencies, and architectural signals.", repositorySchema()))
         add(tool("codecontext_pr_intelligence", "Analyze working-tree or revision-to-revision changes and return PR intelligence.", buildJsonObject {
-            put("type", "object")
-            put("required", buildJsonArray { add("repoPath") })
+            put("type", JsonPrimitive("object"))
+            put("required", buildJsonArray { add(JsonPrimitive("repoPath")) })
             put("properties", buildJsonObject {
                 put("repoPath", stringProperty("Absolute repository path"))
                 put("baseRevision", stringProperty("Optional Git base revision"))
@@ -180,37 +188,40 @@ object McpProtocol {
     }
 
     private fun repositorySchema(): JsonObject = buildJsonObject {
-        put("type", "object")
-        put("required", buildJsonArray { add("repoPath") })
+        put("type", JsonPrimitive("object"))
+        put("required", buildJsonArray { add(JsonPrimitive("repoPath")) })
         put("properties", buildJsonObject { put("repoPath", stringProperty("Absolute repository path")) })
     }
 
     private fun stringProperty(description: String): JsonObject = buildJsonObject {
-        put("type", "string")
-        put("description", description)
+        put("type", JsonPrimitive("string"))
+        put("description", JsonPrimitive(description))
     }
 
     private fun tool(name: String, description: String, inputSchema: JsonObject): JsonObject = buildJsonObject {
-        put("name", name)
-        put("description", description)
+        put("name", JsonPrimitive(name))
+        put("description", JsonPrimitive(description))
         put("inputSchema", inputSchema)
     }
 
     private fun textResult(text: String): JsonObject = buildJsonObject {
-        put("content", buildJsonArray { add(buildJsonObject { put("type", "text"); put("text", text) }) })
-        put("isError", false)
+        put("content", buildJsonArray { add(buildJsonObject { put("type", JsonPrimitive("text")); put("text", JsonPrimitive(text)) }) })
+        put("isError", JsonPrimitive(false))
     }
 
     private fun resultResponse(id: JsonElement?, result: JsonObject): JsonObject = buildJsonObject {
-        put("jsonrpc", "2.0")
+        put("jsonrpc", JsonPrimitive("2.0"))
         if (id != null) put("id", id)
         put("result", result)
     }
 
     private fun errorResponse(id: JsonElement?, code: Int, message: String): JsonObject = buildJsonObject {
-        put("jsonrpc", "2.0")
+        put("jsonrpc", JsonPrimitive("2.0"))
         if (id != null) put("id", id)
-        put("error", buildJsonObject { put("code", code); put("message", message) })
+        put("error", buildJsonObject {
+            put("code", JsonPrimitive(code))
+            put("message", JsonPrimitive(message))
+        })
     }
 
     private fun emptyResponse(): JsonObject = buildJsonObject {}
