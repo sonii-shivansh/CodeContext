@@ -27,7 +27,9 @@ class RepositoryQATest {
         val question = RepositoryQuestionClassifier.classify("What is the risk of `PaymentService`?")
         val result = RepositoryEvidenceRetriever().retrieve(question, evidence)
         assertEquals("hotspot.1", result.evidence.first().citation.id)
-        assertTrue(result.evidence.first().relevance > result.evidence.last().relevance)
+        assertTrue(
+            result.evidence.first().relevance >= result.evidence.drop(1).maxOfOrNull { it.relevance } ?: 0
+        )
         assertTrue(!result.insufficientEvidence)
     }
 
