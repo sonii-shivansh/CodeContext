@@ -18,8 +18,8 @@ object GitChangeSetBuilder {
         openRepository(repoPath).use { repository ->
             Git(repository).use { git ->
                 val entries = mutableListOf<DiffEntry>()
-                entries += git.diff().setCached(true).setDetectRenames(true).call()
-                entries += git.diff().setCached(false).setDetectRenames(true).call()
+                entries += git.diff().setCached(true).call()
+                entries += git.diff().setCached(false).call()
                 val changes = entries.map { toChangedFile(it, repository) }.toMutableList()
                 val trackedPaths = changes.flatMap { listOfNotNull(it.path, it.oldPath) }.toSet()
 
