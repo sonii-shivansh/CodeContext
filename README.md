@@ -111,6 +111,14 @@ Important settings include source exclusions, file-count limits, Git history lim
 
 The server also supports `CODECONTEXT_ALLOWED_PATHS`. Keep allowed roots as narrow as practical.
 
+## Data & privacy
+
+CodeContext is local-first. With AI disabled, repository analysis and deterministic intelligence do not send repository content to a CodeContext telemetry or storage service. AI is opt-in and sends bounded repository-derived context directly to the configured external provider when an AI operation is invoked.
+
+Generated HTML reports currently load the `force-graph` visualization library from `unpkg.com`, so opening a report can make an external browser request for that JavaScript asset. The report does not upload its embedded graph data or source files to unpkg as part of that request.
+
+See [Data & Privacy](docs/DATA_PRIVACY.md) for the current implementation-level disclosure, including the approximate content limits used by AI operations.
+
 ## REST API
 
 The local API provides health, analysis, reports, change-impact, PR Intelligence, repository Q&A/AI flows, and organization analysis. Local repository paths are validated against configured workspace roots; remote repository URLs are not accepted by the current local endpoints.
@@ -132,6 +140,7 @@ See:
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [API reference](docs/API.md)
+- [Data & Privacy](docs/DATA_PRIVACY.md)
 - [PR Intelligence](docs/PR_INTELLIGENCE.md)
 - [Development guide](docs/DEVELOPMENT.md)
 - [Enterprise implementation status](docs/ENTERPRISE_ROADMAP.md)
