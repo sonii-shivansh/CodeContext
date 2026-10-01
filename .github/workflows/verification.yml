@@ -70,6 +70,11 @@ jobs:
           count="$(find src -type f \( -name '*.kt' -o -name '*.java' \) | wc -l)"
           echo "Source files visible to CI: $count"
           test "$count" -gt 0
+          if [ -f .codecontext.json ]; then
+            echo "Unexpected project config created during build/test:"
+            cat .codecontext.json
+            exit 1
+          fi
 
       - name: Run self-analysis end-to-end
         run: |
