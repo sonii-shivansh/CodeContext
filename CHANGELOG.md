@@ -6,25 +6,25 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Added
 
-- Configuration-driven source exclusions through `excludePaths`.
-- Configured file-count enforcement through `maxFilesAnalyze`.
-- Bounded multi-repository analysis concurrency.
-- Content-hash-based parse cache invalidation.
-- Atomic cache replacement with a fallback for filesystems without atomic moves.
-- Dependency graph rebuild safety and indexed wildcard-import resolution.
+- Deterministic Change Impact Intelligence and PR Intelligence.
+- Architecture Intelligence and architecture evidence.
+- Versioned `AnalysisSnapshot` and grounded `EvidenceCitation` contracts.
+- Grounded repository Q&A retrieval through the `repo-qa` CLI command.
+- Evidence-backed engineering planning through the `plan` CLI command.
+- 2027–2028 product vision and engineering evidence platform strategy.
+- Focused roadmap for governance, Change Proof, simulation, migration safety, provenance, and controlled agent execution.
 
 ### Changed
 
-- Local API reports now use random identifiers and public report URLs.
-- Organization analysis uses structured coroutines instead of nested `runBlocking`.
-- Documentation now reflects the local-only REST endpoint and current AI-provider behavior.
+- Documentation now treats deterministic evidence as the authoritative repository-fact layer.
+- AI is documented as an optional reasoning layer rather than a repository source of truth.
+- Development guidance now requires explicit evidence, permissions, isolation, uncertainty, and CI verification for future AI/agentic features.
 
 ### Security
 
-- Preserved strict canonical-path validation and sibling-path protection.
-- Removed permissive CORS behavior from the default server.
-- Prevented absolute server filesystem paths from being returned by the API.
-- Kept provider errors and AI credentials out of public API responses and prompt content where recognizable.
+- Grounded evidence exposes repository-relative paths instead of absolute filesystem paths.
+- AI context remains bounded and opt-in.
+- Future agentic execution is required to use isolation, explicit policy checks, bounded permissions, and CI verification.
 
 ## [0.2.0] - 2026-09-19
 
