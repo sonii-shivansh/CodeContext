@@ -2,11 +2,9 @@
 
 ## Purpose
 
-CodeContext is a local-first engineering-intelligence pipeline. It transforms Java and Kotlin source, Git history, dependency structure, and engineering signals into deterministic evidence, reports, repository Q&A, and evidence-backed engineering plans.
+CodeContext is a local-first engineering-intelligence pipeline for Java and Kotlin repositories. It transforms source code, Git history, dependency structure, and engineering signals into deterministic analysis, grounded evidence, repository Q&A, engineering plans, reports, and optional AI-assisted reasoning.
 
-The long-term architecture is designed for an AI-heavy development world: deterministic analysis remains the source of truth, while AI is an optional reasoning layer over validated evidence.
-
-## Current system shape
+## Current system
 
 ```text
 CLI / REST / CI
@@ -15,57 +13,42 @@ Configuration + path validation
       ↓
 Repository Scanner
       ↓
-Language Parsers + Git Intelligence
+Java / Kotlin Parsers + Git Intelligence
       ↓
-Unified dependency graph
+Unified Dependency Graph
       ↓
 Analysis Snapshot
       ↓
-┌─────────────────────────────────────────────┐
-│ Deterministic Intelligence                  │
-│                                             │
-│ Risk · Impact · PR · Architecture · Tests   │
-│ Evolution · Hotspots · Learning Paths       │
-└──────────────────────┬──────────────────────┘
+┌────────────────────────────────────────────┐
+│ Deterministic Intelligence                 │
+│ Risk · Impact · PR · Architecture          │
+│ Evolution · Hotspots · Learning Paths      │
+└──────────────────────┬─────────────────────┘
                        ↓
-              Grounded Evidence
-                       ↓
-        ┌──────────────┴──────────────┐
-        ↓                             ↓
- Repository Q&A              Engineering Planner
-        ↓                             ↓
-        └──────────────┬──────────────┘
-                       ↓
+               Grounded Evidence
+                 ↙           ↘
+        Repository Q&A      Engineering Planner
+                 ↘           ↙
                  Optional AI
                        ↓
-              Developer / CI / PR
+                  CLI / REST / CI
 ```
 
-## Current command surface
+## Command surface
 
-`Main.kt` registers analysis, impact, architecture, PR Intelligence, repository Q&A, engineering planning, AI assistant, evolution, and server commands.
+`Main.kt` registers repository analysis, impact, architecture, PR Intelligence, repository Q&A, engineering planning, AI assistance, evolution, and server commands.
 
-### Repository Q&A
+### Repository analysis
 
-`repo-qa` builds a deterministic analysis snapshot, converts it to bounded grounded evidence, classifies the question, and retrieves ranked evidence. The first Q&A implementation does not require an external model.
+`RepositoryScanner` discovers supported Java and Kotlin source files while enforcing configured exclusions and file limits. Source is parsed rather than executed.
 
-### Engineering planning
+`ParserFactory` selects a parser by extension. Java uses JavaParser-based analysis. Kotlin uses the project's current lightweight Kotlin parsing support and therefore has known complex-syntax limitations.
 
-`plan` consumes a versioned grounded-evidence artifact and produces a deterministic engineering plan with risk, implementation steps, evidence IDs, verification criteria, and uncertainty. It is read-only and provider-independent.
-
-## Core pipeline
-
-### Scanning
-
-`RepositoryScanner` discovers supported Java and Kotlin source files while enforcing configured exclusions and file limits. Source is parsed, not executed.
-
-### Parsing
-
-`ParserFactory` selects a parser by extension. Java uses JavaParser-based analysis. Kotlin currently uses a lightweight parser with known complex-syntax limitations. `CodeParallelParser` coordinates parsing and cache access.
+`CodeParallelParser` coordinates parsing and cache access.
 
 ### Git intelligence
 
-`OptimizedGitAnalyzer` adds change frequency, modification time, authorship, and recent-change context. Git operations are read-only.
+`OptimizedGitAnalyzer` supplies change frequency, modification time, authorship, and recent-change context. Git operations are read-only.
 
 ### Dependency graph
 
@@ -73,70 +56,56 @@ Analysis Snapshot
 
 ### Analysis snapshot
 
-`AnalysisSnapshot` is the boundary between raw analysis and higher-level intelligence. It gives downstream features a stable, structured representation of repository metrics, files, hotspots, and architecture information.
+`AnalysisSnapshot` is the boundary between low-level analysis and higher-level intelligence. It provides a structured representation of repository metrics, files, hotspots, and architecture information.
 
-### Evidence
+## Deterministic intelligence
 
-`GroundedEvidenceBuilder` converts deterministic analysis into bounded `EvidenceCitation` records. Citation IDs are unique and repository paths are normalized to repository-relative paths. Evidence is the authoritative substrate for AI reasoning.
+The current system includes:
 
-### Repository Q&A
+- engineering risk signals;
+- dependency-aware change impact;
+- PR Intelligence for Git diffs;
+- Architecture Intelligence;
+- Git evolution analysis;
+- hotspots and learning paths.
 
-`RepositoryQuestionClassifier` identifies an initial intent and `RepositoryEvidenceRetriever` ranks relevant evidence. Retrieval is bounded and explicit about insufficient evidence.
+These components produce machine-readable results and are designed to be reproducible for the same repository state and configuration.
 
-### Engineering planner
+## Grounded evidence
 
-`EngineeringPlanner` converts grounded evidence into a structured plan. It does not modify source code, commit changes, or make autonomous decisions.
+`GroundedEvidenceBuilder` converts deterministic analysis into bounded `EvidenceCitation` records. Citation IDs are stable within the generated evidence set, and paths exposed through evidence are repository-relative.
 
-### AI layer
+`GroundedAIService` can pass bounded evidence to the configured AI provider. AI is optional and does not replace deterministic repository facts.
 
-`GroundedAIService` can combine deterministic evidence with the existing provider abstraction. AI is optional and disabled by default. Provider output must be treated as reasoning over evidence, not as an authoritative repository fact source.
+## Repository Q&A
 
-## Future architecture
+`RepositoryQuestionClassifier` classifies an initial set of repository-question intents. `RepositoryEvidenceRetriever` extracts and ranks relevant evidence with deterministic ordering and bounded result counts.
 
-The target 2027–2028 architecture adds a temporal evidence graph and verification/governance layers:
+The `repo-qa` command can therefore provide useful grounded retrieval without requiring an external model.
 
-```text
-Source + Git + CI + optional runtime signals
-                     ↓
-            Unified Engineering Model
-                     ↓
-       Versioned Evidence + Snapshots
-                     ↓
-      ┌──────────────┼─────────────────┐
-      ↓              ↓                 ↓
- Governance      Simulation       Change Proof
-      ↓              ↓                 ↓
-      └──────────────┼─────────────────┘
-                     ↓
-             AI Reasoning Layer
-                     ↓
-        Controlled Agent Execution
-                     ↓
-          Isolated Workspace + CI
-                     ↓
-             Verified Change
-```
+## Engineering planner
 
-## Security boundaries
+`EngineeringPlanner` consumes grounded evidence and produces a structured, versioned engineering plan containing affected components, risk, implementation steps, evidence IDs, verification criteria, and uncertainty.
 
-- Source code is parsed, not executed.
-- Local paths are canonicalized and constrained to configured roots where server APIs accept paths.
-- File-count and rate limits reduce resource abuse.
-- Evidence uses repository-relative paths.
-- AI credentials remain provider configuration and must not enter evidence artifacts.
-- External AI calls are opt-in.
-- The current server does not provide authentication, tenant isolation, or report authorization by itself.
-- Future agentic execution must use an isolated workspace, explicit policy checks, bounded permissions, and CI verification before changes can be proposed for merge.
+The current planner is read-only and provider-independent. It does not modify source code, commit changes, or autonomously execute repository actions.
 
-## Determinism and reproducibility
+## REST and security boundaries
 
-For the same repository snapshot and relevant configuration, deterministic analysis should produce equivalent structured evidence. AI enrichment may vary and therefore must never overwrite deterministic facts.
+The Ktor server exposes local analysis and intelligence flows. Repository paths are canonicalized and checked against configured allowed roots. Rate limiting is enabled by default.
+
+The current server is intended for trusted local/internal deployment. Authentication, authorization, tenant isolation, TLS, and external deployment controls are not provided by the application itself.
+
+AI credentials are configuration data and must not be embedded in evidence artifacts. External AI calls are opt-in.
+
+## CI
+
+GitHub Actions is the authoritative execution environment. The project verifies builds and tests across supported workflows, including Windows compatibility and end-to-end intelligence flows.
 
 ## Extension points
 
-- add a parser through `LanguageParser` and `ParserFactory`;
+- add parsers through `LanguageParser` and `ParserFactory`;
 - add deterministic intelligence under `core/`;
-- add evidence types without changing existing evidence IDs;
-- add planner/retrieval rules with deterministic ordering;
-- add CI/REST adapters around application services;
-- add future policy, simulation, and provenance layers without coupling them to a model provider.
+- add evidence types without changing existing evidence semantics;
+- add retrieval/planning rules with deterministic ordering;
+- add CLI/REST adapters around application services;
+- extend AI providers behind the existing provider boundary.
