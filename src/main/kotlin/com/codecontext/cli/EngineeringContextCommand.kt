@@ -1,6 +1,5 @@
 package com.codecontext.cli
 
-import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.intelligence.EngineeringContextEngine
 import com.codecontext.core.intelligence.EngineeringContextSnapshot
