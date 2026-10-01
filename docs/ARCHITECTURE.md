@@ -25,6 +25,8 @@ Analysis Snapshot
 │ Evolution · Hotspots · Learning Paths      │
 └──────────────────────┬─────────────────────┘
                        ↓
+              Architecture Drift
+                       ↓
                Grounded Evidence
                  ↙           ↘
         Repository Q&A      Engineering Planner
@@ -36,7 +38,7 @@ Analysis Snapshot
 
 ## Command surface
 
-`Main.kt` registers repository analysis, impact, architecture, PR Intelligence, repository Q&A, engineering planning, AI assistance, evolution, and server commands.
+`Main.kt` registers repository analysis, impact, architecture, architecture drift, PR Intelligence, repository Q&A, engineering planning, AI assistance, evolution, and server commands.
 
 ### Repository analysis
 
@@ -66,10 +68,17 @@ The current system includes:
 - dependency-aware change impact;
 - PR Intelligence for Git diffs;
 - Architecture Intelligence;
+- architecture drift comparison between versioned architecture snapshots;
 - Git evolution analysis;
 - hotspots and learning paths.
 
 These components produce machine-readable results and are designed to be reproducible for the same repository state and configuration.
+
+### Architecture drift
+
+`ArchitectureDriftEngine` compares two deterministic `ArchitectureIntelligenceResult` artifacts. It does not inspect source text or ask an AI model; it compares stable finding identities, normalized cycle identities, and layer counts. The result is a versioned `ArchitectureDriftResult` suitable for CI governance.
+
+The baseline is intentionally an explicit artifact. CodeContext does not silently invent a baseline because a drift decision without a known reference point is ambiguous.
 
 ## Grounded evidence
 
