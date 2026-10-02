@@ -30,7 +30,7 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
-          java-version: "21"
+          java-version: 21
           distribution: temurin
           cache: gradle
 
@@ -167,6 +167,7 @@ jobs:
       - name: Live Gemini repository Q&A
         if: ${{ env.HAS_GEMINI == 'true' }}
         working-directory: ${{ runner.temp }}/real-project
+        shell: bash
         timeout-minutes: 5
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -179,23 +180,21 @@ jobs:
 
           test -s output/live-gemini-ask.txt
 
-          if [ "$status" -eq 0 ]; then
+          # Provider quota/rate-limit exhaustion is an external dependency condition,
+          # not a CodeContext regression. Classify it from the captured provider response
+          # before evaluating the CLI exit status so formatting/exit-code changes cannot
+          # accidentally turn a known 429 into a red CI job.
+          if grep -Eiq 'HTTP[[:space:]]*429|quota[^[:alnum:]]*(exceeded|exhausted)|rate[[:space:]-]*limit|RESOURCE_EXHAUSTED' output/live-gemini-ask.txt; then
+            printf 'status=skipped\nreason=Gemini provider quota or rate limit exhausted\n' > output/live-gemini-status.txt
+            echo "::warning::Live Gemini Q&A skipped because the configured Gemini provider reported quota/rate-limit exhaustion. Deterministic E2E checks remain authoritative."
+          elif [ "$status" -eq 0 ]; then
             ! grep -q "AI features disabled" output/live-gemini-ask.txt
             grep -q '💡' output/live-gemini-ask.txt
             grep -q '🎯 Confidence:' output/live-gemini-ask.txt
             printf 'status=passed\n' > output/live-gemini-status.txt
           else
-            response="$(cat output/live-gemini-ask.txt)"
-            shopt -s nocasematch
-            if [[ "$response" == *"HTTP 429"* || "$response" == *"quota exceeded"* || "$response" == *"rate limit"* || "$response" == *"RESOURCE_EXHAUSTED"* ]]; then
-              printf 'status=skipped\nreason=Gemini provider quota or rate limit exhausted\n' > output/live-gemini-status.txt
-              echo "::warning::Live Gemini Q&A skipped because the configured Gemini provider reported quota/rate-limit exhaustion. Deterministic E2E checks remain authoritative."
-            else
-              echo "Live Gemini Q&A failed for a reason other than quota/rate limiting."
-              shopt -u nocasematch
-              exit "$status"
-            fi
-            shopt -u nocasematch
+            echo "Live Gemini Q&A failed for a reason other than quota/rate limiting."
+            exit "$status"
           fi
 
       - name: Start REST server
