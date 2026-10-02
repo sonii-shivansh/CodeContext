@@ -14,7 +14,7 @@ class RepositoryScanner(
         }
 
         // When callers do not explicitly supply configuration, resolve it from the
-        // repository being analyzed rather than from CodeContext's process cwd.
+        // repository being analyzed rather than from Vericore's process cwd.
         val config = configuredConfig ?: ConfigLoader.loadForRepository(root.path)
         val exclusionSet = config.excludePaths
             .map { it.trim().trim('/') }
@@ -31,9 +31,9 @@ class RepositoryScanner(
                 val matchesSupportedExtension =
                     name.endsWith(".kt") || name.endsWith(".java")
 
-                // CodeContext owns these root-level directories. They must not be
+                // Vericore owns these root-level directories. They must not be
                 // scanned even when the target repository has no configuration.
-                val isToolGeneratedRootPath = segments.firstOrNull() in setOf(".codecontext", "output")
+                val isToolGeneratedRootPath = segments.firstOrNull() in setOf(".vericore", ".codecontext", "output")
 
                 val excludedByConfig = segments.any { segment ->
                     segment in exclusionSet ||
