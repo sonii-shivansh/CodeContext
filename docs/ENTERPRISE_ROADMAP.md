@@ -1,13 +1,19 @@
-# CodeContext — Current Implementation Status
+# Implementation Status & Roadmap
 
-> This document describes what is implemented today. It intentionally does not present future ideas as shipped functionality.
+> This document answers one question: **what does CodeContext implement today, and what is explicitly still future work?**
 
-## Repository intelligence
+## How to read this document
 
-Implemented:
+- **Implemented** — present in the repository and covered by tests, CI, or release-gate validation.
+- **Current limitation** — an intentional or known boundary of the shipped implementation.
+- **Future direction** — not shipped; do not depend on it as an existing capability.
+
+## Implemented capabilities
+
+### Repository intelligence
 
 - Java and Kotlin source discovery and parsing
-- configurable source exclusions and file limits
+- configurable exclusions and file limits
 - parallel parsing and content-based caching
 - dependency graph construction
 - wildcard-import handling
@@ -15,13 +21,11 @@ Implemented:
 - PageRank knowledge hotspots
 - Git authorship, churn, modification-time, and recent-change analysis
 - learning-path generation
-- HTML reporting
+- self-contained HTML reporting
 
-## Change and PR intelligence
+### Change and PR intelligence
 
-Implemented:
-
-- dependency-aware change impact analysis
+- dependency-aware change-impact analysis
 - changed-file analysis
 - blast-radius signals
 - deterministic PR Intelligence
@@ -29,91 +33,55 @@ Implemented:
 - architecture findings
 - test recommendations/signals
 - machine-readable intelligence artifacts
-- evidence-first `prepare → change → verify` workflow
-- deterministic change-safety scope verification
-- repository-bound Agent Change Contract with SHA-256 fingerprint
-- persisted-contract validation for repository identity, prepared Git `HEAD`, plan binding, and tamper detection
 
-## Architecture intelligence
+### Architecture intelligence
 
-Implemented:
-
-- architecture-oriented findings over the dependency graph
-- cycle/boundary signals
+- architecture-oriented dependency findings
+- cycle and boundary signals
 - deterministic architecture artifacts
 - architecture drift comparison against an explicit baseline artifact
 - deterministic drift reporting for findings, cycles, and layer counts
 - deterministic architecture contracts for CI/governance enforcement
 - `architecture-contract` CLI command
 - contract templates with explicit finding/cycle/severity limits
-- deterministic architecture contract decision records with repository commit, contract/result digests, and stable decision IDs
+- deterministic contract decision records with repository commit, contract/result digests, and stable decision IDs
 - idempotent contract decision history persistence via `--record`
-- CI end-to-end verification of architecture analysis, drift, and contract evaluation
 
-## Engineering context
+### Engineering context and Reality
 
-Implemented:
-
-- versioned deterministic engineering-context snapshot contract
+- versioned deterministic engineering-context snapshots
 - repository-relative file fingerprints
 - repository `HEAD` capture when Git metadata is available
 - working-tree dirty/change-path state
-- stable snapshot digest
-- deterministic snapshot-to-snapshot diffing for added, removed, and modified files
-- `context-snapshot` CLI command
-- `context-diff` CLI command
-- clean-environment CI verification of snapshot and zero-drift diff behavior
-
-## Engineering Reality
-
-Implemented:
-
-- versioned `EngineeringRealitySnapshot` contract
+- stable snapshot digests
+- deterministic snapshot-to-snapshot diffs
+- versioned `EngineeringRealitySnapshot`
 - deterministic composition of analysis + repository-context identities
-- repository commit binding when Git metadata is available
+- repository commit binding
 - stable analysis/context digests
-- explicit composite `realityDigest`
-- protection against analysis wall-clock timestamps changing the identity
-- `reality` CLI command
-- repository-local `output/engineering-reality.json` artifact
-- unit tests covering stable and state-changing reality identities
+- explicit `realityDigest`
+- protection against analysis wall-clock timestamps changing identity
+- `context-snapshot`, `context-diff`, and `reality` CLI commands
 
-Engineering Reality is deliberately a composition boundary. It does not add model-generated claims or autonomous repository mutation.
-
-## Grounded evidence
-
-Implemented:
+### Grounded evidence and Q&A
 
 - versioned evidence contracts
-- `EvidenceCitation`
 - bounded evidence generation
 - repository-relative citation paths
 - deterministic citation ordering
 - evidence size limits
-- safeguards against evidence paths escaping the repository
-
-## Repository Q&A
-
-Implemented:
-
 - repository question intent classification
-- entity/path extraction
 - dependency, risk, impact, architecture, PR, and test-oriented retrieval intents
 - deterministic evidence ranking
 - bounded result sets
 - explicit insufficient-evidence handling
 - `repo-qa` CLI command
 
-The first implementation does not require an external model.
-
-## Engineering Planner
-
-Implemented:
+### Engineering Planner
 
 - versioned engineering-plan model
 - deterministic plan synthesis from grounded evidence
-- affected components
-- risk
+- affected components and risk
 - implementation steps
 - evidence IDs
 - verification criteria
@@ -122,136 +90,129 @@ Implemented:
 - bounded input/output
 - `plan` CLI command
 
-The current planner is read-only and does not modify repositories.
+The planner is read-only.
 
-## Agent Change Contract
-
-Implemented:
+### Agent Change Contract and verification
 
 - versioned repository-bound `AgentChangeContract`
 - canonical repository identity
-- prepared Git `HEAD` binding when Git metadata is available
+- prepared Git `HEAD` binding
 - planned-path and expected-component scope
 - verification-command and evidence binding
 - architecture expectation binding
 - deterministic SHA-256 fingerprint
 - persisted `output/agent-change-contract.json` artifact from `prepare`
-- CLI verification against the persisted contract
-- tamper, plan-mismatch, repository-mismatch, and stale-HEAD detection
-- live release-gate mutation tests for contract tampering and unexpected source changes
+- verification against the persisted contract
+- contract tamper detection
+- plan mismatch detection
+- repository mismatch detection
+- stale-HEAD detection
+- live mutation tests for tampering and unexpected source changes
 
-Current boundary: the core workflow retains a compatibility overload that can derive a contract from a supplied plan, and the MCP `codecontext_get_change_contract` helper currently generates a fresh contract rather than retrieving a persisted artifact. These paths are explicitly treated as compatibility/preview behavior and are candidates for further hardening.
+**Authoritative rule:** the persisted contract is the verification boundary. Verification does not silently reconstruct a replacement contract from a mutable plan, and `codecontext_get_change_contract` retrieves the persisted artifact rather than generating a replacement.
 
-## Engineering provenance
+### Provenance and temporal intelligence
 
-Implemented:
-
-- versioned `DecisionProvenance` contract
+- versioned `DecisionProvenance`
 - stable SHA-256 provenance IDs
-- repository `HEAD` capture through read-only Git metadata when available
-- explicit unknown-Git state instead of fabricated provenance
-- provenance attached to prepare and verify workflow results
-- architecture contract decision records with idempotent persistence
-
-## Temporal intelligence
-
-Implemented:
-
+- repository `HEAD` capture through read-only Git metadata
+- explicit unknown-Git state
+- provenance attached to prepare and verify results
+- idempotent architecture decision persistence
 - Git-history evolution analysis
 - deterministic time-based commit sampling
-- exact committed Java/Kotlin/Kotlin-script source line counts read directly from Git objects
+- source line counts read directly from Git objects
 - cumulative source-file change-frequency hotspots
-- deterministic fallback hotspots based on historical file size when no touch history exists
-- safe analysis of dirty working trees without destructive checkout operations
-- no mutation of the repository working tree during temporal analysis
+- deterministic fallback hotspots
+- safe dirty-working-tree analysis without destructive checkout
 
-Temporal analysis currently provides source-history metrics; it does not reconstruct full semantic dependency graphs for arbitrary historical commits.
-
-## AI integration
-
-Implemented:
+### AI integration
 
 - optional AI provider abstraction
-- configured Gemini/Anthropic provider support in the existing AI assistant flow
-- grounded evidence passed as bounded context
+- configured Gemini/Anthropic provider support in the existing assistant flow
+- bounded grounded evidence as model context
 - explicit separation between deterministic repository facts and model reasoning
 
 AI is disabled unless configured.
 
-## MCP integration
-
-Implemented:
+### MCP
 
 - local stdio JSON-RPC MCP server
-- repository analysis, impact, architecture, PR Intelligence
+- repository analysis, impact, architecture, and PR Intelligence
 - Engineering Reality and context snapshot/diff tools
 - architecture drift and contract tools
 - grounded evidence, prepare, change-safety, and verify tools
-- local path-safety boundary and rejection of remote repository URLs
+- local path-safety boundary
+- rejection of remote repository URLs
+- persisted change-contract retrieval for the verification boundary
 
-Current MCP boundary: the server is a trusted local integration without authentication or tenant isolation. The change-contract generation helper is not a replacement for the persisted contract used by verification.
+The MCP server is a trusted local integration without authentication or tenant isolation.
 
-## Local REST API
-
-Implemented:
+### Local REST API
 
 - service banner
-- health/readiness/liveness routes
+- health/readiness/liveness
 - local repository analysis
 - generated report serving
 - repository question/AI flow
 - organization analysis with bounded concurrency
-- change-impact and PR Intelligence flows
+- change-impact and PR Intelligence
 - path validation
 - rate limiting
 - sanitized public errors
 
-The current server is intended for trusted local/internal use and does not itself provide authentication, authorization, tenant isolation, or deployment-level TLS.
+The server is intended for trusted local/internal use and does not provide authentication, authorization, tenant isolation, or deployment-level TLS.
 
-## CI and verification
+### CI and release verification
 
-Implemented CI verification includes:
+The clean-environment workflows validate:
 
 - JVM compilation and tests
-- lint/code-quality checks
-- CLI verification
-- generated artifact validation
+- lint/code quality
+- CLI behavior
+- generated artifacts
 - self-analysis
-- PR Intelligence end-to-end verification
-- Architecture Intelligence end-to-end verification
-- architecture-drift CLI verification
-- architecture-contract CLI verification
-- engineering-context snapshot/diff verification
-- prepare/verify contract validation
-- REST API end-to-end verification
-- Linux x64 validation
-- Windows x64 validation
-- macOS x64 validation
-- macOS ARM64 validation
-- live-repository release-gate mutation and repository-immutability checks
+- PR Intelligence
+- Architecture Intelligence
+- architecture drift/contracts
+- engineering-context snapshots/diffs
+- prepare/verify contracts
+- REST API behavior
+- Linux x64
+- Windows x64
+- macOS x64
+- macOS ARM64
+- live repository mutation and immutability checks
+- deterministic 0.7.0 release audit
 
-The clean-environment workflows are the authoritative execution environment for release verification.
+GitHub Actions is the authoritative automated execution environment for release verification.
 
-## Release line
+## Current release line
 
-The current `main` branch contains post-v0.6.0 engineering-intelligence work while the Gradle/application version remains **0.6.0**. These changes have not yet been published as a new release.
+`main` is the **0.7.0 release candidate line**. The published release remains `v0.6.0` until the 0.7.0 release is created.
+
+The current 0.7.0 line includes the post-v0.6.0 engineering-intelligence, Engineering Reality, Agent Change Contract, and live release-audit work described above.
 
 ## Current limitations
 
-The repository currently has important boundaries:
+These are known boundaries of the current implementation:
 
-- analysis is focused on Java and Kotlin;
+- analysis focuses on Java and Kotlin;
 - Kotlin parsing has known complex-syntax limitations;
 - remote repository URLs are not accepted by the local server endpoints;
 - the REST server does not provide authentication or multi-tenant authorization;
 - the planner is read-only;
-- autonomous code modification is not implemented;
+- autonomous source-code modification is not implemented;
 - production telemetry integrations are not implemented;
 - organization-wide governance and cross-repository intelligence are not implemented;
-- Engineering Reality currently composes analysis and repository-context artifacts but does not yet include the full semantic evidence graph;
-- context snapshots currently fingerprint repository-scanned source files and do not yet capture the full semantic evidence graph;
-- temporal archaeology provides deterministic source-history metrics but does not yet reconstruct full semantic dependency graphs for arbitrary historical commits;
-- architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not yet implemented;
-- the current Agent Change Contract is a deterministic verification boundary, not an authorization system or autonomous coding mechanism.
+- Engineering Reality composes analysis and repository-context artifacts but is not a full semantic evidence graph;
+- context snapshots fingerprint repository-scanned source files rather than the full semantic evidence graph;
+- temporal archaeology provides deterministic source-history metrics but does not reconstruct full semantic dependency graphs for arbitrary historical commits;
+- architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not implemented;
+- the Agent Change Contract is a deterministic verification boundary, not an authorization system or autonomous coding mechanism.
 
-This file should be updated when implementation changes materially. It should not describe unimplemented features as if they already exist.
+## Future direction
+
+Future work must be documented here as future work until code, tests, and release validation establish the capability. Do not use roadmap entries as API contracts.
+
+When a future item becomes implemented, move it into the appropriate **Implemented** section in the same pull request that changes the behavior.
