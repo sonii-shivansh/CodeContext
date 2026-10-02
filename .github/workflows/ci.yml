@@ -7,8 +7,7 @@ on:
     branches: [ main, develop ]
 
 permissions:
-  contents: write
-  workflows: write
+  contents: read
 
 jobs:
   test:
@@ -18,20 +17,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-
-      - name: Execute Vericore migration on approved branch
-        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'refactor/vericore-migration') && github.event.pull_request.head.repo.full_name == github.repository
-        shell: bash
-        run: |
-          python3 scripts/migrate-to-vericore.py
-          rm -f scripts/migrate-to-vericore.py .github/workflows/execute-vericore-migration.yml .vericore-migration-trigger .vericore-migration-trigger-2 .vericore-migration-trigger-3 .vericore-migration-trigger-4 .vericore-migration-trigger-5
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -s -m 'refactor: migrate CodeContext identity to Vericore'
-            git push origin HEAD:${{ github.event.pull_request.head.ref }}
-          fi
 
       - name: Set up JDK 21
         uses: actions/setup-java@v6
