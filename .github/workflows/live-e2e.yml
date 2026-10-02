@@ -186,13 +186,16 @@ jobs:
             printf 'status=passed\n' > output/live-gemini-status.txt
           else
             response="$(cat output/live-gemini-ask.txt)"
+            shopt -s nocasematch
             if [[ "$response" == *"HTTP 429"* || "$response" == *"quota exceeded"* || "$response" == *"rate limit"* || "$response" == *"RESOURCE_EXHAUSTED"* ]]; then
               printf 'status=skipped\nreason=Gemini provider quota or rate limit exhausted\n' > output/live-gemini-status.txt
               echo "::warning::Live Gemini Q&A skipped because the configured Gemini provider reported quota/rate-limit exhaustion. Deterministic E2E checks remain authoritative."
             else
               echo "Live Gemini Q&A failed for a reason other than quota/rate limiting."
+              shopt -u nocasematch
               exit "$status"
             fi
+            shopt -u nocasematch
           fi
 
       - name: Start REST server
