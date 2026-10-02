@@ -6,7 +6,7 @@
 
 | You are... | Read |
 |---|---|
-| New to CodeContext | [Getting Started](GETTING_STARTED.md) |
+| New to Vericore | [Getting Started](GETTING_STARTED.md) |
 | Learning the architecture | [Architecture](ARCHITECTURE.md) |
 | Building a feature | [Development](DEVELOPMENT.md) |
 | Building an AI-agent integration | [MCP](MCP.md) |

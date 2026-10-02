@@ -4,7 +4,7 @@
 
 ## Purpose
 
-CodeContext is a local-first engineering-intelligence system for Java and Kotlin repositories. It turns source code, Git history, dependency structure, and engineering signals into deterministic facts, grounded evidence, planning artifacts, and safe verification workflows.
+Vericore is a local-first engineering-intelligence system for Java and Kotlin repositories. It turns source code, Git history, dependency structure, and engineering signals into deterministic facts, grounded evidence, planning artifacts, and safe verification workflows.
 
 **Core rule:** deterministic evidence first; optional AI reasoning second.
 

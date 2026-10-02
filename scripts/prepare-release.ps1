@@ -1,9 +1,9 @@
-# CodeContext Release Preparation Script (Windows)
+# Vericore Release Preparation Script (Windows)
 # Version: 0.1.0
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "🚀 CodeContext Release Preparation" -ForegroundColor Cyan
+Write-Host "🚀 Vericore Release Preparation" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -71,7 +71,7 @@ Write-Host ""
 # Step 7: Create release notes
 Write-Host "📝 Step 7: Creating release notes..." -ForegroundColor Blue
 $releaseNotes = @"
-# CodeContext $VERSION Release Notes
+# Vericore $VERSION Release Notes
 
 ## 🎉 Features
 
@@ -111,8 +111,8 @@ codecontext --help
 ### From Source
 
 ``````bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
+git clone https://github.com/sonii-shivansh/Vericore.git
+cd Vericore
 .\gradlew.bat installDist
 .\build\install\codecontext\bin\codecontext.bat --help
 ``````
@@ -127,7 +127,7 @@ codecontext analyze .
 start output\index.html
 
 # Enable AI insights (requires Gemini API key)
-# Add to .codecontext.json:
+# Add to .vericore.json:
 {
   "ai": {
     "enabled": true,
@@ -139,7 +139,7 @@ start output\index.html
 
 ## 🔧 Configuration
 
-Create ``.codecontext.json`` in your project root:
+Create ``.vericore.json`` in your project root:
 
 ``````json
 {
@@ -168,9 +168,9 @@ Create ``.codecontext.json`` in your project root:
 
 ## 📚 Documentation
 
-- [README](https://github.com/sonii-shivansh/CodeContext/blob/main/README.md)
-- [API Documentation](https://github.com/sonii-shivansh/CodeContext/blob/main/docs/API.md)
-- [Contributing Guide](https://github.com/sonii-shivansh/CodeContext/blob/main/CONTRIBUTING.md)
+- [README](https://github.com/sonii-shivansh/Vericore/blob/main/README.md)
+- [API Documentation](https://github.com/sonii-shivansh/Vericore/blob/main/docs/API.md)
+- [Contributing Guide](https://github.com/sonii-shivansh/Vericore/blob/main/CONTRIBUTING.md)
 
 ## 🙏 Acknowledgments
 
@@ -183,9 +183,9 @@ Built with:
 
 ## 📧 Support
 
-- Issues: https://github.com/sonii-shivansh/CodeContext/issues
+- Issues: https://github.com/sonii-shivansh/Vericore/issues
 - Email: shivanshsoni568@gmail.com
-- Discussions: https://github.com/sonii-shivansh/CodeContext/discussions
+- Discussions: https://github.com/sonii-shivansh/Vericore/discussions
 
 ## 📄 License
 

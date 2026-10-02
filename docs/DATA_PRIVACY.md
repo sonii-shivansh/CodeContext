@@ -1,12 +1,12 @@
 # Data & Privacy
 
-CodeContext is primarily a local analysis tool. This document describes what data stays on the machine, what can leave the machine, and which behavior requires explicit configuration.
+Vericore is primarily a local analysis tool. This document describes what data stays on the machine, what can leave the machine, and which behavior requires explicit configuration.
 
 ## Default behavior
 
-With the default configuration (`ai.enabled = false`), CodeContext performs repository scanning, parsing, dependency analysis, Git analysis, deterministic intelligence, report generation, and local API operations without sending repository content to an AI provider.
+With the default configuration (`ai.enabled = false`), Vericore performs repository scanning, parsing, dependency analysis, Git analysis, deterministic intelligence, report generation, and local API operations without sending repository content to an AI provider.
 
-CodeContext does not include product telemetry or an analytics service in the application pipeline.
+Vericore does not include product telemetry or an analytics service in the application pipeline.
 
 ## What can leave the machine
 
@@ -31,9 +31,9 @@ The exact provider request also contains the prompt instructions and structured 
 
 ### API keys
 
-Provider API keys are configured locally. CodeContext does not send keys to any CodeContext-owned telemetry service. Provider requests authenticate directly with the selected external AI provider.
+Provider API keys are configured locally. Vericore does not send keys to any Vericore-owned telemetry service. Provider requests authenticate directly with the selected external AI provider.
 
-Never commit `.codecontext.json` containing a real API key.
+Never commit `.vericore.json` containing a real API key.
 
 ## What stays local by default
 
@@ -52,9 +52,9 @@ The following operations are local unless an explicitly invoked feature requires
 
 Generated HTML reports are self-contained. Their graph visualization code is embedded in the report, so opening a generated report does not require a browser request to a third-party CDN.
 
-## What CodeContext does not currently provide
+## What Vericore does not currently provide
 
-CodeContext does not currently provide a CodeContext-hosted telemetry backend, centralized source-code storage, or a mandatory cloud account.
+Vericore does not currently provide a Vericore-hosted telemetry backend, centralized source-code storage, or a mandatory cloud account.
 
 The local REST server also does not provide authentication or tenant isolation. Do not expose it to an untrusted network without adding an appropriate deployment boundary.
 
@@ -69,6 +69,6 @@ The authoritative implementation is the source code and configuration in this re
 - `ReportGenerator.kt` defines the self-contained report output and graph visualization.
 - `AICodeAnalyzer.kt` defines the AI provider requests and content-size boundaries.
 - `GroundedAIService.kt` and `GroundedEvidence.kt` define the bounded evidence sent for grounded Q&A.
-- `.codecontext.json.template` shows the default AI configuration.
+- `.vericore.json.template` shows the default AI configuration.
 
 If these implementation details change, this document must be updated in the same change.

@@ -1,16 +1,16 @@
-# CodeContext
+# Vericore
 
 **Deterministic engineering intelligence for Java and Kotlin repositories.**
 
-[🌐 Website](https://sonii-shivansh.github.io/CodeContext-Website/) · [📚 Documentation](docs/INDEX.md) · [🚀 Releases](https://github.com/sonii-shivansh/CodeContext/releases)
+[🌐 Website](https://sonii-shivansh.github.io/__VERICORE_EXTERNAL_VERICORE_WEBSITE__/) · [📚 Documentation](docs/INDEX.md) · [🚀 Releases](https://github.com/sonii-shivansh/Vericore/releases)
 
-CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a deterministic prepare → change → verify safety loop.
+Vericore is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a deterministic prepare → change → verify safety loop.
 
 > **Core principle:** deterministic evidence first, optional AI reasoning second.
 
 ## Current status
 
-**CodeContext `main` is the v0.7.0 release-candidate line.** The published release remains `v0.6.0` until the 0.7.0 release is created.
+**Vericore `main` is the v0.7.0 release-candidate line.** The published release remains `v0.6.0` until the 0.7.0 release is created.
 
 Implemented on `main`:
 
@@ -40,7 +40,7 @@ Implemented on `main`:
 
 ## Quick start
 
-**New to CodeContext? Start with [Getting Started](docs/GETTING_STARTED.md).**
+**New to Vericore? Start with [Getting Started](docs/GETTING_STARTED.md).**
 
 ### Use a released archive
 
@@ -63,11 +63,11 @@ The default report is written to `output/index.html`. Machine-readable artifacts
 ### Build from source
 
 ```bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
+git clone https://github.com/sonii-shivansh/Vericore.git
+cd Vericore
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon installDist
-./build/install/codecontext/bin/codecontext --version
+./build/install/vericore/bin/codecontext --version
 ```
 
 ## Common workflows
@@ -152,7 +152,7 @@ codecontext pr-intelligence /path/to/repository --base main --head feature/my-ch
 # Architecture intelligence and governance
 codecontext architecture /path/to/repository --json
 codecontext architecture-drift /path/to/repository --baseline /path/to/architecture-baseline.json --json
-codecontext architecture-contract /path/to/repository --contract /path/to/.codecontext-architecture-contract.json --json
+codecontext architecture-contract /path/to/repository --contract /path/to/.vericore-architecture-contract.json --json
 
 # Engineering context and repository state
 codecontext context-snapshot /path/to/repository --json
@@ -213,9 +213,9 @@ codecontext doctor
 
 `GEMINI_API_KEY` and `GOOGLE_API_KEY` are supported for CI and non-interactive environments. Never commit API keys.
 
-A repository-local `.codecontext.json` remains supported for advanced settings. `CODECONTEXT_ALLOWED_PATHS` controls server workspace boundaries; keep allowed roots as narrow as practical.
+A repository-local `.vericore.json` remains supported for advanced settings. `VERICORE_ALLOWED_PATHS` controls server workspace boundaries; keep allowed roots as narrow as practical.
 
-CodeContext is local-first. With AI disabled, deterministic repository analysis does not send repository content to a CodeContext telemetry or storage service. AI is opt-in and sends bounded repository-derived context directly to the configured provider when invoked.
+Vericore is local-first. With AI disabled, deterministic repository analysis does not send repository content to a Vericore telemetry or storage service. AI is opt-in and sends bounded repository-derived context directly to the configured provider when invoked.
 
 See [Data & Privacy](docs/DATA_PRIVACY.md).
 
@@ -250,4 +250,4 @@ For contributor workflow, see [Contributing](CONTRIBUTING.md) and [Development](
 
 ## License
 
-CodeContext is released under the MIT License. See [LICENSE](LICENSE).
+Vericore is released under the MIT License. See [LICENSE](LICENSE).

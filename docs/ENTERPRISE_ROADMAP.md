@@ -1,6 +1,6 @@
 # Implementation Status & Roadmap
 
-> This document answers one question: **what does CodeContext implement today, and what is explicitly still future work?**
+> This document answers one question: **what does Vericore implement today, and what is explicitly still future work?**
 
 ## How to read this document
 

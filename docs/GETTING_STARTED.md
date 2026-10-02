@@ -1,16 +1,16 @@
 # Getting Started
 
-> The shortest path from a fresh checkout to a useful CodeContext analysis.
+> The shortest path from a fresh checkout to a useful Vericore analysis.
 
 ## Who this is for
 
-Use this guide if you are new to CodeContext and want to:
+Use this guide if you are new to Vericore and want to:
 
 1. build it,
 2. analyze a repository,
 3. inspect engineering reality,
 4. prepare and verify a change, or
-5. integrate CodeContext with an AI agent.
+5. integrate Vericore with an AI agent.
 
 For architecture and contribution work, continue with the [documentation hub](INDEX.md).
 
@@ -25,8 +25,8 @@ Released platform archives bundle a Java runtime, so a separate JDK is not requi
 ## 1. Build from source
 
 ```bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
+git clone https://github.com/sonii-shivansh/Vericore.git
+cd Vericore
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon installDist
 ```
@@ -34,14 +34,14 @@ cd CodeContext
 The installed CLI is available at:
 
 ```text
-build/install/codecontext/bin/codecontext
+build/install/vericore/bin/codecontext
 ```
 
 Check the installation:
 
 ```bash
-./build/install/codecontext/bin/codecontext --version
-./build/install/codecontext/bin/codecontext --help
+./build/install/vericore/bin/codecontext --version
+./build/install/vericore/bin/codecontext --help
 ```
 
 ## 2. Analyze a repository

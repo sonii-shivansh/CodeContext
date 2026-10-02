@@ -1,4 +1,4 @@
-# CodeContext demo assets
+# Vericore demo assets
 
 This directory contains screenshots and other non-runtime assets used by the project documentation.
 
@@ -8,7 +8,7 @@ From the repository root:
 
 ```bash
 ./gradlew installDist
-./build/install/codecontext/bin/codecontext analyze .
+./build/install/vericore/bin/codecontext analyze .
 ```
 
 Open the generated report at `output/index.html`.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP="./build/install/codecontext/bin/codecontext"
+APP="./build/install/vericore/bin/codecontext"
 PORT="18080"
 LOG="/tmp/codecontext-rest-audit.log"
 "$APP" server --host 127.0.0.1 --port "$PORT" >"$LOG" 2>&1 &
