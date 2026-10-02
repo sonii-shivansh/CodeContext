@@ -22,6 +22,10 @@ class RepositoryScannerTest {
                 parentFile.mkdirs()
                 writeText("class Cache")
             }
+            root.resolve(".vericore/cache.kt").apply {
+                parentFile.mkdirs()
+                writeText("class CanonicalCache")
+            }
 
             val scanner = RepositoryScanner()
             val files = scanner.scan(root.path)
