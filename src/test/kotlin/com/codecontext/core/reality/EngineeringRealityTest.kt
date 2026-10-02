@@ -23,6 +23,16 @@ class EngineeringRealityTest {
     }
 
     @Test
+    fun `analysis timestamp does not change reality identity`() {
+        val first = EngineeringRealityEngine.build(sampleAnalysis(), sampleContext())
+        val laterAnalysis = sampleAnalysis().copy(
+            repository = sampleAnalysis().repository.copy(analyzedAtEpochMillis = 999999L)
+        )
+        val second = EngineeringRealityEngine.build(laterAnalysis, sampleContext())
+        assertEquals(first.realityDigest, second.realityDigest)
+    }
+
+    @Test
     fun `reality digest changes when repository state changes`() {
         val analysis = sampleAnalysis()
         val first = EngineeringRealityEngine.build(analysis, sampleContext())
