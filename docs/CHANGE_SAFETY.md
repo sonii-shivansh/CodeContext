@@ -1,56 +1,32 @@
-# Change Safety Loop
+# Change Safety
 
-CodeContext provides a local, deterministic workflow for preparing and verifying engineering changes:
+> Prepare a repository-bound change contract before editing code, then verify the original persisted contract after the change.
+
+## Purpose
+
+The Change Safety Loop protects developers and AI coding agents from silent scope expansion, stale repository state, contract tampering, and cross-repository verification.
 
 ```text
 prepare → contract → change → verify
 ```
 
-The workflow gives developers and AI agents a stable engineering context before code is changed, then checks whether the implementation stayed within the exact prepared scope and repository state.
+The workflow is deterministic. It does not authorize a change and it does not decide whether a change is good. It verifies whether the repository still matches the prepared change boundary.
 
-## 1. Prepare
+## Quick start
 
-Run from the repository you intend to change:
+From the repository you intend to change:
 
 ```bash
 codecontext prepare "add OAuth login"
 ```
 
-For another repository:
-
-```bash
-codecontext prepare "add OAuth login" --path /path/to/repository
-```
-
-The command creates:
-
-- `output/engineering-context.json` — repository change set, grounded evidence, and the generated plan
-- `output/engineering-plan.json` — the reusable engineering plan
-- `output/agent-change-contract.json` — the persisted repository-bound contract consumed by `verify`
-
-The contract is bound to the canonical repository path and the Git `HEAD` observed during `prepare` when Git metadata is available. Its SHA-256 fingerprint covers the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, and architecture expectations.
-
-The plan is deterministic. It identifies affected components from repository evidence, highlights architecture/hotspot concerns, records uncertainties, and supplies verification commands.
-
-Each prepare result also contains a `provenance` contract. It records the operation, analysis schema version, repository `HEAD` commit when available, the evidence IDs used by the plan, and a stable SHA-256 provenance ID.
-
-## 2. Change the code
-
-Implement the requested change using your normal workflow or an AI coding agent.
-
-CodeContext does not modify source files during `prepare` or `verify`.
-
-Do not edit `output/agent-change-contract.json` or substitute a newly generated contract after `prepare`. Verification is intentionally bound to the persisted contract.
-
-## 3. Verify
-
-Run:
+Make the change, run your normal tests, then verify the persisted contract:
 
 ```bash
 codecontext verify
 ```
 
-Or explicitly specify the repository, plan, and contract:
+For an explicit repository and artifact path:
 
 ```bash
 codecontext verify \
@@ -60,50 +36,107 @@ codecontext verify \
   --output output/verification.json
 ```
 
-Verification combines:
+## 1. Prepare
 
-- persisted contract fingerprint validation
-- repository identity validation
-- prepared `HEAD` freshness validation
-- working-tree scope comparison against the contract's planned paths
-- deterministic dependency impact analysis
-- PR Intelligence
-- Architecture Intelligence
-- the contract's recommended verification commands
-- provenance for the verification operation and evidence context
+`prepare` creates three repository-scoped artifacts:
 
-A missing contract is an error. A tampered contract, mismatched plan, repository mismatch, or stale prepared `HEAD` produces `FAIL` rather than silently reconstructing a replacement contract.
+| Artifact | Purpose |
+|---|---|
+| `output/engineering-context.json` | Repository state, evidence, and context used by planning |
+| `output/engineering-plan.json` | Deterministic, evidence-backed implementation plan |
+| `output/agent-change-contract.json` | Persisted repository-bound verification contract |
 
-### Statuses
+The contract binds the planned change to repository identity and the Git `HEAD` observed during preparation when Git metadata is available.
 
-`PASS` means the persisted prepared contract is valid and the detected working-tree paths remain within the planned scope.
+Its SHA-256 fingerprint covers the meaningful persisted contract fields, including the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, architecture expectations, and schema information.
 
-`REVIEW_REQUIRED` means the contract is valid but the change needs explicit review, such as a deleted file or a critical deterministic finding.
+The plan and contract are deterministic artifacts. Preparation does not modify source code.
 
-`FAIL` means the contract is invalid/stale or at least one changed path falls outside the supplied plan. This is intended to catch accidental, stale, tampered, or agent-introduced scope expansion.
+## 2. Change the code
 
-A status is a review signal, not a claim that the code is correct. Tests and human engineering judgment remain necessary.
+Use your normal development workflow or an AI coding agent.
 
-## Agent workflow
+Do **not**:
 
-The same loop can be used by an MCP-compatible coding agent:
+- replace the persisted contract;
+- regenerate a new contract after preparation and use it as the verification authority;
+- move the change to another repository and expect verification to accept it;
+- treat a `PASS` result as a substitute for tests or code review.
+
+## 3. Verify
+
+Verification loads the persisted contract and validates:
+
+1. contract fingerprint integrity;
+2. repository identity;
+3. prepared Git `HEAD` freshness;
+4. binding between the plan and persisted contract;
+5. working-tree scope against planned paths;
+6. deterministic dependency impact;
+7. PR Intelligence signals;
+8. Architecture Intelligence signals;
+9. recommended verification commands;
+10. verification provenance.
+
+A missing, tampered, mismatched, cross-repository, or stale contract produces `FAIL`. Verification does not silently reconstruct a replacement contract from a mutable plan.
+
+## Status semantics
+
+| Status | Meaning |
+|---|---|
+| `PASS` | The persisted contract is valid and detected changes remain within the planned scope. |
+| `REVIEW_REQUIRED` | The contract is valid, but the change contains a condition that needs explicit engineering review, such as a deleted file or critical deterministic finding. |
+| `FAIL` | The contract is invalid or stale, or a detected change falls outside the prepared scope. |
+
+These statuses are **review signals**, not proof of software correctness. Tests, review, and human engineering judgment remain required.
+
+## Adversarial cases
+
+The release and E2E test suites exercise the safety boundary against:
+
+- contract-field tampering;
+- schema-version tampering;
+- plan/contract mismatch;
+- repository mismatch;
+- stale prepared `HEAD`;
+- unexpected source changes;
+- missing contract;
+- malformed contract;
+- repository restoration after mutation.
+
+The goal is to fail closed when the prepared verification boundary is no longer trustworthy.
+
+## AI-agent workflow
+
+An MCP-compatible agent can use the same boundary:
 
 ```text
 CodeContext evidence
         ↓
-Prepare change plan + persisted contract
+prepare
         ↓
-Agent modifies repository
+persist Agent Change Contract
         ↓
-CodeContext verifies ORIGINAL persisted contract
+agent changes repository
         ↓
-Agent runs tests / responds to findings
+verify original persisted contract
+        ↓
+agent runs tests / responds to findings
 ```
 
-The MCP verification tool uses the repository's persisted `output/agent-change-contract.json` when no explicit contract object is supplied. The current `codecontext_get_change_contract` MCP helper generates a fresh contract for a requested summary; it is not the persisted verification artifact.
+The MCP verification path uses the persisted `output/agent-change-contract.json` when no explicit contract object is supplied.
+
+`codecontext_get_change_contract` is a **retrieval operation**: it reads the persisted `output/agent-change-contract.json` and does not generate a replacement contract.
 
 ## Security boundary
 
-All analysis is local. Repository paths are handled through CodeContext's existing local path validation. The workflow does not upload repository contents to CodeContext infrastructure.
+The workflow is local-first. Repository paths use CodeContext's path-safety boundary. The workflow does not upload repository contents to CodeContext infrastructure.
 
-AI remains optional; the prepare/verify workflow itself does not require an external model.
+AI is optional. The deterministic prepare/verify workflow does not require an external model.
+
+## Related documents
+
+- [Architecture](ARCHITECTURE.md) — system boundaries and data flow
+- [Engineering Reality](ENGINEERING_REALITY.md) — repository-state identity
+- [MCP](MCP.md) — agent integration contract
+- [Development](DEVELOPMENT.md) — contribution and validation workflow
