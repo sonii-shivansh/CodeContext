@@ -19,15 +19,16 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class EngineeringPreparationResult(
-    val schemaVersion: String = "1.0",
+    val schemaVersion: String = "1.2",
     val repository: String,
     val changeSet: ChangeSet,
     val evidence: GroundedEvidence,
     val plan: EngineeringPlan,
+    val contract: AgentChangeContract,
     val provenance: DecisionProvenance = DecisionProvenance.create("prepare", null, "1.0", emptyList())
 )
 
-/** Builds a reusable evidence snapshot and deterministic engineering plan before coding. */
+/** Builds a reusable evidence snapshot, deterministic plan, and repository-bound change contract before coding. */
 object EngineeringPreparation {
     suspend fun prepare(repoPath: String, changeSummary: String): EngineeringPreparationResult {
         val root = File(repoPath).canonicalFile
@@ -49,16 +50,18 @@ object EngineeringPreparation {
             parseFailures = 0
         )
         val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot)
-        val changeSet = runCatching {
-            com.codecontext.core.intelligence.GitChangeSetBuilder.fromWorkingTree(root.path)
-        }.getOrElse { ChangeSet(emptyList(), source = "not-a-git-change-set") }
-        val plan = EngineeringPlanner().plan(
+        val changeSet = runCatching { com.codecontext.core.intelligence.GitChangeSetBuilder.fromWorkingTree(root.path) }
+            .getOrElse { ChangeSet(emptyList(), source = "not-a-git-change-set") }
+        val initialPlan = EngineeringPlanner().plan(
             EngineeringPlanRequest(
                 changeSummary = changeSummary,
                 changedPaths = changeSet.files.map { it.path },
                 evidence = evidence
             )
         )
+        val preparedHead = RepositoryState.head(root.path).orEmpty()
+        val contract = AgentChangeContract.fromPlan(initialPlan, root.path, preparedHead)
+        val plan = initialPlan.copy(contractFingerprint = contract.fingerprint)
         val provenance = DecisionProvenance.capture(
             repoPath = root.path,
             operation = "prepare",
@@ -70,6 +73,7 @@ object EngineeringPreparation {
             changeSet = changeSet,
             evidence = evidence,
             plan = plan,
+            contract = contract,
             provenance = provenance
         )
     }
