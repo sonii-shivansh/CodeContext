@@ -10,7 +10,7 @@ CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source 
 
 ## Current status
 
-The `main` branch currently contains the post-v0.6.0 engineering-intelligence work. The build version remains `0.6.0`; these changes have not yet been published as a new release.
+**CodeContext v0.7.0 is the current release candidate line.** The `main` branch contains the post-v0.6.0 engineering-intelligence work described in the `0.7.0` changelog section.
 
 Implemented on `main`:
 

@@ -58,11 +58,19 @@ jobs:
       - name: Build distribution
         run: ./gradlew installDist
 
+      - name: Resolve application version
+        id: version
+        shell: bash
+        run: |
+          version="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Verify installed CLI
         shell: pwsh
         run: |
           $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
-          if ($version -notmatch '0\.6\.0') { throw "Unexpected CLI version: $version" }
+          if ($version -notmatch [regex]::Escape('${{ steps.version.outputs.version }}')) { throw "Unexpected CLI version: $version" }
 
       - name: Upload distribution
         uses: actions/upload-artifact@v7

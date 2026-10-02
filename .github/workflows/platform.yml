@@ -36,6 +36,14 @@ jobs:
           distribution: "temurin"
           cache: "gradle"
 
+      - name: Resolve application version
+        id: version
+        shell: bash
+        run: |
+          version="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Build distribution on Unix
         if: runner.os != 'Windows'
         shell: bash
@@ -47,14 +55,14 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          ./build/install/codecontext/bin/codecontext --version | grep -F '0.6.0'
+          ./build/install/codecontext/bin/codecontext --version | grep -F '${{ steps.version.outputs.version }}'
           ./build/install/codecontext/bin/codecontext --help >/dev/null
 
       - name: Verify Unix release archive
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          archive="codecontext-0.6.0-${{ matrix.name }}.tar.gz"
+          archive="codecontext-${{ steps.version.outputs.version }}-${{ matrix.name }}.tar.gz"
           tar -czf "$archive" -C build/install codecontext
           tar -tzf "$archive" | grep -F 'codecontext/bin/codecontext'
 
@@ -68,13 +76,13 @@ jobs:
         shell: pwsh
         run: |
           $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
-          if ($version -notmatch '0\.6\.0') { throw "Unexpected CLI version: $version" }
+          if ($version -notmatch [regex]::Escape('${{ steps.version.outputs.version }}')) { throw "Unexpected CLI version: $version" }
           & .\build\install\codecontext\bin\codecontext.bat --help | Out-Null
 
       - name: Verify Windows release archive
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $archive = "codecontext-0.6.0-Windows-x64.zip"
+          $archive = "codecontext-${{ steps.version.outputs.version }}-Windows-x64.zip"
           Compress-Archive -Path .\build\install\codecontext -DestinationPath $archive
           if (-not (Test-Path $archive)) { throw "Archive was not created" }

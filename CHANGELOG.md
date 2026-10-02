@@ -2,11 +2,11 @@
 
 All notable changes to CodeContext are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.7.0]
 
 ### Added
 
-- Engineering Reality and deterministic engineering-context snapshot/diff capabilities on `main`.
+- Engineering Reality and deterministic engineering-context snapshot/diff capabilities.
 - Architecture drift and deterministic architecture-contract governance.
 - Repository-bound Agent Change Contracts for the prepare → change → verify workflow.
 - Persisted contract validation for repository identity, prepared Git `HEAD`, plan binding, tamper detection, and unexpected working-tree scope.
@@ -15,12 +15,13 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Documentation
 
-- Updated the README, architecture, API, MCP, change-safety, and implementation-status documentation to describe the current post-v0.6.0 state without presenting future work as released functionality.
+- Updated the README, architecture, API, MCP, change-safety, and implementation-status documentation to describe the current engineering-intelligence architecture.
 
-### Current release status
+### Release engineering
 
-- The application/build version remains `0.6.0`.
-- The post-v0.6.0 engineering-intelligence work on `main` has not yet been published as a new release.
+- Application and build version aligned to `0.7.0`.
+- Release verification uses the declared application version instead of a hard-coded previous release version.
+- Release packaging continues to cover Linux x64, Windows x64, macOS x64, and macOS ARM64 with bundled Java runtimes and SHA-256 checksums.
 
 ## [0.6.0]
 
@@ -101,7 +102,8 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 - The server does not provide authentication, tenant isolation, or report retention.
 - AI analysis requires external provider access and explicit configuration.
 
-[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.7.0
 [0.6.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.6.0
 [0.5.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.5.0
 [0.2.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.2.0
