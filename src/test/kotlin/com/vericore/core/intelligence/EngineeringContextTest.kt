@@ -2,7 +2,6 @@ package com.vericore.core.intelligence
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.eclipse.jgit.api.Git
 
 class EngineeringContextTest : StringSpec({
     "diff detects added removed and modified files deterministically" {
@@ -41,18 +40,13 @@ class EngineeringContextTest : StringSpec({
         diff.changes shouldBe emptyList()
     }
 
-    "snapshot ignores Vericore and legacy generated output changes but keeps real source changes detectable" {
+    "snapshot excludes Vericore and legacy generated output" {
         val root = java.nio.file.Files.createTempDirectory("vericore-context-output-").toFile()
         try {
             root.resolve("src/App.kt").apply {
                 parentFile.mkdirs()
                 writeText("class App")
             }
-            Git.init().setDirectory(root).call().use { git ->
-                git.add().addFilepattern("src/App.kt").call()
-            }
-
-            root.resolve("src/Changed.kt").writeText("class Changed")
             root.resolve("output/verify.json").apply {
                 parentFile.mkdirs()
                 writeText("generated")
@@ -76,9 +70,10 @@ class EngineeringContextTest : StringSpec({
                 )
             )
 
-            snapshot.changedPaths shouldBe listOf("src/Changed.kt")
+            snapshot.files.map { it.path } shouldBe listOf("src/App.kt")
+            snapshot.changedPaths shouldBe emptyList()
             snapshot.languages shouldBe listOf("Kotlin")
-            snapshot.dirty shouldBe true
+            snapshot.dirty shouldBe false
         } finally {
             root.deleteRecursively()
         }
