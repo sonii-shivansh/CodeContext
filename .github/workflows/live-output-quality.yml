@@ -150,6 +150,18 @@ jobs:
               assert path.is_file() and path.stat().st_size > 0, f'missing structured output {generated}'
               json.loads(path.read_text())
               report.append(f'- `{txt}` -> `{generated}`: valid JSON, {path.stat().st_size} bytes')
+
+          context_output = (out / '07-context-snapshot.txt').read_text()
+          assert 'Dirty: false' in context_output, 'context-snapshot must report a clean target repository'
+          context = json.loads((Path('output') / 'engineering-context.json').read_text())
+          dirty = context.get('dirty')
+          changed_paths = context.get('changedPaths')
+          if dirty is not None:
+              assert dirty is False, f'context-snapshot falsely reports dirty repository: {changed_paths or []}'
+          if changed_paths is not None:
+              assert changed_paths == [], f'context-snapshot reports unexpected changes: {changed_paths}'
+          report.append('- `07-context-snapshot.txt`: clean target-state assertion passed')
+
           (out / 'SUMMARY.md').write_text('# Live command output audit\n\n' + '\n'.join(report) + '\n')
           PY
 
@@ -261,7 +273,7 @@ jobs:
           test "$(cat "$RUNNER_TEMP/target-before.sha")" = "$(git rev-parse HEAD)"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.codecontext/)' || true)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.codecontext/|\.codecontext-architecture-contract\.json$)' || true)"
 
       - name: Upload complete output evidence
         if: always()

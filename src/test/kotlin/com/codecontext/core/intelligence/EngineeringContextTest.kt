@@ -56,6 +56,7 @@ class EngineeringContextTest : StringSpec({
                 parentFile.mkdirs()
                 writeText("class Cache")
             }
+            root.resolve(".codecontext-architecture-contract.json").writeText("generated contract")
 
             val snapshot = EngineeringContextEngine.snapshot(
                 root,
@@ -67,6 +68,7 @@ class EngineeringContextTest : StringSpec({
             snapshot.files.map { it.path } shouldBe listOf("src/App.kt")
             snapshot.changedPaths shouldBe emptyList()
             snapshot.languages shouldBe listOf("Kotlin")
+            snapshot.dirty shouldBe false
         } finally {
             root.deleteRecursively()
         }
