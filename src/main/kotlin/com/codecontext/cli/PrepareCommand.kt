@@ -10,12 +10,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-/** Creates a reusable evidence snapshot and engineering plan before implementation. */
+/** Creates reusable evidence, plan, and repository-bound change-contract artifacts before implementation. */
 class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidence-backed change plan before coding") {
     private val changeSummary by argument("change-summary", help = "Short description of the proposed change")
     private val path by option("--path", help = "Repository path").default(".")
     private val output by option("--output", help = "Preparation artifact path")
     private val planOutput by option("--plan-output", help = "Engineering plan artifact path")
+    private val contractOutput by option("--contract-output", help = "Agent change contract artifact path")
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -27,8 +28,12 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
         val planPath = planOutput ?: root.resolve("output/engineering-plan.json").path
         val planFile = File(planPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
         planFile.writeText(json.encodeToString(result.plan))
+        val contractPath = contractOutput ?: root.resolve("output/agent-change-contract.json").path
+        val contractFile = File(contractPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
+        contractFile.writeText(json.encodeToString(result.contract))
         echo("Engineering context: ${artifact.path}")
         echo("Engineering plan: ${planFile.path}")
+        echo("Agent change contract: ${contractFile.path}")
         echo("Risk: ${result.plan.riskLevel}")
         echo("Affected components: ${result.plan.affectedComponents.size}")
     }

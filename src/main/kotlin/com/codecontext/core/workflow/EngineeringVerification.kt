@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class EngineeringVerificationResult(
-    val schemaVersion: String = "1.0",
+    val schemaVersion: String = "1.1",
     val repository: String,
     val safety: ChangeSafetyResult,
     val prIntelligence: com.codecontext.core.intelligence.PRIntelligenceResult,
@@ -29,9 +29,12 @@ data class EngineeringVerificationResult(
     val contract: AgentChangeContractResult? = null
 )
 
-/** Runs deterministic post-change checks against the current working tree and the exact prepared plan. */
+/** Runs deterministic post-change checks against the exact persisted contract produced by prepare. */
 object EngineeringVerification {
-    suspend fun verify(repoPath: String, plan: EngineeringPlan): EngineeringVerificationResult {
+    suspend fun verify(repoPath: String, plan: EngineeringPlan): EngineeringVerificationResult =
+        verify(repoPath, plan, AgentChangeContract.fromPlan(plan))
+
+    suspend fun verify(repoPath: String, plan: EngineeringPlan, contract: AgentChangeContract): EngineeringVerificationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
         val config = ConfigLoader.loadForRepository(root.path)
@@ -62,23 +65,29 @@ object EngineeringVerification {
         val tests = impact.nodes.filter { it.relationship == com.codecontext.core.intelligence.ImpactRelationship.TEST_CANDIDATE }.map { toRelativePath(it.path) }
         val pr = com.codecontext.core.intelligence.PRIntelligenceEngine.analyze(changeSet, impact, risks, packageByPath, tests, toRelativePath)
         val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
-        val expectedFingerprint = AgentChangeContract.fingerprintFor(plan.copy(contractFingerprint = ""))
-        val fingerprintValid = plan.contractFingerprint.isBlank() || plan.contractFingerprint == expectedFingerprint
-        val contract = AgentChangeContractResult(
-            contract = AgentChangeContract.fromPlan(plan),
-            valid = fingerprintValid,
-            reasons = if (fingerprintValid) emptyList() else listOf("The supplied engineering plan fingerprint does not match its canonical contract.")
-        )
+
+        val currentHead = RepositoryState.head(root.path).orEmpty()
+        val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
+        val expectedPlanFingerprint = AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+        val reasons = buildList {
+            if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
+            if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
+            if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
+            if (expectedPlanFingerprint != contract.fingerprint) add("The supplied plan does not match the persisted contract contents.")
+            if (contract.preparedHead.isNotBlank() && currentHead.isNotBlank() && contract.preparedHead != currentHead) add("The repository HEAD changed after prepare (${contract.preparedHead} -> $currentHead); the contract is stale.")
+        }
+        val contractValid = reasons.isEmpty()
+        val contractResult = AgentChangeContractResult(contract, contractValid, reasons)
         val status = when {
-            !fingerprintValid -> SafetyStatus.FAIL
+            !contractValid -> SafetyStatus.FAIL
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
-        val provenance = DecisionProvenance.capture(root.path, "verify", snapshot.schemaVersion, plan.evidenceIds)
+        val provenance = DecisionProvenance.capture(root.path, "verify", snapshot.schemaVersion, contract.evidenceIds)
         return EngineeringVerificationResult(
             repository = root.path, safety = safety, prIntelligence = pr, architecture = architecture,
-            verificationCommands = plan.verificationCommands, status = status, provenance = provenance, contract = contract
+            verificationCommands = contract.verificationCommands, status = status, provenance = provenance, contract = contractResult
         )
     }
 }

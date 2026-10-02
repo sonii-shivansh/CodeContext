@@ -1,6 +1,7 @@
 package com.codecontext.cli
 
 import com.codecontext.core.planner.EngineeringPlan
+import com.codecontext.core.workflow.AgentChangeContract
 import com.codecontext.core.workflow.EngineeringVerification
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
@@ -9,10 +10,11 @@ import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
-/** Verifies the working-tree change against an evidence-backed engineering plan. */
-class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current change against an engineering plan") {
+/** Verifies the working-tree change against the exact contract persisted by prepare. */
+class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current change against an engineering plan and immutable change contract") {
     private val path by option("--path", help = "Repository path").default(".")
     private val planFile by option("--plan", help = "Engineering plan JSON artifact")
+    private val contractFile by option("--contract", help = "Agent change contract JSON artifact")
     private val output by option("--output", help = "Optional verification artifact path")
 
     override fun run() {
@@ -20,8 +22,12 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         val json = Json { ignoreUnknownKeys = true; prettyPrint = true; encodeDefaults = true }
         val planPath = planFile ?: root.resolve("output/engineering-plan.json").path
         val resolvedPlan = File(planPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
+        val contractPath = contractFile ?: root.resolve("output/agent-change-contract.json").path
+        val resolvedContract = File(contractPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
+        require(resolvedContract.isFile) { "Immutable agent change contract not found: ${resolvedContract.path}. Run prepare before verify." }
         val plan = json.decodeFromString<EngineeringPlan>(resolvedPlan.readText())
-        val result = runBlocking { EngineeringVerification.verify(root.path, plan) }
+        val contract = json.decodeFromString<AgentChangeContract>(resolvedContract.readText())
+        val result = runBlocking { EngineeringVerification.verify(root.path, plan, contract) }
         val encoded = json.encodeToString(result)
         if (output != null) {
             val file = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
@@ -32,7 +38,7 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         }
         echo("Status: ${result.status}")
         if (result.status == com.codecontext.core.workflow.SafetyStatus.FAIL) {
-            throw IllegalStateException("Change verification failed: unexpected files are outside the engineering plan")
+            throw IllegalStateException("Change verification failed: the prepared contract or change scope is invalid")
         }
     }
 }
