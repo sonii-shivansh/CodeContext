@@ -25,7 +25,7 @@ class MainCommandTest {
 
     @Test
     fun `architecture contract help uses canonical generated artifact`() {
-        val result = MainCommand().test("architecture-contract --help")
+        val result = ArchitectureContractCommand().test("--help")
 
         assertEquals(0, result.statusCode)
         assertTrue(result.stdout.contains(".vericore-architecture-contract.json"))
