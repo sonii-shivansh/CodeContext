@@ -41,7 +41,7 @@ class EngineeringContextTest : StringSpec({
         diff.changes shouldBe emptyList()
     }
 
-    "snapshot ignores Vericore and legacy generated output changes but keeps user config changes detectable" {
+    "snapshot ignores Vericore and legacy generated output changes but keeps real source changes detectable" {
         val root = java.nio.file.Files.createTempDirectory("vericore-context-output-").toFile()
         try {
             root.resolve("src/App.kt").apply {
@@ -52,6 +52,7 @@ class EngineeringContextTest : StringSpec({
                 git.add().addFilepattern("src/App.kt").call()
             }
 
+            root.resolve("src/Changed.kt").writeText("class Changed")
             root.resolve("output/verify.json").apply {
                 parentFile.mkdirs()
                 writeText("generated")
@@ -76,7 +77,7 @@ class EngineeringContextTest : StringSpec({
                 )
             )
 
-            snapshot.changedPaths shouldBe listOf(".vericore.json")
+            snapshot.changedPaths shouldBe listOf("src/Changed.kt")
             snapshot.languages shouldBe listOf("Kotlin")
             snapshot.dirty shouldBe true
         } finally {
