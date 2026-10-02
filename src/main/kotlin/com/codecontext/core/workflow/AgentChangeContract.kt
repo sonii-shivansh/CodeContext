@@ -20,8 +20,7 @@ data class AgentChangeContract(
     val fingerprint: String
 ) {
     companion object {
-        fun fromPlan(plan: EngineeringPlan): AgentChangeContract =
-            fromPlan(plan, "", "")
+        fun fromPlan(plan: EngineeringPlan): AgentChangeContract = fromPlan(plan, "", "")
 
         fun fromPlan(plan: EngineeringPlan, repositoryPath: String, preparedHead: String): AgentChangeContract {
             val repository = repositoryPath.takeIf { it.isNotBlank() }?.let { File(it).canonicalPath } ?: ""
@@ -30,12 +29,14 @@ data class AgentChangeContract(
             val commands = plan.verificationCommands.distinct().sorted()
             val evidence = plan.evidenceIds.distinct().sorted()
             val expectations = plan.concerns.distinct().sorted()
-            val canonical = canonicalize(plan.changeSummary, repository, preparedHead, paths, components, commands, evidence, expectations)
+            val changeTypes = emptyMap<String, List<String>>()
+            val canonical = canonicalize("2.0", plan.changeSummary, repository, preparedHead, paths, changeTypes, components, commands, evidence, expectations)
             return AgentChangeContract(
                 changeSummary = plan.changeSummary.trim(),
                 repository = repository,
                 preparedHead = preparedHead,
                 plannedPaths = paths,
+                expectedChangeTypes = changeTypes,
                 expectedComponents = components,
                 verificationCommands = commands,
                 evidenceIds = evidence,
@@ -47,11 +48,43 @@ data class AgentChangeContract(
         fun fingerprintFor(plan: EngineeringPlan): String = fromPlan(plan).fingerprint
 
         fun fingerprintFor(contract: AgentChangeContract): String = sha256(
-            canonicalize(contract.changeSummary, contract.repository, contract.preparedHead, contract.plannedPaths.map(::normalize).distinct().sorted(), contract.expectedComponents.map(::normalize).distinct().sorted(), contract.verificationCommands.distinct().sorted(), contract.evidenceIds.distinct().sorted(), contract.architectureExpectations.distinct().sorted())
+            canonicalize(
+                contract.schemaVersion,
+                contract.changeSummary,
+                contract.repository,
+                contract.preparedHead,
+                contract.plannedPaths.map(::normalize).distinct().sorted(),
+                contract.expectedChangeTypes.mapValues { (_, values) -> values.distinct().sorted() }.toSortedMap(),
+                contract.expectedComponents.map(::normalize).distinct().sorted(),
+                contract.verificationCommands.distinct().sorted(),
+                contract.evidenceIds.distinct().sorted(),
+                contract.architectureExpectations.distinct().sorted()
+            )
         )
 
-        private fun canonicalize(summary: String, repository: String, preparedHead: String, paths: List<String>, components: List<String>, commands: List<String>, evidence: List<String>, expectations: List<String>): String =
-            listOf(summary.trim(), repository, preparedHead, paths.joinToString("\n"), components.joinToString("\n"), commands.joinToString("\n"), evidence.joinToString("\n"), expectations.joinToString("\n")).joinToString("\n---\n")
+        private fun canonicalize(
+            schemaVersion: String,
+            summary: String,
+            repository: String,
+            preparedHead: String,
+            paths: List<String>,
+            changeTypes: Map<String, List<String>>,
+            components: List<String>,
+            commands: List<String>,
+            evidence: List<String>,
+            expectations: List<String>
+        ): String = listOf(
+            schemaVersion,
+            summary.trim(),
+            repository,
+            preparedHead,
+            paths.joinToString("\n"),
+            changeTypes.entries.sortedBy { it.key }.joinToString("\n") { (path, types) -> "$path=${types.joinToString(",")}" },
+            components.joinToString("\n"),
+            commands.joinToString("\n"),
+            evidence.joinToString("\n"),
+            expectations.joinToString("\n")
+        ).joinToString("\n---\n")
 
         private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }

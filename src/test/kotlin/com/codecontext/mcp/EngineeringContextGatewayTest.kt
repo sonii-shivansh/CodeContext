@@ -7,11 +7,13 @@ import com.codecontext.core.config.CodeContextConfig
 import com.codecontext.cli.CodeParallelParser
 import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.graph.RobustDependencyGraph
+import com.codecontext.core.workflow.AgentChangeContract
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import java.nio.file.Files
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class EngineeringContextGatewayTest {
@@ -29,6 +31,31 @@ class EngineeringContextGatewayTest {
             val baseline = Json { encodeDefaults = true }.encodeToJsonElement(ArchitectureIntelligenceResult.serializer(), architecture).jsonObject
             val result = EngineeringContextGateway.architectureDrift(root.path, baseline)
             assertNotNull(result["summary"] ?: result["changes"])
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
+    fun `change contract gateway returns persisted artifact without regeneration`() {
+        val root = Files.createTempDirectory("gateway-contract").toFile()
+        try {
+            val contract = AgentChangeContract(
+                changeSummary = "test change",
+                repository = root.canonicalPath,
+                preparedHead = "abc123",
+                plannedPaths = listOf("src/App.kt"),
+                expectedChangeTypes = mapOf("src/App.kt" to listOf("MODIFIED")),
+                expectedComponents = listOf("src/App.kt"),
+                verificationCommands = listOf("./gradlew test"),
+                evidenceIds = listOf("e-1"),
+                architectureExpectations = listOf("keep module boundary"),
+                fingerprint = "0".repeat(64)
+            )
+            val file = root.resolve("output/agent-change-contract.json").apply { parentFile.mkdirs() }
+            file.writeText(Json { encodeDefaults = true }.encodeToString(AgentChangeContract.serializer(), contract))
+
+            val returned = EngineeringContextGateway.changeContract(root.path)
+            val decoded = Json.decodeFromJsonElement(AgentChangeContract.serializer(), returned)
+            assertEquals(contract, decoded)
         } finally { root.deleteRecursively() }
     }
 }
