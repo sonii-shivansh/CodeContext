@@ -105,8 +105,56 @@ jobs:
           "$CLI" prepare "Improve the repository safely"
           test -s output/engineering-plan.json
           test -s output/engineering-context.json
-          "$CLI" verify --output output/verify.json
-          test -s output/verify.json
+          test -s output/agent-change-contract.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open('output/agent-change-contract.json'))
+          assert p['fingerprint'] and len(p['fingerprint']) == 64
+          assert p['repository']
+          assert p['preparedHead']
+          PY
+
+      - name: Prove contract tamper detection
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          cp output/agent-change-contract.json "$RUNNER_TEMP/contract-original.json"
+          python3 - <<'PY'
+          import json
+          p=json.load(open('output/agent-change-contract.json'))
+          p['plannedPaths'] = list(p.get('plannedPaths', [])) + ['.github/contract-tampered.txt']
+          json.dump(p, open('output/agent-change-contract.json','w'), indent=2)
+          PY
+          set +e
+          "$CLI" verify --output output/contract-tamper-verify.json > "$RUNNER_TEMP/contract-tamper.log" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q 'Verification failed' "$RUNNER_TEMP/contract-tamper.log"
+          cp "$RUNNER_TEMP/contract-original.json" output/agent-change-contract.json
+
+      - name: Prove unexpected source change detection
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          TEST_FILE="src/codecontext-live-gate-safety-check.txt"
+          printf '%s\n' 'intentional release-gate mutation' > "$TEST_FILE"
+          set +e
+          "$CLI" verify --output output/unexpected-change-verify.json > "$RUNNER_TEMP/unexpected-change.log" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q 'Verification failed' "$RUNNER_TEMP/unexpected-change.log"
+          rm -f "$TEST_FILE"
+          test -z "$(git status --porcelain)"
+
+      - name: Verify prepared contract remains valid after mutation tests
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          "$CLI" verify --output output/final-verify.json
+          test -s output/final-verify.json
+          grep -q '"valid": true' output/final-verify.json
 
       - name: MCP protocol and gateway smoke test
         working-directory: ${{ runner.temp }}/target

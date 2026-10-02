@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class EngineeringPreparationResult(
-    val schemaVersion: String = "1.1",
+    val schemaVersion: String = "1.2",
     val repository: String,
     val changeSet: ChangeSet,
     val evidence: GroundedEvidence,
@@ -28,7 +28,7 @@ data class EngineeringPreparationResult(
     val provenance: DecisionProvenance = DecisionProvenance.create("prepare", null, "1.0", emptyList())
 )
 
-/** Builds a reusable evidence snapshot, deterministic plan, and immutable change contract before coding. */
+/** Builds a reusable evidence snapshot, deterministic plan, and repository-bound change contract before coding. */
 object EngineeringPreparation {
     suspend fun prepare(repoPath: String, changeSummary: String): EngineeringPreparationResult {
         val root = File(repoPath).canonicalFile
@@ -59,7 +59,8 @@ object EngineeringPreparation {
                 evidence = evidence
             )
         )
-        val contract = AgentChangeContract.fromPlan(initialPlan)
+        val preparedHead = RepositoryState.head(root.path).orEmpty()
+        val contract = AgentChangeContract.fromPlan(initialPlan, root.path, preparedHead)
         val plan = initialPlan.copy(contractFingerprint = contract.fingerprint)
         val provenance = DecisionProvenance.capture(
             repoPath = root.path,
