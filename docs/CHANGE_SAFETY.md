@@ -26,7 +26,7 @@ The command creates:
 
 - `output/engineering-context.json` — repository change set, grounded evidence, and the generated plan
 - `output/engineering-plan.json` — the reusable engineering plan
-- `output/agent-change-contract.json` — the immutable contract consumed by `verify`
+- `output/agent-change-contract.json` — the persisted repository-bound contract consumed by `verify`
 
 The contract is bound to the canonical repository path and the Git `HEAD` observed during `prepare` when Git metadata is available. Its SHA-256 fingerprint covers the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, and architecture expectations.
 
@@ -91,16 +91,16 @@ The same loop can be used by an MCP-compatible coding agent:
 ```text
 CodeContext evidence
         ↓
-Prepare change plan + contract
+Prepare change plan + persisted contract
         ↓
 Agent modifies repository
         ↓
-CodeContext verifies ORIGINAL contract
+CodeContext verifies ORIGINAL persisted contract
         ↓
 Agent runs tests / responds to findings
 ```
 
-This keeps CodeContext in the role of an evidence and verification layer rather than an autonomous coding authority.
+The MCP verification tool uses the repository's persisted `output/agent-change-contract.json` when no explicit contract object is supplied. The current `codecontext_get_change_contract` MCP helper generates a fresh contract for a requested summary; it is not the persisted verification artifact.
 
 ## Security boundary
 
