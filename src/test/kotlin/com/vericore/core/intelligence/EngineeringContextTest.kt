@@ -70,7 +70,6 @@ class EngineeringContextTest : StringSpec({
                 )
             )
 
-            println("PHASE3_SNAPSHOT_FILES=${snapshot.files.map { it.path }} LANGUAGES=${snapshot.languages} DIRTY=${snapshot.dirty} CHANGED=${snapshot.changedPaths}")
             snapshot.files.map { it.path } shouldBe listOf("src/App.kt")
             snapshot.changedPaths shouldBe emptyList()
             snapshot.languages shouldBe listOf("Kotlin")
