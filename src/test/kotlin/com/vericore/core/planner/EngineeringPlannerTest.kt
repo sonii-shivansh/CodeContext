@@ -48,19 +48,20 @@ class EngineeringPlannerTest {
     }
 
     @Test
-    fun `generated CodeContext paths are excluded from affected components`() {
+    fun `generated CodeContext and Vericore paths are excluded from affected components`() {
         val evidence = GroundedEvidence(
             citations = listOf(
                 EvidenceCitation("source", "source", "src/Service.kt", "source file"),
                 EvidenceCitation("output", "output", "output/verify.json", "generated report"),
-                EvidenceCitation("cache", "cache", ".codecontext/cache/index.json", "generated cache")
+                EvidenceCitation("legacy-cache", "cache", ".codecontext/cache/index.json", "legacy generated cache"),
+                EvidenceCitation("canonical-cache", "cache", ".vericore/cache/index.json", "canonical generated cache")
             )
         )
 
         val plan = planner.plan(
             EngineeringPlanRequest(
                 changeSummary = "Verify generated artifacts",
-                changedPaths = listOf("src/Service.kt", "output/verify.json", ".codecontext/cache/index.json"),
+                changedPaths = listOf("src/Service.kt", "output/verify.json", ".codecontext/cache/index.json", ".vericore/cache/index.json"),
                 evidence = evidence
             )
         )
