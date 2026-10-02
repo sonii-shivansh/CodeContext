@@ -118,7 +118,7 @@ class VericoreConfigurationNamespaceTest {
             System.setErr(PrintStream(captured))
             assertEquals("legacy-key", requireNotNull(UserConfigStore.load()).ai.apiKey)
             assertTrue(captured.toString().contains("Deprecated CodeContext user configuration"))
-            assertTrue(captured.toString().contains("Vericore"))
+            assertTrue(captured.toString().contains(".config/vericore/config.json"))
         } finally {
             System.setErr(originalErr)
         }
