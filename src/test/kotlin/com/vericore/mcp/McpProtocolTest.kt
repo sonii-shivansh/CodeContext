@@ -1,5 +1,7 @@
 package com.vericore.mcp
 
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -27,12 +29,22 @@ class McpProtocolTest {
     }
 
     @Test
-    fun legacyCodeContextToolAliasRemainsCallable() {
-        val response = McpProtocol.handle(buildJsonObject {
-            put("jsonrpc", JsonPrimitive("2.0")); put("id", JsonPrimitive(5)); put("method", JsonPrimitive("tools/call"))
-            put("params", buildJsonObject { put("name", JsonPrimitive("codecontext_get_engineering_reality")); put("arguments", buildJsonObject { put("repoPath", JsonPrimitive("https://github.com/spring-projects/spring-petclinic")) }) })
-        })
-        assertTrue(response.toString().contains("Remote repositories are not supported"))
+    fun legacyCodeContextToolAliasRemainsCallableAndWarns() {
+        val originalErr = System.err
+        val capturedErr = ByteArrayOutputStream()
+        System.setErr(PrintStream(capturedErr))
+        try {
+            val response = McpProtocol.handle(buildJsonObject {
+                put("jsonrpc", JsonPrimitive("2.0")); put("id", JsonPrimitive(5)); put("method", JsonPrimitive("tools/call"))
+                put("params", buildJsonObject { put("name", JsonPrimitive("codecontext_get_engineering_reality")); put("arguments", buildJsonObject { put("repoPath", JsonPrimitive("https://github.com/spring-projects/spring-petclinic")) }) })
+            })
+            assertTrue(response.toString().contains("Remote repositories are not supported"))
+            val warning = capturedErr.toString()
+            assertTrue(warning.contains("Deprecated MCP tool 'codecontext_get_engineering_reality'"))
+            assertTrue(warning.contains("migrate to 'vericore_get_engineering_reality'"))
+        } finally {
+            System.setErr(originalErr)
+        }
     }
 
     @Test
