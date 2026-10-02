@@ -19,7 +19,7 @@ enum class SafetyStatus { PASS, REVIEW_REQUIRED, FAIL }
 
 /** Compares actual source changes with an evidence-backed plan. Generated artifacts are ignored. */
 object ChangeSafetyAnalyzer {
-    private val generatedPrefixes = listOf(".codecontext/", "output/", "build/", "target/")
+    private val generatedPrefixes = listOf(".vericore/", ".codecontext/", "output/", "build/", "target/")
 
     fun verify(changes: List<ChangedFile>, plannedPaths: Collection<String>): ChangeSafetyResult {
         val actual = changes.map { normalize(it.path) }.filterNot(::isGeneratedPath).distinct().sorted()
@@ -58,7 +58,8 @@ object ChangeSafetyAnalyzer {
 
     private fun isGeneratedPath(path: String): Boolean {
         val normalized = normalize(path).trimStart('/')
-        return normalized == ".codecontext" || generatedPrefixes.any { normalized.startsWith(it) } ||
+        return normalized == ".vericore" || normalized == ".codecontext" ||
+            generatedPrefixes.any { normalized.startsWith(it) } ||
             normalized == "output" || normalized == "build" || normalized == "target"
     }
 }
