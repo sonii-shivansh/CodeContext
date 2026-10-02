@@ -21,6 +21,7 @@ class MainCommandTest {
 
         assertEquals(0, result.statusCode)
         assertTrue(result.stdout.lines().first().startsWith("Usage: vericore"))
+        assertTrue(!result.stdout.contains("CodeContext"))
     }
 
     @Test
