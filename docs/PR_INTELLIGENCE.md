@@ -5,9 +5,9 @@ PR Intelligence converts a local Git change set into a deterministic engineering
 ## CLI
 
 ```bash
-codecontext pr-intelligence /path/to/repository --json
+vericore pr-intelligence /path/to/repository --json
 
-codecontext pr-intelligence /path/to/repository \
+vericore pr-intelligence /path/to/repository \
   --base main \
   --head feature/my-change \
   --json

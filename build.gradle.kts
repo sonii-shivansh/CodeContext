@@ -4,7 +4,7 @@ plugins {
     application
 }
 
-group = "com.codecontext"
+group = "com.vericore"
 version = "0.7.0"
 
 repositories {
@@ -55,7 +55,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.codecontext.MainKt")
+    mainClass.set("com.vericore.MainKt")
 }
 
 tasks.test {
@@ -69,6 +69,6 @@ kotlin {
 
 tasks.jar {
     manifest {
-        attributes["Main-Class"] = "com.codecontext.MainKt"
+        attributes["Main-Class"] = "com.vericore.MainKt"
     }
 }

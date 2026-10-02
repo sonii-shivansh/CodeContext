@@ -1,12 +1,12 @@
 # API Reference
 
-CodeContext exposes a CLI and a local REST API. The REST API is implemented by `com.codecontext.server.CodeContextServer` and is intended for trusted local or internal use.
+Vericore exposes a CLI and a local REST API. The REST API is implemented by `com.vericore.server.CodeContextServer` and is intended for trusted local or internal use.
 
 ## Build and start
 
 ```bash
 ./gradlew installDist
-./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
+./build/install/vericore/bin/vericore server --host 127.0.0.1 --port 8080
 ```
 
 Keep the default bind address on loopback for local use. Deployments beyond loopback must provide authentication, trusted-origin controls, TLS, quotas, report authorization, and tenant isolation at the deployment boundary.
@@ -37,14 +37,14 @@ setup
 doctor
 ```
 
-Run `codecontext <command> --help` for exact installed options.
+Run `vericore <command> --help` for exact installed options.
 
 ### Engineering Reality and context
 
 ```bash
-codecontext context-snapshot /path/to/repository --json
-codecontext context-diff output/before.json output/after.json --json
-codecontext reality /path/to/repository --json
+vericore context-snapshot /path/to/repository --json
+vericore context-diff output/before.json output/after.json --json
+vericore reality /path/to/repository --json
 ```
 
 Reality binds deterministic analysis and repository-context state. A stale analysis is rejected instead of being silently combined with a newer repository state.
@@ -52,9 +52,9 @@ Reality binds deterministic analysis and repository-context state. A stale analy
 ### Architecture drift and governance
 
 ```bash
-codecontext architecture /path/to/repository --json
-codecontext architecture-drift /path/to/repository --baseline output/architecture-baseline.json --json
-codecontext architecture-contract /path/to/repository --json
+vericore architecture /path/to/repository --json
+vericore architecture-drift /path/to/repository --baseline output/architecture-baseline.json --json
+vericore architecture-contract /path/to/repository --json
 ```
 
 `architecture-drift` compares a previously generated `ArchitectureIntelligenceResult` with the current deterministic architecture analysis. `architecture-contract` evaluates current architecture findings against the configured deterministic governance contract.
@@ -62,17 +62,17 @@ codecontext architecture-contract /path/to/repository --json
 ### Evidence, planning, and safe changes
 
 ```bash
-codecontext repo-qa "why is PaymentService risky?" \
+vericore repo-qa "why is PaymentService risky?" \
   --path /workspace/example \
   --evidence-output output/grounded-evidence.json
 
-codecontext plan "add payment validation" \
+vericore plan "add payment validation" \
   --evidence output/grounded-evidence.json \
   --output output/engineering-plan.json
 
-codecontext prepare "add payment validation" --path /workspace/example
+vericore prepare "add payment validation" --path /workspace/example
 
-codecontext verify \
+vericore verify \
   --path /workspace/example \
   --plan output/engineering-plan.json \
   --contract output/agent-change-contract.json \
@@ -140,7 +140,7 @@ Local change-impact and PR Intelligence flows are exposed through the applicatio
 
 The server resolves paths with `Path.toRealPath()` and accepts only readable directories equal to or descendants of a configured allowed root.
 
-Allowed roots are configured with `CODECONTEXT_ALLOWED_PATHS`, separated by the platform path separator. Configure the smallest practical set of roots.
+Allowed roots are configured with `VERICORE_ALLOWED_PATHS`, separated by the platform path separator. Configure the smallest practical set of roots.
 
 ## Rate limiting
 

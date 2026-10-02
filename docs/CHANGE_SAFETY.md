@@ -17,19 +17,19 @@ The workflow is deterministic. It does not authorize a change and it does not de
 From the repository you intend to change:
 
 ```bash
-codecontext prepare "add OAuth login"
+vericore prepare "add OAuth login"
 ```
 
 Make the change, run your normal tests, then verify the persisted contract:
 
 ```bash
-codecontext verify
+vericore verify
 ```
 
 For an explicit repository and artifact path:
 
 ```bash
-codecontext verify \
+vericore verify \
   --path /path/to/repository \
   --plan output/engineering-plan.json \
   --contract output/agent-change-contract.json \
@@ -111,7 +111,7 @@ The goal is to fail closed when the prepared verification boundary is no longer 
 An MCP-compatible agent can use the same boundary:
 
 ```text
-CodeContext evidence
+Vericore evidence
         ↓
 prepare
         ↓
@@ -130,7 +130,7 @@ The MCP verification path uses the persisted `output/agent-change-contract.json`
 
 ## Security boundary
 
-The workflow is local-first. Repository paths use CodeContext's path-safety boundary. The workflow does not upload repository contents to CodeContext infrastructure.
+The workflow is local-first. Repository paths use Vericore's path-safety boundary. The workflow does not upload repository contents to Vericore infrastructure.
 
 AI is optional. The deterministic prepare/verify workflow does not require an external model.
 

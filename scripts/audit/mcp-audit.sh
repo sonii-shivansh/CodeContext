@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP="./build/install/codecontext/bin/codecontext"
+APP="./build/install/vericore/bin/vericore"
 mkdir -p output
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"audit-lab","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' '{"jsonrpc":"2.0","id":3,"method":"ping","params":{}}' '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"codecontext_get_engineering_reality","arguments":{"repoPath":"."}}}' '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"codecontext_get_context_snapshot","arguments":{"repoPath":"."}}}' '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"codecontext_get_change_contract","arguments":{"repoPath":"."}}}' | "$APP" mcp > output/mcp-audit.jsonl
 python3 - <<'PY'

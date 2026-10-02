@@ -1,9 +1,9 @@
-# CodeContext Release Preparation Script (Windows)
+# Vericore Release Preparation Script (Windows)
 # Version: 0.1.0
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "🚀 CodeContext Release Preparation" -ForegroundColor Cyan
+Write-Host "🚀 Vericore Release Preparation" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -44,7 +44,7 @@ Write-Host ""
 
 # Step 5: Package release
 Write-Host "📦 Step 5: Packaging release..." -ForegroundColor Blue
-$RELEASE_NAME = "codecontext-$VERSION"
+$RELEASE_NAME = "vericore-$VERSION"
 $RELEASE_DIR = "build\release"
 
 # Create release directory
@@ -52,7 +52,7 @@ New-Item -ItemType Directory -Force -Path $RELEASE_DIR | Out-Null
 
 # Create zip archive
 Push-Location build\install
-Compress-Archive -Path codecontext -DestinationPath "..\..\$RELEASE_DIR\$RELEASE_NAME.zip" -Force
+Compress-Archive -Path vericore -DestinationPath "..\..\$RELEASE_DIR\$RELEASE_NAME.zip" -Force
 Write-Host "✅ Created $RELEASE_NAME.zip" -ForegroundColor Green
 Pop-Location
 Write-Host ""
@@ -71,7 +71,7 @@ Write-Host ""
 # Step 7: Create release notes
 Write-Host "📝 Step 7: Creating release notes..." -ForegroundColor Blue
 $releaseNotes = @"
-# CodeContext $VERSION Release Notes
+# Vericore $VERSION Release Notes
 
 ## 🎉 Features
 
@@ -99,35 +99,35 @@ $releaseNotes = @"
 
 ``````bash
 # Extract archive
-Expand-Archive codecontext-$VERSION.zip
+Expand-Archive vericore-$VERSION.zip
 
 # Add to PATH (PowerShell)
-`$env:Path += ";`$(Get-Location)\codecontext\bin"
+`$env:Path += ";`$(Get-Location)\vericore\bin"
 
 # Verify installation
-codecontext --help
+vericore --help
 ``````
 
 ### From Source
 
 ``````bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
+git clone https://github.com/sonii-shivansh/Vericore.git
+cd Vericore
 .\gradlew.bat installDist
-.\build\install\codecontext\bin\codecontext.bat --help
+.\build\install\vericore\bin\vericore.bat --help
 ``````
 
 ## 🚀 Quick Start
 
 ``````bash
 # Analyze current directory
-codecontext analyze .
+vericore analyze .
 
 # View report
 start output\index.html
 
 # Enable AI insights (requires Gemini API key)
-# Add to .codecontext.json:
+# Add to .vericore.json:
 {
   "ai": {
     "enabled": true,
@@ -139,7 +139,7 @@ start output\index.html
 
 ## 🔧 Configuration
 
-Create ``.codecontext.json`` in your project root:
+Create ``.vericore.json`` in your project root:
 
 ``````json
 {
@@ -168,9 +168,9 @@ Create ``.codecontext.json`` in your project root:
 
 ## 📚 Documentation
 
-- [README](https://github.com/sonii-shivansh/CodeContext/blob/main/README.md)
-- [API Documentation](https://github.com/sonii-shivansh/CodeContext/blob/main/docs/API.md)
-- [Contributing Guide](https://github.com/sonii-shivansh/CodeContext/blob/main/CONTRIBUTING.md)
+- [README](https://github.com/sonii-shivansh/Vericore/blob/main/README.md)
+- [API Documentation](https://github.com/sonii-shivansh/Vericore/blob/main/docs/API.md)
+- [Contributing Guide](https://github.com/sonii-shivansh/Vericore/blob/main/CONTRIBUTING.md)
 
 ## 🙏 Acknowledgments
 
@@ -183,9 +183,9 @@ Built with:
 
 ## 📧 Support
 
-- Issues: https://github.com/sonii-shivansh/CodeContext/issues
+- Issues: https://github.com/sonii-shivansh/Vericore/issues
 - Email: shivanshsoni568@gmail.com
-- Discussions: https://github.com/sonii-shivansh/CodeContext/discussions
+- Discussions: https://github.com/sonii-shivansh/Vericore/discussions
 
 ## 📄 License
 
@@ -206,7 +206,7 @@ Get-ChildItem $RELEASE_DIR | Format-Table Name, Length, LastWriteTime
 Write-Host ""
 Write-Host "📋 Next steps:" -ForegroundColor Cyan
 Write-Host "   1. Review release notes: $RELEASE_DIR\RELEASE_NOTES.md" -ForegroundColor White
-Write-Host "   2. Test the distribution: .\build\install\codecontext\bin\codecontext.bat --help" -ForegroundColor White
+Write-Host "   2. Test the distribution: .\build\install\vericore\bin\vericore.bat --help" -ForegroundColor White
 Write-Host "   3. Create GitHub release with artifacts from $RELEASE_DIR\" -ForegroundColor White
 Write-Host "   4. Update CHANGELOG.md" -ForegroundColor White
 Write-Host "   5. Tag release: git tag $VERSION && git push origin $VERSION" -ForegroundColor White
