@@ -1,6 +1,6 @@
 # CodeContext — Current Implementation Status
 
-This document describes what is implemented in the repository today. It is intentionally not a future product roadmap.
+> This document describes what is implemented today. It intentionally does not present future ideas as shipped functionality.
 
 ## Repository intelligence
 
@@ -61,6 +61,22 @@ Implemented:
 - `context-snapshot` CLI command
 - `context-diff` CLI command
 - clean-environment CI verification of snapshot and zero-drift diff behavior
+
+## Engineering Reality
+
+Implemented:
+
+- versioned `EngineeringRealitySnapshot` contract
+- deterministic composition of analysis + repository-context identities
+- repository commit binding when Git metadata is available
+- stable analysis/context digests
+- explicit composite `realityDigest`
+- protection against analysis wall-clock timestamps changing the identity
+- `reality` CLI command
+- repository-local `output/engineering-reality.json` artifact
+- unit tests covering stable and state-changing reality identities
+
+Engineering Reality is deliberately a composition boundary. It does not add model-generated claims or autonomous repository mutation.
 
 ## Grounded evidence
 
@@ -196,6 +212,7 @@ The repository currently has important boundaries:
 - autonomous code modification is not implemented;
 - production telemetry integrations are not implemented;
 - organization-wide governance and cross-repository intelligence are not implemented;
+- Engineering Reality currently composes analysis and repository-context artifacts but does not yet include the full semantic evidence graph;
 - context snapshots currently fingerprint repository-scanned source files and do not yet capture the full semantic evidence graph;
 - temporal archaeology provides deterministic source-history metrics but does not yet reconstruct full semantic dependency graphs for arbitrary historical commits;
 - architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not yet implemented.

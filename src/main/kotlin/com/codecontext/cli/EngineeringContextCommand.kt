@@ -3,7 +3,6 @@ package com.codecontext.cli
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.intelligence.EngineeringContextEngine
 import com.codecontext.core.intelligence.EngineeringContextSnapshot
-import com.codecontext.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.flag
@@ -16,9 +15,13 @@ class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot"
     private val jsonOutput by option("--json", help = "Write machine-readable snapshot JSON").flag()
 
     override fun run() {
-        val root = File(path).absoluteFile.normalize()
-        val snapshot = EngineeringContextEngine.snapshot(root, RepositoryScanner(ConfigLoader.load()))
-        val output = File("output/engineering-context.json")
+        val root = File(path).canonicalFile
+        require(root.isDirectory) { "Repository path is not a directory: ${root.path}" }
+        val snapshot = EngineeringContextEngine.snapshot(
+            root,
+            com.codecontext.core.scanner.RepositoryScanner(ConfigLoader.loadForRepository(root.path))
+        )
+        val output = root.resolve("output/engineering-context.json")
         if (jsonOutput) {
             output.parentFile.mkdirs()
             output.writeText(EngineeringContextEngine.encode(snapshot))

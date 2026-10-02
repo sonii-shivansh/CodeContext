@@ -172,13 +172,34 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          set +e
           "$CLI" ask "Give a concise evidence-grounded overview of this repository's architecture and identify two files I should inspect first." 2>&1 | tee output/live-gemini-ask.txt
+          status=${PIPESTATUS[0]}
+          set -e
+
           test -s output/live-gemini-ask.txt
-          ! grep -q "AI features disabled" output/live-gemini-ask.txt
-          grep -q '💡' output/live-gemini-ask.txt
-          grep -q '🎯 Confidence:' output/live-gemini-ask.txt
+
+          if [ "$status" -eq 0 ]; then
+            ! grep -q "AI features disabled" output/live-gemini-ask.txt
+            grep -q '💡' output/live-gemini-ask.txt
+            grep -q '🎯 Confidence:' output/live-gemini-ask.txt
+            printf 'status=passed\n' > output/live-gemini-status.txt
+          else
+            response="$(cat output/live-gemini-ask.txt)"
+            shopt -s nocasematch
+            if [[ "$response" == *"HTTP 429"* || "$response" == *"quota exceeded"* || "$response" == *"rate limit"* || "$response" == *"RESOURCE_EXHAUSTED"* ]]; then
+              printf 'status=skipped\nreason=Gemini provider quota or rate limit exhausted\n' > output/live-gemini-status.txt
+              echo "::warning::Live Gemini Q&A skipped because the configured Gemini provider reported quota/rate-limit exhaustion. Deterministic E2E checks remain authoritative."
+            else
+              echo "Live Gemini Q&A failed for a reason other than quota/rate limiting."
+              shopt -u nocasematch
+              exit "$status"
+            fi
+            shopt -u nocasematch
+          fi
 
       - name: Start REST server
+        if: ${{ always() }}
         working-directory: ${{ runner.temp }}/real-project
         shell: bash
         run: |
@@ -193,6 +214,7 @@ jobs:
           exit 1
 
       - name: Verify REST API against real project
+        if: ${{ always() }}
         working-directory: ${{ runner.temp }}/real-project
         run: |
           curl --fail --silent http://127.0.0.1:18080/ | grep -F "CodeContext API is running"
