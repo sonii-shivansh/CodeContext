@@ -1,6 +1,5 @@
 package com.codecontext.cli
 
-import com.codecontext.cli.CodeParallelParser
 import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
@@ -39,7 +38,16 @@ class ImpactCommand : CliktCommand(
         graph.analyze().getOrThrow()
 
         val pathLookup = enriched.associateBy { it.file.absolutePath.replace('\\', '/') }
-        val changedAbsolute = changed.map { File(root, it).absolutePath.replace('\\', '/') }
+        val changedAbsolute = changed.map { File(root, it).absoluteFile.normalize().path.replace('\\', '/') }
+        val graphPaths = graph.graph.vertexSet().map { it.replace('\\', '/') }.toSet()
+        val unresolved = changedAbsolute.filter { requested ->
+            requested !in graphPaths && graphPaths.none { candidate -> candidate.endsWith("/${requested.trimStart('/')}") }
+        }
+        require(unresolved.isEmpty()) {
+            "Changed file(s) were not found in the analyzed dependency graph: ${unresolved.joinToString()}. " +
+                "Paths must point to files supported by repository analysis."
+        }
+
         val packageByPath = pathLookup.mapValues { it.value.packageName }
         val churnByPath = pathLookup.mapValues { it.value.gitMetadata.changeFrequency }
 
@@ -50,6 +58,10 @@ class ImpactCommand : CliktCommand(
             churnByPath = churnByPath,
             packageByPath = packageByPath
         )
+
+        require(result.summary.changedFiles == changedAbsolute.distinct().size) {
+            "Impact analysis could not resolve all requested changed files."
+        }
 
         if (jsonOutput) {
             val output = File("output/change-impact.json")
@@ -67,7 +79,8 @@ class ImpactCommand : CliktCommand(
         echo("└─ Maximum dependency depth: ${result.summary.maxDepth}")
 
         result.nodes.take(20).forEach { node ->
-            echo("   ${node.relationship}: ${node.path} (depth=${node.depth}, score=${String.format("%.1f", node.score)})")
+            val displayPath = node.path.replace('\\', '/').removePrefix("${root.path.replace('\\', '/')}/")
+            echo("   ${node.relationship}: $displayPath (depth=${node.depth}, score=${String.format("%.1f", node.score)})")
         }
     }
 }

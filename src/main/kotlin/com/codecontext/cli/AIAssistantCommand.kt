@@ -3,6 +3,7 @@ package com.codecontext.cli
 import com.codecontext.core.ai.CodebaseContext
 import com.codecontext.core.ai.GeminiQuestionService
 import com.codecontext.core.config.ConfigLoader
+import com.codecontext.core.exceptions.AIProviderException
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
@@ -54,7 +55,7 @@ class AIAssistantCommand :
                 val response = if (config.ai.provider.equals("gemini", ignoreCase = true)) {
                     GeminiQuestionService(config.ai.apiKey, config.ai.model).ask(question, context)
                 } else {
-                    throw IllegalArgumentException("Unsupported AI provider for ask: ${config.ai.provider}")
+                    throw IllegalArgumentException("Unsupported AI provider: ${config.ai.provider}")
                 }
 
                 echo("\n💡 ${response.answer}\n")
@@ -65,9 +66,23 @@ class AIAssistantCommand :
                 echo("\n🎯 Confidence: ${(response.confidence * 100).toInt()}%")
             } catch (e: Exception) {
                 if (e is com.codecontext.core.exceptions.CodeContextException) throw e
-                val detail = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName.orEmpty()
-                throw com.codecontext.core.exceptions.AIProviderException("Failed to get AI response: $detail", e)
+                throw AIProviderException(formatProviderFailure(e.message), e)
             }
+        }
+    }
+
+    private fun formatProviderFailure(message: String?): String {
+        val detail = message.orEmpty()
+        return when {
+            Regex("HTTP\\s+429", RegexOption.IGNORE_CASE).containsMatchIn(detail) ||
+                Regex("quota|rate limit|resource exhausted", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
+                "AI provider quota or rate limit exceeded. Repository analysis completed, but the AI provider could not answer the question. Try again later or configure another supported provider."
+            Regex("HTTP\\s+401|HTTP\\s+403", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
+                "AI provider authentication failed. Check the configured API key and run 'codecontext doctor' to validate the setup."
+            Regex("unsupported AI provider", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
+                detail
+            else ->
+                "AI provider request failed. Repository analysis completed, but the AI provider could not answer the question. Check 'codecontext doctor' and try again."
         }
     }
 }

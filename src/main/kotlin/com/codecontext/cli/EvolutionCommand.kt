@@ -1,4 +1,3 @@
-
 package com.codecontext.cli
 
 import com.codecontext.core.temporal.TemporalAnalyzer
@@ -16,38 +15,44 @@ class EvolutionCommand : CliktCommand(
 ) {
     private val months by option("--months", help = "Months back to analyze").int().default(6)
     private val interval by option("--interval", help = "Days between snapshots").int().default(30)
-    
+
     override fun run() {
         echo("⏳ Starting Temporal Analysis (Time Machine)...")
         echo("   Looking back $months months, every $interval days.")
-        
+
         val repoPath = File(".").absolutePath
         val analyzer = TemporalAnalyzer(repoPath)
-        
+
         try {
             val snapshots = analyzer.analyzeEvolution(months, interval)
-            
-            echo("\n📈 Evolution Report:")
+
+            echo("\n📈 Evolution Report")
             echo("------------------------------------------------")
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault())
-            
-            snapshots.forEach { s ->
-                echo("${formatter.format(s.timestamp)} | ${s.commitHash.take(7)} | Files: ${s.totalFiles} | Lines: ${s.totalLines}")
+            echo("Timestamp            | Commit  | Files | Lines")
+            echo("------------------------------------------------")
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
+
+            snapshots.forEach { snapshot ->
+                echo(
+                    "${formatter.format(snapshot.timestamp)} | ${snapshot.commitHash.take(7)} | " +
+                        "${snapshot.totalFiles.toString().padStart(5)} | ${snapshot.totalLines}"
+                )
             }
-            
+
             if (snapshots.isEmpty()) {
-                echo("⚠️ No history found. Is this a git repository?")
+                echo("⚠️ No historical snapshots were found. Is this a git repository with commit history?")
             } else {
-                val growth = if (snapshots.first().totalFiles > 0) {
-                    ((snapshots.last().totalFiles - snapshots.first().totalFiles).toDouble() / snapshots.first().totalFiles) * 100
+                val initialFiles = snapshots.first().totalFiles
+                val finalFiles = snapshots.last().totalFiles
+                val growth = if (initialFiles > 0) {
+                    ((finalFiles - initialFiles).toDouble() / initialFiles) * 100
                 } else 0.0
-                
-                echo("\n📊 Net Growth: ${String.format("%.1f", growth)}%")
+
+                echo("\n📊 Net file growth: ${String.format("%.1f", growth)}% ($initialFiles → $finalFiles files)")
             }
-            
         } catch (e: Exception) {
-            echo("❌ Error: ${e.message}")
-            e.printStackTrace()
+            echo("❌ Evolution analysis failed: ${e.message ?: e::class.simpleName}")
+            echo("   Check that the current directory is a valid git repository and try again.")
         }
     }
 }

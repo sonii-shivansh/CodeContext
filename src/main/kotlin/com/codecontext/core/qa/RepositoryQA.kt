@@ -40,9 +40,13 @@ object RepositoryQuestionClassifier {
     private val dependencyWords = setOf("depend", "dependency", "dependencies", "uses", "imports", "call", "calls")
     private val riskWords = setOf("risk", "danger", "hotspot", "critical", "risky")
     private val impactWords = setOf("impact", "break", "affected", "affect", "blast radius")
-    private val architectureWords = setOf("architecture", "layer", "boundary", "cycle", "module", "coupling")
+    private val architectureWords = setOf("architecture", "architectural", "architecturally", "layer", "boundary", "cycle", "module", "coupling")
     private val prWords = setOf("pr", "pull request", "change", "changed", "diff")
     private val testWords = setOf("test", "tests", "testing", "coverage", "verify")
+
+    private val questionWords = setOf(
+        "what", "which", "who", "where", "when", "why", "how", "can", "could", "does", "do", "is", "are", "should"
+    )
 
     fun classify(question: String): RepositoryQuestion {
         require(question.isNotBlank()) { "question must not be blank" }
@@ -61,9 +65,14 @@ object RepositoryQuestionClassifier {
         return RepositoryQuestion(question.trim(), intent, extractEntity(question))
     }
 
-    private fun extractEntity(question: String): String? =
-        Regex("`([^`]+)`").find(question)?.groupValues?.getOrNull(1)
-            ?: Regex("\\b[A-Z][A-Za-z0-9_$.]{2,}\\b").find(question)?.value
+    private fun extractEntity(question: String): String? {
+        Regex("`([^`]+)`").find(question)?.groupValues?.getOrNull(1)?.takeIf { it.isNotBlank() }?.let { return it }
+
+        return Regex("\\b[A-Z][A-Za-z0-9_$.]{2,}\\b")
+            .findAll(question)
+            .map { it.value }
+            .firstOrNull { it.lowercase() !in questionWords }
+    }
 }
 
 class RepositoryEvidenceRetriever {
