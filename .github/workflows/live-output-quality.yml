@@ -108,12 +108,15 @@ jobs:
           capture 15-verify "$CLI" verify --output output/final-verify.json
 
           echo "===== 16-setup-invalid ====="
-          set +e
-          "$CLI" setup --provider unsupported > "$OUT/16-setup-invalid.txt" 2>&1
-          SETUP_STATUS=$?
-          set -e
-          cat "$OUT/16-setup-invalid.txt"
-          test "$SETUP_STATUS" -ne 0
+          if "$CLI" setup --provider unsupported > "$OUT/16-setup-invalid.txt" 2>&1; then
+            echo "Expected setup command to reject unsupported provider, but it exited successfully."
+            cat "$OUT/16-setup-invalid.txt"
+            exit 1
+          else
+            SETUP_STATUS=$?
+            cat "$OUT/16-setup-invalid.txt"
+            test "$SETUP_STATUS" -ne 0
+          fi
 
           python3 - <<'PY'
           from pathlib import Path
