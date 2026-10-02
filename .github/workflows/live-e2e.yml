@@ -22,7 +22,7 @@ jobs:
       HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' }}
 
     steps:
-      - name: Checkout CodeContext
+      - name: Checkout Vericore
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -34,14 +34,14 @@ jobs:
           distribution: temurin
           cache: gradle
 
-      - name: Build CodeContext
+      - name: Build Vericore
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
 
       - name: Verify CLI surface
         run: |
-          CLI=./build/install/codecontext/bin/codecontext
+          CLI=./build/install/vericore/bin/vericore
           "$CLI" --version
           "$CLI" --help
           "$CLI" setup --help
@@ -75,20 +75,20 @@ jobs:
       - name: Diagnose real project
         working-directory: ${{ runner.temp }}/real-project
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VERICORE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          "$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext" doctor | tee doctor.txt
-          grep -q "CodeContext doctor" doctor.txt
+          "$GITHUB_WORKSPACE/build/install/vericore/bin/vericore" doctor | tee doctor.txt
+          grep -q "Vericore doctor" doctor.txt
           grep -q "Repository" doctor.txt
           if [ "$HAS_GEMINI" = "true" ]; then
-            grep -q "AI credentials.*GEMINI_API_KEY environment variable" doctor.txt
+            grep -q "AI credentials.*VERICORE_GEMINI_API_KEY environment variable" doctor.txt
             grep -q "Gemini API.*reachable and credentials accepted" doctor.txt
           fi
 
       - name: Analyze real project
         working-directory: ${{ runner.temp }}/real-project
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" analyze .
           test -s output/index.html
           test -s output/analysis-snapshot.json
@@ -98,7 +98,7 @@ jobs:
         working-directory: ${{ runner.temp }}/real-project
         shell: bash
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" architecture . --json
           test -s output/architecture.json
           SOURCE_FILE="$(find src -type f -name '*.java' | head -1)"
@@ -109,11 +109,11 @@ jobs:
         working-directory: ${{ runner.temp }}/real-project
         shell: bash
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           cp output/architecture.json output/architecture-baseline.json
           "$CLI" architecture-drift . --baseline output/architecture-baseline.json --json
           test -s output/architecture-drift.json
-          cat > .codecontext-architecture-contract.json <<'JSON'
+          cat > .vericore-architecture-contract.json <<'JSON'
           {
             "schemaVersion": "1.0",
             "maxFindings": 100000,
@@ -124,12 +124,12 @@ jobs:
           JSON
           "$CLI" architecture-contract . --json
           test -s output/architecture-contract.json
-          rm -f .codecontext-architecture-contract.json
+          rm -f .vericore-architecture-contract.json
 
       - name: Engineering context snapshots
         working-directory: ${{ runner.temp }}/real-project
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" context-snapshot . --json
           test -s output/engineering-context.json
           cp output/engineering-context.json output/engineering-context-baseline.json
@@ -139,7 +139,7 @@ jobs:
       - name: Git history and PR intelligence
         working-directory: ${{ runner.temp }}/real-project
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" evolution
           "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
           test -s output/pr-intelligence.json
@@ -147,13 +147,13 @@ jobs:
       - name: Grounded Q&A and engineering preparation
         working-directory: ${{ runner.temp }}/real-project
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json > output/repo-qa.json
           test -s output/repo-qa.json
           test -s output/grounded-evidence.json
           "$CLI" plan "Improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
           test -s output/engineering-plan.json
-          ! grep -q '.codecontext/cache' output/engineering-plan.json
+          ! grep -q '.vericore/cache' output/engineering-plan.json
           "$CLI" prepare "Improve the repository safely"
           test -s output/engineering-context.json
           test -s output/engineering-plan.json
@@ -161,7 +161,7 @@ jobs:
       - name: Verification workflow on real project
         working-directory: ${{ runner.temp }}/real-project
         run: |
-          "$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext" verify --output output/verify.json
+          "$GITHUB_WORKSPACE/build/install/vericore/bin/vericore" verify --output output/verify.json
           test -s output/verify.json
 
       - name: Live Gemini repository Q&A
@@ -170,20 +170,14 @@ jobs:
         shell: bash
         timeout-minutes: 5
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VERICORE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           set +e
           "$CLI" ask "Give a concise evidence-grounded overview of this repository's architecture and identify two files I should inspect first." 2>&1 | tee output/live-gemini-ask.txt
           status=${PIPESTATUS[0]}
           set -e
-
           test -s output/live-gemini-ask.txt
-
-          # Provider quota/rate-limit exhaustion is an external dependency condition,
-          # not a CodeContext regression. Classify it from the captured provider response
-          # before evaluating the CLI exit status so formatting/exit-code changes cannot
-          # accidentally turn a known 429 into a red CI job.
           if grep -Eiq 'HTTP[[:space:]]*429|quota[^[:alnum:]]*(exceeded|exhausted)|rate[[:space:]-]*limit|RESOURCE_EXHAUSTED' output/live-gemini-ask.txt; then
             printf 'status=skipped\nreason=Gemini provider quota or rate limit exhausted\n' > output/live-gemini-status.txt
             echo "::warning::Live Gemini Q&A skipped because the configured Gemini provider reported quota/rate-limit exhaustion. Deterministic E2E checks remain authoritative."
@@ -202,7 +196,7 @@ jobs:
         working-directory: ${{ runner.temp }}/real-project
         shell: bash
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" server --host 127.0.0.1 --port 18080 > server.log 2>&1 &
           echo $! > server.pid
           for attempt in {1..30}; do
@@ -216,7 +210,7 @@ jobs:
         if: ${{ always() }}
         working-directory: ${{ runner.temp }}/real-project
         run: |
-          curl --fail --silent http://127.0.0.1:18080/ | grep -F "CodeContext API is running"
+          curl --fail --silent http://127.0.0.1:18080/ | grep -F "Vericore API is running"
           curl --fail --silent http://127.0.0.1:18080/health | grep -F '"status":"healthy"'
           curl --fail --silent -H 'Content-Type: application/json' -d '{"repoPath":"."}' http://127.0.0.1:18080/architecture > output/rest-architecture.json
           test -s output/rest-architecture.json
@@ -235,7 +229,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: codecontext-live-e2e
+          name: vericore-live-e2e
           if-no-files-found: ignore
           path: |
             ${{ runner.temp }}/real-project/output/
