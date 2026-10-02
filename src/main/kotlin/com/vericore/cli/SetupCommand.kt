@@ -11,7 +11,7 @@ import com.github.ajalt.clikt.parameters.options.option
 
 class SetupCommand : CliktCommand(
     name = "setup",
-    help = "Set up CodeContext AI credentials securely on this machine"
+    help = "Set up Vericore AI credentials securely on this machine"
 ) {
     private val provider by option("--provider", help = "AI provider (currently: gemini)").default("gemini")
     private val model by option("--model", help = "Gemini model to use").default(AISetup.DEFAULT_GEMINI_MODEL)
@@ -30,7 +30,7 @@ class SetupCommand : CliktCommand(
         if (!force && existing?.apiKey?.isNotBlank() == true) {
             echo("✓ Gemini is already configured for this user.")
             echo("  Config: ${UserConfigStore.configFile().absolutePath}")
-            echo("  Run 'codecontext doctor' to verify the setup.")
+            echo("  Run 'vericore doctor' to verify the setup.")
             return
         }
 
@@ -47,7 +47,7 @@ class SetupCommand : CliktCommand(
                 echo("✓ Saved securely for this user")
                 echo("  Config: ${UserConfigStore.configFile().absolutePath}")
                 echo("\nYou can now run:")
-                echo("  codecontext ask \"What is the architecture of this repository?\"")
+                echo("  vericore ask \"What is the architecture of this repository?\"")
             }
             is AISetupResult.Failure -> {
                 echo("❌ ${result.message}")
