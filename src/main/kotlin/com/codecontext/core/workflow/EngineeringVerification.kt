@@ -25,10 +25,11 @@ data class EngineeringVerificationResult(
     val architecture: ArchitectureIntelligenceResult,
     val verificationCommands: List<String>,
     val status: SafetyStatus,
-    val provenance: DecisionProvenance = DecisionProvenance.create("verify", null, "1.0", emptyList())
+    val provenance: DecisionProvenance = DecisionProvenance.create("verify", null, "1.0", emptyList()),
+    val contract: AgentChangeContractResult? = null
 )
 
-/** Runs deterministic post-change checks against the current working tree. */
+/** Runs deterministic post-change checks against the current working tree and the exact prepared plan. */
 object EngineeringVerification {
     suspend fun verify(repoPath: String, plan: EngineeringPlan): EngineeringVerificationResult {
         val root = File(repoPath).canonicalFile
@@ -45,12 +46,8 @@ object EngineeringVerification {
         val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path)
         val plannedPaths = if (plan.plannedPaths.isNotEmpty()) plan.plannedPaths else plan.affectedComponents
         val safety = ChangeSafetyAnalyzer.verify(changeSet.files, plannedPaths)
-        val packageByPath = enriched.associate { file ->
-            root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.packageName
-        }
-        val absoluteByRelative = enriched.associate { file ->
-            root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.file.absolutePath.replace('\\', '/')
-        }
+        val packageByPath = enriched.associate { file -> root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.packageName }
+        val absoluteByRelative = enriched.associate { file -> root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.file.absolutePath.replace('\\', '/') }
         val changedAbsolute = changeSet.files.mapNotNull { absoluteByRelative[it.path] }
         val churn = enriched.associate { it.file.absolutePath.replace('\\', '/') to it.gitMetadata.changeFrequency }
         val packages = enriched.associate { it.file.absolutePath.replace('\\', '/') to it.packageName }
@@ -65,21 +62,23 @@ object EngineeringVerification {
         val tests = impact.nodes.filter { it.relationship == com.codecontext.core.intelligence.ImpactRelationship.TEST_CANDIDATE }.map { toRelativePath(it.path) }
         val pr = com.codecontext.core.intelligence.PRIntelligenceEngine.analyze(changeSet, impact, risks, packageByPath, tests, toRelativePath)
         val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
+        val expectedFingerprint = AgentChangeContract.fingerprintFor(plan.copy(contractFingerprint = ""))
+        val fingerprintValid = plan.contractFingerprint.isBlank() || plan.contractFingerprint == expectedFingerprint
+        val contract = AgentChangeContractResult(
+            contract = AgentChangeContract.fromPlan(plan),
+            valid = fingerprintValid,
+            reasons = if (fingerprintValid) emptyList() else listOf("The supplied engineering plan fingerprint does not match its canonical contract.")
+        )
         val status = when {
+            !fingerprintValid -> SafetyStatus.FAIL
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
         val provenance = DecisionProvenance.capture(root.path, "verify", snapshot.schemaVersion, plan.evidenceIds)
         return EngineeringVerificationResult(
-            schemaVersion = "1.0",
-            repository = root.path,
-            safety = safety,
-            prIntelligence = pr,
-            architecture = architecture,
-            verificationCommands = plan.verificationCommands,
-            status = status,
-            provenance = provenance
+            repository = root.path, safety = safety, prIntelligence = pr, architecture = architecture,
+            verificationCommands = plan.verificationCommands, status = status, provenance = provenance, contract = contract
         )
     }
 }
