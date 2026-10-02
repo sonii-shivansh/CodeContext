@@ -4,9 +4,7 @@ import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.ConfigLoader
 import com.codecontext.core.graph.RobustDependencyGraph
 import com.codecontext.core.intelligence.ArchitectureDriftEngine
-import com.codecontext.core.intelligence.ArchitectureDriftResult
 import com.codecontext.core.intelligence.ArchitectureIntelligenceEngine
-import com.codecontext.core.intelligence.ArchitectureIntelligenceResult
 import com.codecontext.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -34,10 +32,10 @@ class ArchitectureDriftCommand : CliktCommand(
 
         val json = Json { ignoreUnknownKeys = false }
         val baselineResult = runCatching {
-            json.decodeFromString<ArchitectureIntelligenceResult>(baselineFile.readText())
+            json.decodeFromString<com.codecontext.core.intelligence.ArchitectureIntelligenceResult>(baselineFile.readText())
         }.getOrElse { error("Invalid architecture baseline: ${it.message}") }
 
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
         val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(files) }
@@ -48,7 +46,7 @@ class ArchitectureDriftCommand : CliktCommand(
         val drift = ArchitectureDriftEngine.compare(baselineResult, currentResult)
 
         if (jsonOutput) {
-            val output = File("output/architecture-drift.json")
+            val output = root.resolve("output/architecture-drift.json")
             output.parentFile.mkdirs()
             output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(drift))
             echo("🏛️ Architecture drift report: ${output.canonicalPath}")
