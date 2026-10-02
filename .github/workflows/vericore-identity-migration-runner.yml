@@ -1,0 +1,197 @@
+name: Vericore Identity Migration Runner
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  migrate-and-validate:
+    if: github.event.pull_request.head.ref == 'refactor/vericore-identity-migration' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run migration unit test before execution
+        run: python3 scripts/migration/test_migrate_to_vericore.py
+
+      - name: Execute controlled identity migration
+        run: python3 scripts/migration/migrate_to_vericore.py .
+
+      - name: Apply bounded compatibility layer
+        run: python3 scripts/migration/finalize_vericore_compatibility.py
+
+      - name: Verify repository structure and canonical identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d src/main/kotlin/com/codecontext
+          test -d src/main/kotlin/com/vericore
+          test -f src/main/kotlin/com/vericore/Main.kt
+          test ! -f .github/workflows/vericore-migration-executor.yml
+          test ! -f .github/workflows/vericore-identity-migration-runner.yml
+          grep -F 'rootProject.name = "vericore"' settings.gradle.kts
+          grep -F 'group = "com.vericore"' build.gradle.kts
+          grep -F 'com.vericore.MainKt' build.gradle.kts
+
+      - name: Build and test
+        run: ./gradlew --no-daemon clean test build installDist
+
+      - name: Verify distribution and CLI identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="./build/install/vericore/bin/vericore"
+          test -x "$CLI"
+          "$CLI" --version
+          "$CLI" --help > output-help.txt
+          grep -F 'Vericore' output-help.txt
+          "$CLI" --help >/dev/null
+          for command in analyze impact architecture architecture-drift architecture-contract context-snapshot reality pr-intelligence repo-qa plan prepare verify ask evolution server mcp setup doctor; do
+            "$CLI" "$command" --help > "help-${command}.txt"
+          done
+          test -x "./build/install/vericore/bin/codecontext"
+          ./build/install/vericore/bin/codecontext --version 2>legacy-cli-warning.txt > legacy-cli-version.txt
+          grep -F 'Deprecated command' legacy-cli-warning.txt
+
+      - name: Run complete CLI audit
+        run: bash scripts/audit/cli-audit.sh
+
+      - name: Run MCP audit with canonical and legacy contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/audit/mcp-audit.sh
+          APP="./build/install/vericore/bin/vericore"
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"migration-audit","version":"1.0"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"codecontext_get_engineering_reality","arguments":{"repoPath":"."}}}' \
+            | "$APP" mcp > output/mcp-compat.jsonl 2> output/mcp-compat-warning.log
+          python3 - <<'PY'
+          import json
+          rows=[json.loads(line) for line in open('output/mcp-compat.jsonl') if line.strip()]
+          by={row.get('id'):row for row in rows}
+          names={tool['name'] for tool in by[2]['result']['tools']}
+          assert 'vericore_get_engineering_reality' in names
+          assert 'codecontext_get_engineering_reality' not in names
+          assert by[3]['result']['isError'] is False
+          warning=open('output/mcp-compat-warning.log').read()
+          assert 'Deprecated MCP tool name' in warning
+          PY
+
+      - name: Run REST audit
+        run: bash scripts/audit/rest-audit.sh
+
+      - name: Run canonical and legacy configuration checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="./build/install/vericore/bin/vericore"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          printf '%s\n' '{}' > "$tmp/.codecontext.json"
+          "$CLI" reality "$tmp" --json > /dev/null 2> "$tmp/legacy-config-warning.log"
+          grep -F 'Deprecated .codecontext.json' "$tmp/legacy-config-warning.log"
+          VERICORE_AI_PROVIDER=gemini "$CLI" doctor > "$tmp/canonical-env.txt"
+          CODECONTEXT_AI_PROVIDER=gemini "$CLI" doctor > /dev/null 2> "$tmp/legacy-env-warning.log"
+          grep -F 'Deprecated CODECONTEXT_AI_PROVIDER' "$tmp/legacy-env-warning.log"
+
+      - name: Live user-visible output audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="./build/install/vericore/bin/vericore"
+          mkdir -p output/live-command-output
+          capture(){ name="$1"; shift; "$@" > "output/live-command-output/${name}.txt" 2> "output/live-command-output/${name}.err"; }
+          capture 01-version "$CLI" --version
+          capture 02-help "$CLI" --help
+          for command in analyze impact architecture architecture-drift architecture-contract context-snapshot reality pr-intelligence repo-qa plan prepare verify ask evolution doctor; do
+            capture "help-${command}" "$CLI" "$command" --help
+          done
+          capture 03-analyze "$CLI" analyze .
+          capture 04-reality "$CLI" reality . --json
+          capture 05-architecture "$CLI" architecture . --json
+          capture 06-context-snapshot "$CLI" context-snapshot . --json
+          if grep -R -n -F 'CodeContext' output/live-command-output; then exit 1; fi
+          if grep -R -n -F 'CodeContext' output/live-command-output/*.err; then exit 1; fi
+          grep -R -n -F 'Vericore' output/live-command-output >/dev/null
+          echo 'Live user-visible output audit: PASS'
+
+      - name: Final repository-wide identity audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('.')
+          skip={'.git','.gradle','build','output','node_modules','target','.idea'}
+          historical={Path('CHANGELOG.md'),Path('docs/VERICORE_MIGRATION_SPEC.md'),Path('docs/VERICORE_MIGRATION_PLAN.md'),Path('docs/VERICORE_MIGRATION.md')}
+          compatibility={
+              Path('src/main/kotlin/com/vericore/core/config/VericoreConfig.kt'),
+              Path('src/main/kotlin/com/vericore/core/config/UserConfigStore.kt'),
+              Path('src/main/kotlin/com/vericore/server/VericoreServer.kt'),
+              Path('src/main/kotlin/com/vericore/core/intelligence/EngineeringContext.kt'),
+              Path('src/main/kotlin/com/vericore/core/workflow/ChangeSafety.kt'),
+              Path('src/main/kotlin/com/vericore/cli/ArchitectureContractCommand.kt'),
+              Path('src/main/kotlin/com/vericore/mcp/McpProtocol.kt'),
+          }
+          patterns=['CodeContext','codecontext','CODECONTEXT','Code Context','code-context','code_context','com.codecontext','sonii-shivansh/CodeContext','build/install/codecontext','.codecontext','codecontext_','codecontext.config.home']
+          findings=[]
+          for p in root.rglob('*'):
+              if not p.is_file() or any(part in skip for part in p.parts): continue
+              try: text=p.read_text(encoding='utf-8')
+              except (UnicodeDecodeError,OSError): continue
+              hits=[pattern for pattern in patterns if pattern in text]
+              if hits:
+                  rel=p.relative_to(root)
+                  if rel in historical:
+                      classification='HISTORICAL'
+                  elif rel in compatibility:
+                      classification='COMPATIBILITY'
+                  elif 'CodeContext-Website' in text:
+                      classification='EXTERNAL'
+                  else:
+                      classification='REVIEW'
+                  findings.append((rel,classification,hits))
+          for path, classification, hits in findings:
+              print(f'{classification}: {path}: {hits}')
+          review=[item for item in findings if item[1]=='REVIEW']
+          if review:
+              raise SystemExit('Unclassified CodeContext references remain: '+repr(review))
+          if any('com.codecontext' in hits for _,_,hits in findings):
+              raise SystemExit('Legacy Kotlin package namespace remains')
+          old_url=[item for item in findings if 'sonii-shivansh/CodeContext' in item[2] and item[0] not in historical]
+          if old_url:
+              raise SystemExit('Non-historical old repository URL remains: '+repr(old_url))
+          print('Final identity audit: PASS')
+          PY
+
+      - name: Architecture and repository gate
+        run: |
+          bash scripts/audit/cli-audit.sh
+          bash scripts/audit/mcp-audit.sh
+          bash scripts/audit/rest-audit.sh
+
+      - name: Commit validated migration to the PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No migration changes to commit.'
+            exit 0
+          fi
+          git commit -s -m 'refactor: migrate CodeContext identity to Vericore'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
