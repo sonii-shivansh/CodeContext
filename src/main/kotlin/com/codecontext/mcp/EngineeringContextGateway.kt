@@ -13,8 +13,10 @@ import com.codecontext.core.intelligence.ArchitectureIntelligenceEngine
 import com.codecontext.core.intelligence.ArchitectureIntelligenceResult
 import com.codecontext.core.intelligence.EngineeringContextEngine
 import com.codecontext.core.intelligence.EngineeringContextSnapshot
+import com.codecontext.core.intelligence.GitChangeSetBuilder
 import com.codecontext.core.planner.EngineeringPlan
 import com.codecontext.core.scanner.RepositoryScanner
+import com.codecontext.core.workflow.ChangeSafetyAnalyzer
 import com.codecontext.core.workflow.EngineeringPreparation
 import com.codecontext.core.workflow.EngineeringVerification
 import kotlinx.coroutines.runBlocking
@@ -26,70 +28,14 @@ import java.io.File
 /** Shared MCP gateway over deterministic engineering-context workflows. */
 object EngineeringContextGateway {
     private val json = Json { encodeDefaults = true; explicitNulls = false; prettyPrint = false }
-
-    fun reality(repoPath: String): JsonObject {
-        val root = repository(repoPath)
-        val config = ConfigLoader.loadForRepository(root.path)
-        val snapshot = EngineeringContextEngine.snapshot(root, RepositoryScanner(config))
-        return json.parseToJsonElement(EngineeringContextEngine.encode(snapshot)).jsonObject
-    }
-
+    fun reality(repoPath: String): JsonObject { val root = repository(repoPath); val config = ConfigLoader.loadForRepository(root.path); return json.parseToJsonElement(EngineeringContextEngine.encode(EngineeringContextEngine.snapshot(root, RepositoryScanner(config)))).jsonObject }
     fun snapshot(repoPath: String): JsonObject = reality(repoPath)
-
-    fun diff(before: JsonObject, after: JsonObject): JsonObject {
-        val beforeSnapshot = json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), before)
-        val afterSnapshot = json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), after)
-        return json.parseToJsonElement(EngineeringContextEngine.encode(EngineeringContextEngine.diff(beforeSnapshot, afterSnapshot))).jsonObject
-    }
-
-    fun architectureDrift(repoPath: String, baseline: JsonObject): JsonObject {
-        val root = repository(repoPath)
-        val baselineResult = json.decodeFromJsonElement(ArchitectureIntelligenceResult.serializer(), baseline)
-        val config = ConfigLoader.loadForRepository(root.path)
-        val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }
-        val graph = RobustDependencyGraph()
-        graph.build(parsed).getOrThrow()
-        graph.analyze().getOrThrow()
-        val current = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
-        val drift: ArchitectureDriftResult = ArchitectureDriftEngine.compare(baselineResult, current)
-        return json.encodeToJsonElement(ArchitectureDriftResult.serializer(), drift).jsonObject
-    }
-
-    fun architectureContract(repoPath: String, contract: JsonObject?): JsonObject {
-        val root = repository(repoPath)
-        val config = ConfigLoader.loadForRepository(root.path)
-        val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }
-        val graph = RobustDependencyGraph()
-        graph.build(parsed).getOrThrow()
-        graph.analyze().getOrThrow()
-        val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
-        val contractValue = contract?.let { json.decodeFromJsonElement(ArchitectureContract.serializer(), it) }
-            ?: root.resolve(".codecontext-architecture-contract.json").takeIf { it.exists() }
-                ?.let { json.decodeFromString<ArchitectureContract>(it.readText()) }
-            ?: ArchitectureContract()
-        return json.encodeToJsonElement(ArchitectureContractResult.serializer(), ArchitectureContractEngine.evaluate(architecture, contractValue)).jsonObject
-    }
-
-    fun prepare(repoPath: String, changeSummary: String): JsonObject {
-        val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }
-        return json.encodeToJsonElement(com.codecontext.core.workflow.EngineeringPreparationResult.serializer(), result).jsonObject
-    }
-
-    fun evidence(repoPath: String, changeSummary: String): JsonObject {
-        val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }
-        return json.encodeToJsonElement(com.codecontext.core.ai.GroundedEvidence.serializer(), result.evidence).jsonObject
-    }
-
-    fun verify(repoPath: String, plan: JsonObject): JsonObject {
-        val engineeringPlan = json.decodeFromJsonElement(EngineeringPlan.serializer(), plan)
-        val result = runBlocking { EngineeringVerification.verify(repository(repoPath).path, engineeringPlan) }
-        return json.encodeToJsonElement(com.codecontext.core.workflow.EngineeringVerificationResult.serializer(), result).jsonObject
-    }
-
-    private fun repository(path: String): File {
-        require(!path.startsWith("http://", true) && !path.startsWith("https://", true)) { "Remote repositories are not supported" }
-        val root = File(path).canonicalFile
-        require(root.isDirectory) { "Repository path is not a directory: $path" }
-        return root
-    }
+    fun diff(before: JsonObject, after: JsonObject): JsonObject { val b = json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), before); val a = json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), after); return json.parseToJsonElement(EngineeringContextEngine.encode(EngineeringContextEngine.diff(b, a))).jsonObject }
+    fun architectureDrift(repoPath: String, baseline: JsonObject): JsonObject { val root = repository(repoPath); val baselineResult = json.decodeFromJsonElement(ArchitectureIntelligenceResult.serializer(), baseline); val config = ConfigLoader.loadForRepository(root.path); val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }; val graph = RobustDependencyGraph(); graph.build(parsed).getOrThrow(); graph.analyze().getOrThrow(); val drift: ArchitectureDriftResult = ArchitectureDriftEngine.compare(baselineResult, ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)); return json.encodeToJsonElement(ArchitectureDriftResult.serializer(), drift).jsonObject }
+    fun architectureContract(repoPath: String, contract: JsonObject?): JsonObject { val root = repository(repoPath); val config = ConfigLoader.loadForRepository(root.path); val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }; val graph = RobustDependencyGraph(); graph.build(parsed).getOrThrow(); graph.analyze().getOrThrow(); val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture); val contractValue = contract?.let { json.decodeFromJsonElement(ArchitectureContract.serializer(), it) } ?: root.resolve(".codecontext-architecture-contract.json").takeIf { it.exists() }?.let { json.decodeFromString<ArchitectureContract>(it.readText()) } ?: ArchitectureContract(); return json.encodeToJsonElement(ArchitectureContractResult.serializer(), ArchitectureContractEngine.evaluate(architecture, contractValue)).jsonObject }
+    fun prepare(repoPath: String, changeSummary: String): JsonObject { val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }; return json.encodeToJsonElement(com.codecontext.core.workflow.EngineeringPreparationResult.serializer(), result).jsonObject }
+    fun evidence(repoPath: String, changeSummary: String): JsonObject { val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }; return json.encodeToJsonElement(com.codecontext.core.ai.GroundedEvidence.serializer(), result.evidence).jsonObject }
+    fun changeSafety(repoPath: String, plan: JsonObject): JsonObject { val root = repository(repoPath); val engineeringPlan = json.decodeFromJsonElement(EngineeringPlan.serializer(), plan); val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path); val result = ChangeSafetyAnalyzer.verify(changeSet.files, engineeringPlan.affectedComponents); return json.encodeToJsonElement(com.codecontext.core.workflow.ChangeSafetyResult.serializer(), result).jsonObject }
+    fun verify(repoPath: String, plan: JsonObject): JsonObject { val engineeringPlan = json.decodeFromJsonElement(EngineeringPlan.serializer(), plan); val result = runBlocking { EngineeringVerification.verify(repository(repoPath).path, engineeringPlan) }; return json.encodeToJsonElement(com.codecontext.core.workflow.EngineeringVerificationResult.serializer(), result).jsonObject }
+    private fun repository(path: String): File { require(!path.startsWith("http://", true) && !path.startsWith("https://", true)) { "Remote repositories are not supported" }; val root = File(path).canonicalFile; require(root.isDirectory) { "Repository path is not a directory: $path" }; return root }
 }
