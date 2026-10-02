@@ -43,7 +43,8 @@ object EngineeringVerification {
         graph.analyze().getOrThrow()
 
         val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path)
-        val safety = ChangeSafetyAnalyzer.verify(changeSet.files, plan.affectedComponents)
+        val plannedPaths = if (plan.plannedPaths.isNotEmpty()) plan.plannedPaths else plan.affectedComponents
+        val safety = ChangeSafetyAnalyzer.verify(changeSet.files, plannedPaths)
         val packageByPath = enriched.associate { file ->
             root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.packageName
         }
@@ -61,30 +62,17 @@ object EngineeringVerification {
             val absolute = if (candidate.isAbsolute) candidate else root.toPath().resolve(candidate)
             root.toPath().relativize(absolute.normalize()).toString().replace('\\', '/')
         }
-        val tests = impact.nodes
-            .filter { it.relationship == com.codecontext.core.intelligence.ImpactRelationship.TEST_CANDIDATE }
-            .map { toRelativePath(it.path) }
-        val pr = com.codecontext.core.intelligence.PRIntelligenceEngine.analyze(
-            changeSet = changeSet,
-            impact = impact,
-            risks = risks,
-            packageByPath = packageByPath,
-            testCandidates = tests,
-            pathMapper = toRelativePath
-        )
+        val tests = impact.nodes.filter { it.relationship == com.codecontext.core.intelligence.ImpactRelationship.TEST_CANDIDATE }.map { toRelativePath(it.path) }
+        val pr = com.codecontext.core.intelligence.PRIntelligenceEngine.analyze(changeSet, impact, risks, packageByPath, tests, toRelativePath)
         val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
         val status = when {
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
-        val provenance = DecisionProvenance.capture(
-            repoPath = root.path,
-            operation = "verify",
-            analysisSchemaVersion = snapshot.schemaVersion,
-            evidenceIds = plan.evidenceIds
-        )
+        val provenance = DecisionProvenance.capture(root.path, "verify", snapshot.schemaVersion, plan.evidenceIds)
         return EngineeringVerificationResult(
+            schemaVersion = "1.0",
             repository = root.path,
             safety = safety,
             prIntelligence = pr,
