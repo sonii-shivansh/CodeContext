@@ -188,7 +188,7 @@ fun sanitizePath(inputPath: String): String? {
         if (inputPath.isBlank() || inputPath.length > 4096) return null
         val candidate = Paths.get(inputPath).toRealPath()
         if (!Files.isDirectory(candidate) || !Files.isReadable(candidate)) return null
-        val configured = System.getenv("VERICORE_ALLOWED_PATHS")
+        val configured = System.getenv("VERICORE_ALLOWED_PATHS") ?: System.getenv("CODECONTEXT_ALLOWED_PATHS")?.also { System.err.println("⚠️ Deprecated CODECONTEXT_ALLOWED_PATHS is in use; replace it with VERICORE_ALLOWED_PATHS.") }
         val roots = (configured?.split(File.pathSeparator)?.filter { it.isNotBlank() } ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir"))).mapNotNull { runCatching { Paths.get(it).toRealPath() }.getOrNull() }
         if (roots.any { root -> candidate == root || candidate.startsWith(root) }) candidate.toString() else null
     } catch (_: Exception) { null }
