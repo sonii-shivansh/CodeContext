@@ -99,6 +99,11 @@ jobs:
           VERICORE_GEMINI_API_KEY: "e2e-placeholder-key"
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          set +e
           "$CLI" doctor | tee env-doctor.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -ne 0
           grep -q "VERICORE_GEMINI_API_KEY environment variable" env-doctor.txt
+          grep -q "Gemini API.*API key not valid" env-doctor.txt
           test ! -f .vericore.json
