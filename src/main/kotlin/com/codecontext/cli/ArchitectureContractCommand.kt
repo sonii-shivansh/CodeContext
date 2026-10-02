@@ -30,7 +30,7 @@ class ArchitectureContractCommand : CliktCommand(
     override fun run() {
         val root = File(path).absoluteFile.normalize()
         require(root.isDirectory) { "Repository path is not a directory: $path" }
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) {
             "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}"
@@ -55,7 +55,7 @@ class ArchitectureContractCommand : CliktCommand(
             echo("🧾 Contract decision history: ${historyFile.absolutePath}")
         }
         if (jsonOutput) {
-            val output = File("output/architecture-contract.json")
+            val output = root.resolve("output/architecture-contract.json")
             output.parentFile.mkdirs()
             output.writeText(json.encodeToString<ArchitectureContractResult>(result))
             echo("🛡️ Architecture contract: ${output.absolutePath}")

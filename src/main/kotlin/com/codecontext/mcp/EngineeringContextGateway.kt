@@ -1,6 +1,16 @@
 package com.codecontext.mcp
 
+import com.codecontext.cli.CodeParallelParser
+import com.codecontext.core.cache.CacheManager
 import com.codecontext.core.config.ConfigLoader
+import com.codecontext.core.graph.RobustDependencyGraph
+import com.codecontext.core.intelligence.ArchitectureContract
+import com.codecontext.core.intelligence.ArchitectureContractEngine
+import com.codecontext.core.intelligence.ArchitectureContractResult
+import com.codecontext.core.intelligence.ArchitectureDriftEngine
+import com.codecontext.core.intelligence.ArchitectureDriftResult
+import com.codecontext.core.intelligence.ArchitectureIntelligenceEngine
+import com.codecontext.core.intelligence.ArchitectureIntelligenceResult
 import com.codecontext.core.intelligence.EngineeringContextEngine
 import com.codecontext.core.intelligence.EngineeringContextSnapshot
 import com.codecontext.core.planner.EngineeringPlan
@@ -30,6 +40,34 @@ object EngineeringContextGateway {
         val beforeSnapshot = json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), before)
         val afterSnapshot = json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), after)
         return json.parseToJsonElement(EngineeringContextEngine.encode(EngineeringContextEngine.diff(beforeSnapshot, afterSnapshot))).jsonObject
+    }
+
+    fun architectureDrift(repoPath: String, baseline: JsonObject): JsonObject {
+        val root = repository(repoPath)
+        val baselineResult = json.decodeFromJsonElement(ArchitectureIntelligenceResult.serializer(), baseline)
+        val config = ConfigLoader.loadForRepository(root.path)
+        val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }
+        val graph = RobustDependencyGraph()
+        graph.build(parsed).getOrThrow()
+        graph.analyze().getOrThrow()
+        val current = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
+        val drift: ArchitectureDriftResult = ArchitectureDriftEngine.compare(baselineResult, current)
+        return json.encodeToJsonElement(ArchitectureDriftResult.serializer(), drift).jsonObject
+    }
+
+    fun architectureContract(repoPath: String, contract: JsonObject?): JsonObject {
+        val root = repository(repoPath)
+        val config = ConfigLoader.loadForRepository(root.path)
+        val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }
+        val graph = RobustDependencyGraph()
+        graph.build(parsed).getOrThrow()
+        graph.analyze().getOrThrow()
+        val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
+        val contractValue = contract?.let { json.decodeFromJsonElement(ArchitectureContract.serializer(), it) }
+            ?: root.resolve(".codecontext-architecture-contract.json").takeIf { it.exists() }
+                ?.let { json.decodeFromString<ArchitectureContract>(it.readText()) }
+            ?: ArchitectureContract()
+        return json.encodeToJsonElement(ArchitectureContractResult.serializer(), ArchitectureContractEngine.evaluate(architecture, contractValue)).jsonObject
     }
 
     fun prepare(repoPath: String, changeSummary: String): JsonObject {
