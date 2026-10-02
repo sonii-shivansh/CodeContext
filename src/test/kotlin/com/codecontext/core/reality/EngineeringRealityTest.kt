@@ -9,6 +9,7 @@ import com.codecontext.core.intelligence.HotspotSnapshot
 import com.codecontext.core.intelligence.RepositorySnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 
 class EngineeringRealityTest {
@@ -37,15 +38,39 @@ class EngineeringRealityTest {
         val analysis = sampleAnalysis()
         val first = EngineeringRealityEngine.build(analysis, sampleContext())
         val changed = EngineeringRealityEngine.build(
-            analysis,
+            analysis.copy(repository = analysis.repository.copy(repositoryStateDigest = null)),
             sampleContext().copy(changedPaths = listOf("src/New.kt"))
         )
         assertNotEquals(first.realityDigest, changed.realityDigest)
     }
 
+    @Test
+    fun `stale analysis commit is rejected`() {
+        val stale = sampleAnalysis().copy(
+            repository = sampleAnalysis().repository.copy(repositoryCommit = "old-commit")
+        )
+        assertFailsWith<IllegalArgumentException> {
+            EngineeringRealityEngine.build(stale, sampleContext())
+        }
+    }
+
+    @Test
+    fun `stale analysis source state is rejected`() {
+        val stale = sampleAnalysis().copy(
+            repository = sampleAnalysis().repository.copy(repositoryStateDigest = "old-state")
+        )
+        assertFailsWith<IllegalArgumentException> {
+            EngineeringRealityEngine.build(stale, sampleContext())
+        }
+    }
+
     private fun sampleAnalysis() = AnalysisSnapshot(
-        schemaVersion = "1.0",
-        repository = RepositorySnapshot("/repo", 1L, listOf("Java", "Kotlin")),
+        schemaVersion = "1.1",
+        repository = RepositorySnapshot(
+            path = "/repo",
+            analyzedAtEpochMillis = 1L,
+            languages = listOf("Java", "Kotlin")
+        ),
         metrics = AnalysisMetrics(2, 2, 1, false, 0),
         files = listOf(
             FileSnapshot("/repo/A.java", "demo", 1, 2, listOf("alice"), 0.7, 1, 0),

@@ -49,6 +49,21 @@ object EngineeringRealityEngine {
             "Analysis/context language sets differ; generate both artifacts from the same repository state."
         }
 
+        require(
+            analysis.repository.repositoryCommit == null ||
+                context.repositoryCommit == null ||
+                analysis.repository.repositoryCommit == context.repositoryCommit
+        ) {
+            "Analysis snapshot is stale: its Git commit does not match the current repository state. Run 'codecontext analyze' again."
+        }
+
+        require(
+            analysis.repository.repositoryStateDigest == null ||
+                analysis.repository.repositoryStateDigest == context.snapshotDigest
+        ) {
+            "Analysis snapshot is stale: its source-state digest does not match the current repository state. Run 'codecontext analyze' again."
+        }
+
         // analyzedAtEpochMillis is deliberately excluded from the identity. Re-running
         // analysis against unchanged repository state must not create a new reality digest.
         val analysisDigest = sha256(
