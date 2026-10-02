@@ -1,0 +1,34 @@
+name: Vericore Migration Runner
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.event.pull_request.head.ref == 'refactor/vericore-migration' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run controlled migration
+        run: python3 scripts/migrate-to-vericore.py
+
+      - name: Remove migration tooling from branch
+        run: rm -f scripts/migrate-to-vericore.py .github/workflows/execute-vericore-migration.yml .vericore-migration-trigger
+
+      - name: Commit migration to PR branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -s -m 'refactor: migrate CodeContext identity to Vericore'
+          git push origin HEAD:refactor/vericore-migration
