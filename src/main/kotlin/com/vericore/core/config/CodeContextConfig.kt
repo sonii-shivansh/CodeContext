@@ -40,50 +40,67 @@ data class RateLimitConfig(
 )
 
 object ConfigLoader {
-    private const val GEMINI_API_KEY = "GEMINI_API_KEY"
-    private const val GOOGLE_API_KEY = "GOOGLE_API_KEY"
-    private const val AI_PROVIDER = "CODECONTEXT_AI_PROVIDER"
-    private const val AI_MODEL = "CODECONTEXT_AI_MODEL"
+    private const val VERICORE_GEMINI_API_KEY = "VERICORE_GEMINI_API_KEY"
+    private const val VERICORE_GOOGLE_API_KEY = "VERICORE_GOOGLE_API_KEY"
+    private const val LEGACY_GEMINI_API_KEY = "GEMINI_API_KEY"
+    private const val LEGACY_GOOGLE_API_KEY = "GOOGLE_API_KEY"
+    private const val AI_PROVIDER = "VERICORE_AI_PROVIDER"
+    private const val AI_MODEL = "VERICORE_AI_MODEL"
+    private const val LEGACY_AI_PROVIDER = "CODECONTEXT_AI_PROVIDER"
+    private const val LEGACY_AI_MODEL = "CODECONTEXT_AI_MODEL"
     private const val LEGACY_GEMINI_MODEL = "gemini-2.5-flash"
     private const val DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 
+    const val DEFAULT_CONFIG_FILE = ".vericore.json"
+    const val LEGACY_CONFIG_FILE = ".codecontext.json"
+
     private val logger = KotlinLogging.logger {}
 
-    fun load(configPath: String = ".codecontext.json"): CodeContextConfig {
-        val file = File(configPath)
+    fun load(configPath: String = DEFAULT_CONFIG_FILE): CodeContextConfig {
+        val file = resolveConfigFile(File(configPath))
         return if (file.exists()) {
             try {
                 Json { ignoreUnknownKeys = true }.decodeFromString<CodeContextConfig>(file.readText())
             } catch (e: Exception) {
-                logger.warn(e) { "Failed to parse config at $configPath, using defaults" }
+                logger.warn(e) { "Failed to parse config at ${file.path}, using defaults" }
                 System.err.println("⚠️ Failed to parse config, using defaults: ${e.message}")
                 CodeContextConfig()
             }
         } else {
-            logger.debug { "Config file not found at $configPath, using defaults" }
+            logger.debug { "Config file not found at ${file.path}, using defaults" }
             CodeContextConfig()
         }
     }
 
     /** Load project configuration relative to the repository being analyzed, not the CLI process cwd. */
     fun loadForRepository(repoPath: String): CodeContextConfig =
-        load(File(repoPath).canonicalFile.resolve(".codecontext.json").path)
+        load(File(repoPath).canonicalFile.resolve(DEFAULT_CONFIG_FILE).path)
 
     /** Resolves environment -> project credential -> user credential -> defaults. */
-    fun loadEffective(configPath: String = ".codecontext.json"): CodeContextConfig {
+    fun loadEffective(
+        configPath: String = DEFAULT_CONFIG_FILE,
+        environment: Map<String, String> = System.getenv()
+    ): CodeContextConfig {
         val project = load(configPath)
         val user = UserConfigStore.load()?.ai
-        val environmentKey = System.getenv(GEMINI_API_KEY)?.trim()
-            ?.takeIf { it.isNotEmpty() }
-            ?: System.getenv(GOOGLE_API_KEY)?.trim()?.takeIf { it.isNotEmpty() }
+        val environmentKey = firstNonBlank(
+            environment[VERICORE_GEMINI_API_KEY],
+            environment[VERICORE_GOOGLE_API_KEY],
+            environment[LEGACY_GEMINI_API_KEY],
+            environment[LEGACY_GOOGLE_API_KEY]
+        )
         val projectKey = project.ai.apiKey.trim().takeIf { it.isNotEmpty() }
         val userKey = user?.apiKey?.trim()?.takeIf { it.isNotEmpty() }
 
         val key = environmentKey ?: projectKey ?: userKey.orEmpty()
-        val provider = System.getenv(AI_PROVIDER)?.trim()?.takeIf { it.isNotEmpty() }
-            ?: if (projectKey == null && user != null) user.provider else project.ai.provider
-        val configuredModel = System.getenv(AI_MODEL)?.trim()?.takeIf { it.isNotEmpty() }
-            ?: if (projectKey == null && user != null) user.model else project.ai.model
+        val provider = firstNonBlank(
+            environment[AI_PROVIDER],
+            environment[LEGACY_AI_PROVIDER]
+        ) ?: if (projectKey == null && user != null) user.provider else project.ai.provider
+        val configuredModel = firstNonBlank(
+            environment[AI_MODEL],
+            environment[LEGACY_AI_MODEL]
+        ) ?: if (projectKey == null && user != null) user.model else project.ai.model
         val model = if (configuredModel == LEGACY_GEMINI_MODEL) DEFAULT_GEMINI_MODEL else configuredModel
 
         return project.copy(
@@ -96,7 +113,7 @@ object ConfigLoader {
         )
     }
 
-    fun createDefault(path: String = ".codecontext.json") {
+    fun createDefault(path: String = DEFAULT_CONFIG_FILE) {
         try {
             val config = CodeContextConfig()
             val json = Json {
@@ -110,4 +127,17 @@ object ConfigLoader {
             throw ConfigurationException("Failed to create default config at $path", e)
         }
     }
+
+    private fun resolveConfigFile(requested: File): File {
+        if (requested.exists() || requested.name != DEFAULT_CONFIG_FILE) return requested
+        val legacy = File(requested.parentFile ?: File("."), LEGACY_CONFIG_FILE)
+        if (legacy.exists()) {
+            logger.warn { "Using legacy CodeContext configuration ${legacy.path}; migrate to ${requested.path}" }
+            return legacy
+        }
+        return requested
+    }
+
+    private fun firstNonBlank(vararg values: String?): String? =
+        values.asSequence().mapNotNull { it?.trim()?.takeIf(String::isNotEmpty) }.firstOrNull()
 }
