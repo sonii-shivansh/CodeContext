@@ -42,14 +42,14 @@ MODULES="$MODULES,jdk.crypto.ec,java.net.http"
   --no-man-pages \
   --output "$APP_HOME/jre"
 
-SCRIPT="$APP_HOME/bin/codecontext"
+SCRIPT="$APP_HOME/bin/vericore"
 if [[ ! -f "$SCRIPT" ]]; then
   echo "ERROR: launcher not found: $SCRIPT" >&2
   exit 1
 fi
 
-if ! grep -q 'CODECONTEXT_BUNDLED_JAVA' "$SCRIPT"; then
-  sed -i '/^# Add default JVM options here/i\\# Prefer the runtime bundled with this distribution.\nif [ -x "$APP_HOME/jre/bin/java" ]; then\n    JAVA_HOME="$APP_HOME/jre"\n    export JAVA_HOME\nfi\n# CODECONTEXT_BUNDLED_JAVA' "$SCRIPT"
+if ! grep -q 'VERICORE_BUNDLED_JAVA' "$SCRIPT"; then
+  sed -i '/^# Add default JVM options here/i\\# Prefer the runtime bundled with this distribution.\nif [ -x "$APP_HOME/jre/bin/java" ]; then\n    JAVA_HOME="$APP_HOME/jre"\n    export JAVA_HOME\nfi\n# VERICORE_BUNDLED_JAVA' "$SCRIPT"
 fi
 
 chmod +x "$SCRIPT"
