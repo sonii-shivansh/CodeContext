@@ -78,11 +78,11 @@ class AIAssistantCommand :
                 Regex("quota|rate limit|resource exhausted", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
                 "AI provider quota or rate limit exceeded. Repository analysis completed, but the AI provider could not answer the question. Try again later or configure another supported provider."
             Regex("HTTP\\s+401|HTTP\\s+403", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
-                "AI provider authentication failed. Check the configured API key and run 'codecontext doctor' to validate the setup."
+                "AI provider authentication failed. Check the configured API key and run 'vericore doctor' to validate the setup."
             Regex("unsupported AI provider", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
                 detail
             else ->
-                "AI provider request failed. Repository analysis completed, but the AI provider could not answer the question. Check 'codecontext doctor' and try again."
+                "AI provider request failed. Repository analysis completed, but the AI provider could not answer the question. Check 'vericore doctor' and try again."
         }
     }
 }

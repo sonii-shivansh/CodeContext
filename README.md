@@ -47,15 +47,15 @@ Implemented on `main`:
 Released platform archives bundle the Java runtime, so a separate Java installation is not required for normal end-user use.
 
 ```text
-Windows:      bin\\codecontext.bat --version
-Linux/macOS:  ./bin/codecontext --version
+Windows:      bin\\vericore.bat --version
+Linux/macOS:  ./bin/vericore --version
 ```
 
 From the repository you want to analyze:
 
 ```text
-codecontext analyze .
-codecontext reality . --json
+vericore analyze .
+vericore reality . --json
 ```
 
 The default report is written to `output/index.html`. Machine-readable artifacts are written under the analyzed repository's `output/` directory.
@@ -67,7 +67,7 @@ git clone https://github.com/sonii-shivansh/Vericore.git
 cd Vericore
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon installDist
-./build/install/vericore/bin/codecontext --version
+./build/install/vericore/bin/vericore --version
 ```
 
 ## Common workflows
@@ -75,14 +75,14 @@ cd Vericore
 ### Analyze a repository
 
 ```bash
-codecontext analyze /path/to/repository
-codecontext reality /path/to/repository --json
+vericore analyze /path/to/repository
+vericore reality /path/to/repository --json
 ```
 
 ### Ask a grounded repository question
 
 ```bash
-codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
+vericore repo-qa "why is PaymentService risky?" --path /path/to/repository
 ```
 
 AI is optional. Deterministic evidence remains the source of repository facts.
@@ -90,13 +90,13 @@ AI is optional. Deterministic evidence remains the source of repository facts.
 ### Prepare and verify a change
 
 ```bash
-codecontext prepare "add payment validation" --path /path/to/repository
+vericore prepare "add payment validation" --path /path/to/repository
 ```
 
 Then implement the change and verify the original persisted contract:
 
 ```bash
-codecontext verify \
+vericore verify \
   --path /path/to/repository \
   --plan output/engineering-plan.json \
   --contract output/agent-change-contract.json
@@ -117,7 +117,7 @@ See [Change Safety](docs/CHANGE_SAFETY.md).
 ### Run the local REST server
 
 ```bash
-codecontext server --host 127.0.0.1 --port 8080
+vericore server --host 127.0.0.1 --port 8080
 ```
 
 ```bash
@@ -131,7 +131,7 @@ See [API](docs/API.md).
 ### Integrate an AI agent with MCP
 
 ```bash
-codecontext mcp
+vericore mcp
 ```
 
 See [MCP](docs/MCP.md) for the current tool contract and safety boundary.
@@ -140,43 +140,43 @@ See [MCP](docs/MCP.md) for the current tool contract and safety boundary.
 
 ```bash
 # Repository analysis
-codecontext analyze /path/to/repository
+vericore analyze /path/to/repository
 
 # Change impact
-codecontext impact /path/to/repository src/main/Service.kt --json
+vericore impact /path/to/repository src/main/Service.kt --json
 
 # PR / change intelligence
-codecontext pr-intelligence /path/to/repository --json
-codecontext pr-intelligence /path/to/repository --base main --head feature/my-change --json
+vericore pr-intelligence /path/to/repository --json
+vericore pr-intelligence /path/to/repository --base main --head feature/my-change --json
 
 # Architecture intelligence and governance
-codecontext architecture /path/to/repository --json
-codecontext architecture-drift /path/to/repository --baseline /path/to/architecture-baseline.json --json
-codecontext architecture-contract /path/to/repository --contract /path/to/.vericore-architecture-contract.json --json
+vericore architecture /path/to/repository --json
+vericore architecture-drift /path/to/repository --baseline /path/to/architecture-baseline.json --json
+vericore architecture-contract /path/to/repository --contract /path/to/.vericore-architecture-contract.json --json
 
 # Engineering context and repository state
-codecontext context-snapshot /path/to/repository --json
-codecontext context-diff /path/to/before.json /path/to/after.json --json
-codecontext reality /path/to/repository --json
+vericore context-snapshot /path/to/repository --json
+vericore context-diff /path/to/before.json /path/to/after.json --json
+vericore reality /path/to/repository --json
 
 # Grounded repository Q&A
-codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
+vericore repo-qa "why is PaymentService risky?" --path /path/to/repository
 
 # Evidence-backed change preparation and verification
-codecontext prepare "add payment validation" --path /path/to/repository
-codecontext verify --path /path/to/repository --plan output/engineering-plan.json --contract output/agent-change-contract.json
+vericore prepare "add payment validation" --path /path/to/repository
+vericore verify --path /path/to/repository --plan output/engineering-plan.json --contract output/agent-change-contract.json
 
 # Optional AI assistance
-codecontext ask "What are the main architectural hotspots in this repository?"
+vericore ask "What are the main architectural hotspots in this repository?"
 
 # Git evolution
-codecontext evolution /path/to/repository
+vericore evolution /path/to/repository
 
 # Local REST server
-codecontext server --host 127.0.0.1 --port 8080
+vericore server --host 127.0.0.1 --port 8080
 
 # AI-agent integration over MCP stdio
-codecontext mcp
+vericore mcp
 ```
 
 For the complete developer workflow and implementation guidance, see [Development](docs/DEVELOPMENT.md).
@@ -207,8 +207,8 @@ See [Architecture](docs/ARCHITECTURE.md) for the detailed system model and packa
 The recommended setup path is:
 
 ```bash
-codecontext setup
-codecontext doctor
+vericore setup
+vericore doctor
 ```
 
 `GEMINI_API_KEY` and `GOOGLE_API_KEY` are supported for CI and non-interactive environments. Never commit API keys.

@@ -104,7 +104,7 @@ See [Change Safety](CHANGE_SAFETY.md).
 ## Source layout
 
 ```text
-src/main/kotlin/com/codecontext/
+src/main/kotlin/com/vericore/
 ├── Main.kt
 ├── cli/                 # user-facing commands and adapters
 ├── core/

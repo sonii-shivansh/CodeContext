@@ -42,7 +42,7 @@ MODULES="$MODULES,jdk.crypto.ec,java.net.http"
   --no-man-pages \
   --output "$APP_HOME/jre"
 
-SCRIPT="$APP_HOME/bin/codecontext"
+SCRIPT="$APP_HOME/bin/vericore"
 if [[ ! -f "$SCRIPT" ]]; then
   echo "ERROR: launcher not found: $SCRIPT" >&2
   exit 1

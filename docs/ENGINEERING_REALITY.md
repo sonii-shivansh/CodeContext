@@ -31,7 +31,7 @@ The analysis snapshot records two pieces of provenance when available:
 - the Git `HEAD` observed during analysis;
 - a digest of the source-file state observed during analysis.
 
-When `codecontext reality` runs, it creates a fresh engineering-context snapshot and compares those values. A mismatch is rejected instead of producing a plausible-looking but stale reality artifact.
+When `vericore reality` runs, it creates a fresh engineering-context snapshot and compares those values. A mismatch is rejected instead of producing a plausible-looking but stale reality artifact.
 
 ```mermaid
 flowchart TD
@@ -98,13 +98,13 @@ The analysis timestamp is deliberately excluded from the identity. Re-running an
 First create an analysis snapshot:
 
 ```bash
-codecontext analyze .
+vericore analyze .
 ```
 
 Then create the combined reality artifact:
 
 ```bash
-codecontext reality . --json
+vericore reality . --json
 ```
 
 The command validates that the analysis still belongs to the current repository state before writing:
@@ -113,7 +113,7 @@ The command validates that the analysis still belongs to the current repository 
 output/engineering-reality.json
 ```
 
-If the repository changed after analysis, rerun `codecontext analyze` before generating reality.
+If the repository changed after analysis, rerun `vericore analyze` before generating reality.
 
 The command is read-only: it does not modify source code, Git state, commits, or branches.
 

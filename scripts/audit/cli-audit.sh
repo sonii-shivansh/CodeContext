@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP="./build/install/vericore/bin/codecontext"
+APP="./build/install/vericore/bin/vericore"
 REPO="$(pwd)"
 [[ -x "$APP" ]] || { echo "CLI not installed: $APP" >&2; exit 1; }
 run(){ echo "==> $*"; "$@"; }

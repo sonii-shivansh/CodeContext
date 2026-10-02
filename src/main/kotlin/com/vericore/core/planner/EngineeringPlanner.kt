@@ -82,6 +82,6 @@ class EngineeringPlanner {
     private fun normalizePath(path: String): String = path.replace('\\', '/').trim().removePrefix("./")
     private fun isGeneratedPath(path: String): Boolean {
         val normalized = normalizePath(path).trimStart('/')
-        return normalized == ".codecontext" || normalized.startsWith(".vericore/") || normalized == "output" || normalized.startsWith("output/") || normalized == "build" || normalized.startsWith("build/") || normalized == "target" || normalized.startsWith("target/")
+        return normalized == ".vericore" || normalized.startsWith(".vericore/") || normalized == "output" || normalized.startsWith("output/") || normalized == "build" || normalized.startsWith("build/") || normalized == "target" || normalized.startsWith("target/")
     }
 }

@@ -109,7 +109,7 @@ object GitChangeSetBuilder {
     /** Paths owned by Vericore itself must not become repository change evidence. */
     private fun isToolGeneratedPath(path: String): Boolean {
         val normalized = path.replace('\\', '/').trimStart('/')
-        return normalized == ".codecontext" ||
+        return normalized == ".vericore" ||
             normalized.startsWith(".vericore/") ||
             normalized == "output" ||
             normalized.startsWith("output/")

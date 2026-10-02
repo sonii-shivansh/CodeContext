@@ -9,7 +9,7 @@ import kotlin.test.assertNotNull
 class JavaLanguageLevelDetectorTest {
     @Test
     fun `detects Java version from Maven release`() {
-        val root = Files.createTempDirectory("codecontext-java-level-").toFile()
+        val root = Files.createTempDirectory("vericore-java-level-").toFile()
         try {
             root.resolve("pom.xml").writeText(
                 """
@@ -33,7 +33,7 @@ class JavaLanguageLevelDetectorTest {
 
     @Test
     fun `detects Java toolchain from Gradle Kotlin DSL`() {
-        val root = Files.createTempDirectory("codecontext-gradle-java-level-").toFile()
+        val root = Files.createTempDirectory("vericore-gradle-java-level-").toFile()
         try {
             root.resolve("build.gradle.kts").writeText("java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }")
             val source = root.resolve("src/main/java/demo/App.java")
@@ -49,7 +49,7 @@ class JavaLanguageLevelDetectorTest {
 
     @Test
     fun `uses current parser level when repository does not declare a Java version`() {
-        val root = Files.createTempDirectory("codecontext-java-default-").toFile()
+        val root = Files.createTempDirectory("vericore-java-default-").toFile()
         try {
             val source = root.resolve("App.java")
             source.writeText("class App {}")
@@ -61,7 +61,7 @@ class JavaLanguageLevelDetectorTest {
 
     @Test
     fun `parses Java 17 instanceof pattern without parser warning`() {
-        val root = Files.createTempDirectory("codecontext-java-pattern-").toFile()
+        val root = Files.createTempDirectory("vericore-java-pattern-").toFile()
         try {
             root.resolve("pom.xml").writeText("<maven.compiler.release>17</maven.compiler.release>")
             val source = root.resolve("App.java")

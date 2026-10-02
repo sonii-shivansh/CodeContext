@@ -9,7 +9,7 @@ import java.nio.file.Files
 
 class ReportGeneratorTest : StringSpec({
     "generated reports should be self-contained and not load visualization code from a CDN" {
-        val tempDir = Files.createTempDirectory("codecontext-report-test").toFile()
+        val tempDir = Files.createTempDirectory("vericore-report-test").toFile()
         try {
             val parsedFiles = listOf(
                 ParsedFile(File(tempDir, "A.kt"), "example", emptyList()),

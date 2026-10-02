@@ -13,7 +13,7 @@ Vericore exposes a local stdio MCP server for agents that need repository eviden
 Build/install Vericore, then launch:
 
 ```bash
-codecontext mcp
+vericore mcp
 ```
 
 The process uses newline-delimited JSON-RPC over stdin/stdout. stdout is reserved for protocol messages; do not pipe human-readable CLI output into the MCP process.
@@ -21,7 +21,7 @@ The process uses newline-delimited JSON-RPC over stdin/stdout. stdout is reserve
 Client configuration uses the stable executable boundary:
 
 ```text
-command: /absolute/path/to/codecontext
+command: /absolute/path/to/vericore
 args: ["mcp"]
 ```
 
@@ -29,20 +29,20 @@ args: ["mcp"]
 
 | Tool | What it does | Mutates source? |
 |---|---|---:|
-| `codecontext_analyze_repository` | Repository structure, dependency graph, hotspots, and deterministic analysis | No |
-| `codecontext_impact_analysis` | Dependency-aware impact for changed paths | No |
-| `codecontext_architecture_analysis` | Architecture Intelligence | No |
-| `codecontext_pr_intelligence` | Working-tree or revision-pair change intelligence | No |
-| `codecontext_get_engineering_reality` | Repository-state-bound Engineering Reality | No |
-| `codecontext_get_context_snapshot` | Versioned engineering-context snapshot | No |
-| `codecontext_get_context_diff` | Deterministic snapshot diff | No |
-| `codecontext_get_architecture_drift` | Baseline/current architecture drift | No |
-| `codecontext_get_architecture_contract` | Architecture governance evaluation | No |
-| `codecontext_prepare_change` | Evidence + engineering plan + persisted change contract | Writes artifacts under `output/` |
-| `codecontext_get_change_contract` | Retrieves the persisted `output/agent-change-contract.json` | No |
-| `codecontext_get_evidence` | Bounded grounded repository evidence | No |
-| `codecontext_change_safety` | Current working-tree scope signal | No |
-| `codecontext_verify_change` | Verifies the persisted Agent Change Contract and plan | No |
+| `vericore_analyze_repository` | Repository structure, dependency graph, hotspots, and deterministic analysis | No |
+| `vericore_impact_analysis` | Dependency-aware impact for changed paths | No |
+| `vericore_architecture_analysis` | Architecture Intelligence | No |
+| `vericore_pr_intelligence` | Working-tree or revision-pair change intelligence | No |
+| `vericore_get_engineering_reality` | Repository-state-bound Engineering Reality | No |
+| `vericore_get_context_snapshot` | Versioned engineering-context snapshot | No |
+| `vericore_get_context_diff` | Deterministic snapshot diff | No |
+| `vericore_get_architecture_drift` | Baseline/current architecture drift | No |
+| `vericore_get_architecture_contract` | Architecture governance evaluation | No |
+| `vericore_prepare_change` | Evidence + engineering plan + persisted change contract | Writes artifacts under `output/` |
+| `vericore_get_change_contract` | Retrieves the persisted `output/agent-change-contract.json` | No |
+| `vericore_get_evidence` | Bounded grounded repository evidence | No |
+| `vericore_change_safety` | Current working-tree scope signal | No |
+| `vericore_verify_change` | Verifies the persisted Agent Change Contract and plan | No |
 
 All repository arguments use `repoPath`. Remote repository URLs are rejected.
 
@@ -130,9 +130,9 @@ The contract binds repository identity and prepared Git `HEAD` to planned paths,
 
 These operations have intentionally different responsibilities:
 
-- `codecontext_prepare_change` **creates/persists** the change contract.
-- `codecontext_get_change_contract` **retrieves** the persisted `output/agent-change-contract.json`.
-- `codecontext_verify_change` verifies the persisted contract and does not silently generate a replacement.
+- `vericore_prepare_change` **creates/persists** the change contract.
+- `vericore_get_change_contract` **retrieves** the persisted `output/agent-change-contract.json`.
+- `vericore_verify_change` verifies the persisted contract and does not silently generate a replacement.
 
 This distinction prevents an agent from replacing the verification boundary after it has prepared a change.
 

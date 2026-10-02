@@ -30,7 +30,7 @@ class SetupCommand : CliktCommand(
         if (!force && existing?.apiKey?.isNotBlank() == true) {
             echo("✓ Gemini is already configured for this user.")
             echo("  Config: ${UserConfigStore.configFile().absolutePath}")
-            echo("  Run 'codecontext doctor' to verify the setup.")
+            echo("  Run 'vericore doctor' to verify the setup.")
             return
         }
 
@@ -47,7 +47,7 @@ class SetupCommand : CliktCommand(
                 echo("✓ Saved securely for this user")
                 echo("  Config: ${UserConfigStore.configFile().absolutePath}")
                 echo("\nYou can now run:")
-                echo("  codecontext ask \"What is the architecture of this repository?\"")
+                echo("  vericore ask \"What is the architecture of this repository?\"")
             }
             is AISetupResult.Failure -> {
                 echo("❌ ${result.message}")

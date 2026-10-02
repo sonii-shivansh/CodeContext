@@ -33,7 +33,7 @@ class RepositoryScanner(
 
                 // Vericore owns these root-level directories. They must not be
                 // scanned even when the target repository has no configuration.
-                val isToolGeneratedRootPath = segments.firstOrNull() in setOf(".codecontext", "output")
+                val isToolGeneratedRootPath = segments.firstOrNull() in setOf(".vericore", "output")
 
                 val excludedByConfig = segments.any { segment ->
                     segment in exclusionSet ||

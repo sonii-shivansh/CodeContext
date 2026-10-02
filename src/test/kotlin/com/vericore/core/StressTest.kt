@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 class StressTest : FunSpec({
     test("analyzes 1000 files with deterministic dependencies") {
-        val tempDir = createTempDirectory("codecontext-stress").toFile()
+        val tempDir = createTempDirectory("vericore-stress").toFile()
         tempDir.deleteOnExit()
         val random = Random(42)
         (1..1000).forEach { i ->

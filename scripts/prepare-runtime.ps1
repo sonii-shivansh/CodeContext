@@ -32,7 +32,7 @@ $modules = "$modules,jdk.crypto.ec,java.net.http"
 & $Jlink '--add-modules' $modules '--bind-services' '--strip-debug' '--no-header-files' '--no-man-pages' '--output' $Jre
 if ($LASTEXITCODE -ne 0) { throw 'jlink failed while creating the bundled Java runtime.' }
 
-$script = Join-Path $AppHome 'bin\codecontext.bat'
+$script = Join-Path $AppHome 'bin\vericore.bat'
 if (-not (Test-Path $script)) { throw "Launcher not found: $script" }
 $text = Get-Content -Raw $script
 if ($text -notmatch 'VERICORE_BUNDLED_JAVA') {

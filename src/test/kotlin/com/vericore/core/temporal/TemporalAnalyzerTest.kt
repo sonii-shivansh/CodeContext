@@ -7,7 +7,7 @@ import org.eclipse.jgit.api.Git
 
 class TemporalAnalyzerTest : StringSpec({
     "temporal snapshot reads committed source lines without checking out history" {
-        val root = Files.createTempDirectory("codecontext-temporal-test").toFile()
+        val root = Files.createTempDirectory("vericore-temporal-test").toFile()
         root.deleteOnExit()
         val source = root.resolve("Example.java")
         source.writeText("class Example {\n    void run() {}\n}\n")
@@ -15,7 +15,7 @@ class TemporalAnalyzerTest : StringSpec({
         Git.init().setDirectory(root).call().use { git ->
             git.repository.config.apply {
                 setString("user", null, "name", "Vericore Test")
-                setString("user", null, "email", "codecontext@example.invalid")
+                setString("user", null, "email", "vericore@example.invalid")
                 save()
             }
             git.add().addFilepattern("Example.java").call()

@@ -22,7 +22,7 @@ class McpProtocolTest {
     fun toolsListExposesEngineeringContextGateway() {
         val response = McpProtocol.handle(buildJsonObject { put("jsonrpc", JsonPrimitive("2.0")); put("id", JsonPrimitive(2)); put("method", JsonPrimitive("tools/list")) })
         val result = response["result"].toString()
-        listOf("codecontext_analyze_repository", "codecontext_impact_analysis", "codecontext_architecture_analysis", "codecontext_pr_intelligence", "codecontext_get_engineering_reality", "codecontext_get_context_snapshot", "codecontext_get_context_diff", "codecontext_get_architecture_drift", "codecontext_get_architecture_contract", "codecontext_prepare_change", "codecontext_get_change_contract", "codecontext_get_evidence", "codecontext_change_safety", "codecontext_verify_change").forEach { assertTrue(result.contains(it), "Missing MCP tool: $it") }
+        listOf("vericore_analyze_repository", "vericore_impact_analysis", "vericore_architecture_analysis", "vericore_pr_intelligence", "vericore_get_engineering_reality", "vericore_get_context_snapshot", "vericore_get_context_diff", "vericore_get_architecture_drift", "vericore_get_architecture_contract", "vericore_prepare_change", "vericore_get_change_contract", "vericore_get_evidence", "vericore_change_safety", "vericore_verify_change").forEach { assertTrue(result.contains(it), "Missing MCP tool: $it") }
     }
 
     @Test
@@ -35,7 +35,7 @@ class McpProtocolTest {
     fun remoteRepositoryArgumentsAreRejected() {
         val response = McpProtocol.handle(buildJsonObject {
             put("jsonrpc", JsonPrimitive("2.0")); put("id", JsonPrimitive(4)); put("method", JsonPrimitive("tools/call"))
-            put("params", buildJsonObject { put("name", JsonPrimitive("codecontext_get_engineering_reality")); put("arguments", buildJsonObject { put("repoPath", JsonPrimitive("https://github.com/spring-projects/spring-petclinic")) }) })
+            put("params", buildJsonObject { put("name", JsonPrimitive("vericore_get_engineering_reality")); put("arguments", buildJsonObject { put("repoPath", JsonPrimitive("https://github.com/spring-projects/spring-petclinic")) }) })
         })
         assertTrue(response.toString().contains("Remote repositories are not supported"))
     }

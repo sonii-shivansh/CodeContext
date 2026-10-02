@@ -34,14 +34,14 @@ cd Vericore
 The installed CLI is available at:
 
 ```text
-build/install/vericore/bin/codecontext
+build/install/vericore/bin/vericore
 ```
 
 Check the installation:
 
 ```bash
-./build/install/vericore/bin/codecontext --version
-./build/install/vericore/bin/codecontext --help
+./build/install/vericore/bin/vericore --version
+./build/install/vericore/bin/vericore --help
 ```
 
 ## 2. Analyze a repository
@@ -49,7 +49,7 @@ Check the installation:
 From the repository you want to understand:
 
 ```bash
-codecontext analyze .
+vericore analyze .
 ```
 
 The default HTML report is written to `output/index.html`.
@@ -57,7 +57,7 @@ The default HTML report is written to `output/index.html`.
 For machine-readable engineering state:
 
 ```bash
-codecontext reality . --json
+vericore reality . --json
 ```
 
 ## 3. Ask repository questions
@@ -65,7 +65,7 @@ codecontext reality . --json
 Grounded repository Q&A uses deterministic evidence before optional AI reasoning:
 
 ```bash
-codecontext repo-qa "Why is PaymentService risky?" --path .
+vericore repo-qa "Why is PaymentService risky?" --path .
 ```
 
 AI is optional. See [Data & Privacy](DATA_PRIVACY.md) before enabling provider-backed features.
@@ -75,7 +75,7 @@ AI is optional. See [Data & Privacy](DATA_PRIVACY.md) before enabling provider-b
 Create a repository-bound engineering plan and persisted change contract:
 
 ```bash
-codecontext prepare "add payment validation"
+vericore prepare "add payment validation"
 ```
 
 This creates:
@@ -89,7 +89,7 @@ output/agent-change-contract.json
 Make the code change with your normal workflow or coding agent. Then verify the original persisted contract:
 
 ```bash
-codecontext verify \
+vericore verify \
   --plan output/engineering-plan.json \
   --contract output/agent-change-contract.json
 ```
@@ -101,7 +101,7 @@ Read [Change Safety](CHANGE_SAFETY.md) for the complete contract and failure sem
 ## 5. Run the local server
 
 ```bash
-codecontext server --host 127.0.0.1 --port 8080
+vericore server --host 127.0.0.1 --port 8080
 ```
 
 In another terminal:
@@ -119,7 +119,7 @@ See [API](API.md).
 Start the local MCP stdio server:
 
 ```bash
-codecontext mcp
+vericore mcp
 ```
 
 See [MCP](MCP.md) for the tool contract and safety model.

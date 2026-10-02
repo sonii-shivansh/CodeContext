@@ -22,7 +22,7 @@ class DecisionProvenanceTest : FunSpec({
     }
 
     test("captures HEAD commit from a git repository") {
-        val repo = Files.createTempDirectory("codecontext-provenance").toFile()
+        val repo = Files.createTempDirectory("vericore-provenance").toFile()
         org.eclipse.jgit.api.Git.init().setDirectory(repo).call().use { git ->
             repo.resolve("README.md").writeText("fixture")
             git.add().addFilepattern("README.md").call()

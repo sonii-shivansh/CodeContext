@@ -58,7 +58,7 @@ object ChangeSafetyAnalyzer {
 
     private fun isGeneratedPath(path: String): Boolean {
         val normalized = normalize(path).trimStart('/')
-        return normalized == ".codecontext" || generatedPrefixes.any { normalized.startsWith(it) } ||
+        return normalized == ".vericore" || generatedPrefixes.any { normalized.startsWith(it) } ||
             normalized == "output" || normalized == "build" || normalized == "target"
     }
 }

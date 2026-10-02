@@ -13,7 +13,7 @@ class UserConfigStoreTest {
     @BeforeTest
     fun setUp() {
         ConfigTestLock.lock.lock()
-        tempDir = createTempDirectory("codecontext-config-test")
+        tempDir = createTempDirectory("vericore-config-test")
         System.setProperty("vericore.config.home", tempDir.toString())
     }
 

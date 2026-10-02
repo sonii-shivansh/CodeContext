@@ -52,7 +52,7 @@ echo ""
 
 # Step 5: Package release
 echo -e "${BLUE}📦 Step 5: Packaging release...${NC}"
-RELEASE_NAME="codecontext-${VERSION}"
+RELEASE_NAME="vericore-${VERSION}"
 RELEASE_DIR="build/release"
 
 # Create release directory
@@ -61,10 +61,10 @@ mkdir -p "${RELEASE_DIR}"
 # Create zip archive
 cd build/install
 if command -v zip &> /dev/null; then
-    zip -r "../../${RELEASE_DIR}/${RELEASE_NAME}.zip" codecontext/
+    zip -r "../../${RELEASE_DIR}/${RELEASE_NAME}.zip" vericore/
     echo -e "${GREEN}✅ Created ${RELEASE_NAME}.zip${NC}"
 else
-    tar -czf "../../${RELEASE_DIR}/${RELEASE_NAME}.tar.gz" codecontext/
+    tar -czf "../../${RELEASE_DIR}/${RELEASE_NAME}.tar.gz" vericore/
     echo -e "${GREEN}✅ Created ${RELEASE_NAME}.tar.gz${NC}"
 fi
 cd ../..
@@ -114,15 +114,15 @@ cat > "${RELEASE_DIR}/RELEASE_NOTES.md" << EOF
 
 \`\`\`bash
 # Extract archive
-unzip codecontext-${VERSION}.zip
+unzip vericore-${VERSION}.zip
 # or
-tar -xzf codecontext-${VERSION}.tar.gz
+tar -xzf vericore-${VERSION}.tar.gz
 
 # Add to PATH
-export PATH=\$PATH:\$(pwd)/codecontext/bin
+export PATH=\$PATH:\$(pwd)/vericore/bin
 
 # Verify installation
-codecontext --help
+vericore --help
 \`\`\`
 
 ### From Source
@@ -131,14 +131,14 @@ codecontext --help
 git clone https://github.com/sonii-shivansh/Vericore.git
 cd Vericore
 ./gradlew installDist
-./build/install/vericore/bin/codecontext --help
+./build/install/vericore/bin/vericore --help
 \`\`\`
 
 ## 🚀 Quick Start
 
 \`\`\`bash
 # Analyze current directory
-codecontext analyze .
+vericore analyze .
 
 # View report
 open output/index.html
@@ -222,7 +222,7 @@ ls -lh "${RELEASE_DIR}/"
 echo ""
 echo "📋 Next steps:"
 echo "   1. Review release notes: ${RELEASE_DIR}/RELEASE_NOTES.md"
-echo "   2. Test the distribution: ./build/install/vericore/bin/codecontext --help"
+echo "   2. Test the distribution: ./build/install/vericore/bin/vericore --help"
 echo "   3. Create GitHub release with artifacts from ${RELEASE_DIR}/"
 echo "   4. Update CHANGELOG.md"
 echo "   5. Tag release: git tag ${VERSION} && git push origin ${VERSION}"

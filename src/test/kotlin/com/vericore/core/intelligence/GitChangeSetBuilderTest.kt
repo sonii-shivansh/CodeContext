@@ -11,7 +11,7 @@ import org.eclipse.jgit.lib.PersonIdent
 class GitChangeSetBuilderTest {
     @Test
     fun `revision diff captures modified and added files`() {
-        val root = Files.createTempDirectory("codecontext-pr-").toFile()
+        val root = Files.createTempDirectory("vericore-pr-").toFile()
         Git.init().setDirectory(root).call().use { git ->
             val a = root.resolve("A.kt")
             a.writeText("class A\n")
@@ -37,7 +37,7 @@ class GitChangeSetBuilderTest {
 
     @Test
     fun `invalid revision is rejected`() {
-        val root = Files.createTempDirectory("codecontext-pr-invalid-").toFile()
+        val root = Files.createTempDirectory("vericore-pr-invalid-").toFile()
         Git.init().setDirectory(root).call().use {
             assertFailsWith<IllegalArgumentException> {
                 GitChangeSetBuilder.fromRevisions(root.path, "missing-base", "missing-head")
@@ -48,7 +48,7 @@ class GitChangeSetBuilderTest {
 
     @Test
     fun `empty revision diff is valid`() {
-        val root = Files.createTempDirectory("codecontext-pr-empty-").toFile()
+        val root = Files.createTempDirectory("vericore-pr-empty-").toFile()
         Git.init().setDirectory(root).call().use { git ->
             val a = root.resolve("A.kt")
             a.writeText("class A\n")
@@ -65,7 +65,7 @@ class GitChangeSetBuilderTest {
 
     @Test
     fun `working tree ignores Vericore generated output`() {
-        val root = Files.createTempDirectory("codecontext-working-tree-").toFile()
+        val root = Files.createTempDirectory("vericore-working-tree-").toFile()
         Git.init().setDirectory(root).call().use { git ->
             root.resolve("README.md").writeText("hello\n")
             git.add().addFilepattern("README.md").call()

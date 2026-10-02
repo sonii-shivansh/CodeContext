@@ -17,19 +17,19 @@ The workflow is deterministic. It does not authorize a change and it does not de
 From the repository you intend to change:
 
 ```bash
-codecontext prepare "add OAuth login"
+vericore prepare "add OAuth login"
 ```
 
 Make the change, run your normal tests, then verify the persisted contract:
 
 ```bash
-codecontext verify
+vericore verify
 ```
 
 For an explicit repository and artifact path:
 
 ```bash
-codecontext verify \
+vericore verify \
   --path /path/to/repository \
   --plan output/engineering-plan.json \
   --contract output/agent-change-contract.json \
@@ -126,7 +126,7 @@ agent runs tests / responds to findings
 
 The MCP verification path uses the persisted `output/agent-change-contract.json` when no explicit contract object is supplied.
 
-`codecontext_get_change_contract` is a **retrieval operation**: it reads the persisted `output/agent-change-contract.json` and does not generate a replacement contract.
+`vericore_get_change_contract` is a **retrieval operation**: it reads the persisted `output/agent-change-contract.json` and does not generate a replacement contract.
 
 ## Security boundary
 

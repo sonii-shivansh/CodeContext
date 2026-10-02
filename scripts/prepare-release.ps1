@@ -44,7 +44,7 @@ Write-Host ""
 
 # Step 5: Package release
 Write-Host "📦 Step 5: Packaging release..." -ForegroundColor Blue
-$RELEASE_NAME = "codecontext-$VERSION"
+$RELEASE_NAME = "vericore-$VERSION"
 $RELEASE_DIR = "build\release"
 
 # Create release directory
@@ -52,7 +52,7 @@ New-Item -ItemType Directory -Force -Path $RELEASE_DIR | Out-Null
 
 # Create zip archive
 Push-Location build\install
-Compress-Archive -Path codecontext -DestinationPath "..\..\$RELEASE_DIR\$RELEASE_NAME.zip" -Force
+Compress-Archive -Path vericore -DestinationPath "..\..\$RELEASE_DIR\$RELEASE_NAME.zip" -Force
 Write-Host "✅ Created $RELEASE_NAME.zip" -ForegroundColor Green
 Pop-Location
 Write-Host ""
@@ -99,13 +99,13 @@ $releaseNotes = @"
 
 ``````bash
 # Extract archive
-Expand-Archive codecontext-$VERSION.zip
+Expand-Archive vericore-$VERSION.zip
 
 # Add to PATH (PowerShell)
-`$env:Path += ";`$(Get-Location)\codecontext\bin"
+`$env:Path += ";`$(Get-Location)\vericore\bin"
 
 # Verify installation
-codecontext --help
+vericore --help
 ``````
 
 ### From Source
@@ -114,14 +114,14 @@ codecontext --help
 git clone https://github.com/sonii-shivansh/Vericore.git
 cd Vericore
 .\gradlew.bat installDist
-.\build\install\codecontext\bin\codecontext.bat --help
+.\build\install\vericore\bin\vericore.bat --help
 ``````
 
 ## 🚀 Quick Start
 
 ``````bash
 # Analyze current directory
-codecontext analyze .
+vericore analyze .
 
 # View report
 start output\index.html
@@ -206,7 +206,7 @@ Get-ChildItem $RELEASE_DIR | Format-Table Name, Length, LastWriteTime
 Write-Host ""
 Write-Host "📋 Next steps:" -ForegroundColor Cyan
 Write-Host "   1. Review release notes: $RELEASE_DIR\RELEASE_NOTES.md" -ForegroundColor White
-Write-Host "   2. Test the distribution: .\build\install\codecontext\bin\codecontext.bat --help" -ForegroundColor White
+Write-Host "   2. Test the distribution: .\build\install\vericore\bin\vericore.bat --help" -ForegroundColor White
 Write-Host "   3. Create GitHub release with artifacts from $RELEASE_DIR\" -ForegroundColor White
 Write-Host "   4. Update CHANGELOG.md" -ForegroundColor White
 Write-Host "   5. Tag release: git tag $VERSION && git push origin $VERSION" -ForegroundColor White

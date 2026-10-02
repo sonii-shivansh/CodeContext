@@ -41,7 +41,7 @@ class EngineeringContextTest : StringSpec({
     }
 
     "snapshot ignores Vericore generated output changes" {
-        val root = java.nio.file.Files.createTempDirectory("codecontext-context-output-").toFile()
+        val root = java.nio.file.Files.createTempDirectory("vericore-context-output-").toFile()
         try {
             root.resolve("src/App.kt").apply {
                 parentFile.mkdirs()

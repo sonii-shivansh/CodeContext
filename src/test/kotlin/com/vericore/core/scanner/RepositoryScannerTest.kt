@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 class RepositoryScannerTest {
     @Test
     fun `default scanner loads config from target repository and excludes generated output`() {
-        val root = Files.createTempDirectory("codecontext-scanner-").toFile()
+        val root = Files.createTempDirectory("vericore-scanner-").toFile()
         try {
             root.resolve("src/main/App.kt").apply {
                 parentFile.mkdirs()

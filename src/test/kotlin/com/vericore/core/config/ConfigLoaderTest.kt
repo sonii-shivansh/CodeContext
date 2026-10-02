@@ -14,7 +14,7 @@ class ConfigLoaderTest {
     @BeforeTest
     fun setUp() {
         ConfigTestLock.lock.lock()
-        tempDir = createTempDirectory("codecontext-config-loader-test")
+        tempDir = createTempDirectory("vericore-config-loader-test")
         System.setProperty("vericore.config.home", tempDir.toString())
     }
 
@@ -31,7 +31,7 @@ class ConfigLoaderTest {
     @Test
     fun `effective config uses user credential without creating project config`() {
         UserConfigStore.saveAi("gemini", "user-key", "gemini-2.5-flash")
-        val project = Files.createTempFile("codecontext-project", ".json")
+        val project = Files.createTempFile("vericore-project", ".json")
         Files.writeString(project, "{\"ai\":{\"enabled\":false,\"provider\":\"gemini\",\"apiKey\":\"\",\"model\":\"gemini-2.5-flash\"}}")
 
         val config = ConfigLoader.loadEffective(project.toString())
@@ -45,7 +45,7 @@ class ConfigLoaderTest {
     @Test
     fun `repository credential wins over user credential`() {
         UserConfigStore.saveAi("gemini", "user-key", "gemini-2.5-flash")
-        val project = Files.createTempFile("codecontext-project", ".json")
+        val project = Files.createTempFile("vericore-project", ".json")
         Files.writeString(project, "{\"ai\":{\"enabled\":true,\"provider\":\"gemini\",\"apiKey\":\"project-key\",\"model\":\"gemini-2.5-flash\"}}")
 
         val config = ConfigLoader.loadEffective(project.toString())
@@ -54,7 +54,7 @@ class ConfigLoaderTest {
 
     @Test
     fun `repository config is resolved from the target repository instead of process cwd`() {
-        val repository = Files.createTempDirectory("codecontext-target-repo").toFile()
+        val repository = Files.createTempDirectory("vericore-target-repo").toFile()
         try {
             repository.resolve(".vericore.json").writeText(
                 """{"maxFilesAnalyze":17,"hotspotCount":3}"""

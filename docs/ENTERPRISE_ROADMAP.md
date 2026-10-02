@@ -109,7 +109,7 @@ The planner is read-only.
 - stale-HEAD detection
 - live mutation tests for tampering and unexpected source changes
 
-**Authoritative rule:** the persisted contract is the verification boundary. Verification does not silently reconstruct a replacement contract from a mutable plan, and `codecontext_get_change_contract` retrieves the persisted artifact rather than generating a replacement.
+**Authoritative rule:** the persisted contract is the verification boundary. Verification does not silently reconstruct a replacement contract from a mutable plan, and `vericore_get_change_contract` retrieves the persisted artifact rather than generating a replacement.
 
 ### Provenance and temporal intelligence
 

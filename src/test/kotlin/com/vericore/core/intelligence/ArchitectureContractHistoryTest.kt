@@ -6,7 +6,7 @@ import java.nio.file.Files
 
 class ArchitectureContractHistoryTest : FunSpec({
     test("decision id is deterministic") {
-        val root = Files.createTempDirectory("codecontext-contract-history").toFile()
+        val root = Files.createTempDirectory("vericore-contract-history").toFile()
         val contract = ArchitectureContract(maxFindings = 2)
         val architecture = ArchitectureIntelligenceResult(
             "1.0",
@@ -22,7 +22,7 @@ class ArchitectureContractHistoryTest : FunSpec({
     }
 
     test("record is idempotent and sorted") {
-        val root = Files.createTempDirectory("codecontext-contract-history").toFile()
+        val root = Files.createTempDirectory("vericore-contract-history").toFile()
         val file = root.resolve("history.json")
         val contract = ArchitectureContract()
         val architecture = ArchitectureIntelligenceResult(

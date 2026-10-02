@@ -46,7 +46,7 @@ For significant behavior changes, document the intended behavior before implemen
 The installed CLI is:
 
 ```bash
-./build/install/vericore/bin/codecontext --version
+./build/install/vericore/bin/vericore --version
 ```
 
 GitHub Actions is the authoritative clean-environment validation path. When local hardware is unavailable, use CI to validate the application and inspect the complete workflow logs and artifacts.
@@ -54,14 +54,14 @@ GitHub Actions is the authoritative clean-environment validation path. When loca
 ## CLI smoke test
 
 ```bash
-./build/install/vericore/bin/codecontext --help
-./build/install/vericore/bin/codecontext --version
-./build/install/vericore/bin/codecontext analyze .
-./build/install/vericore/bin/codecontext reality . --json
-./build/install/vericore/bin/codecontext repo-qa "why is this component risky?" --path . --evidence-output output/grounded-evidence.json
-./build/install/vericore/bin/codecontext plan "change the component" --evidence output/grounded-evidence.json --output output/engineering-plan.json
-./build/install/vericore/bin/codecontext prepare "change the component"
-./build/install/vericore/bin/codecontext verify --plan output/engineering-plan.json --contract output/agent-change-contract.json
+./build/install/vericore/bin/vericore --help
+./build/install/vericore/bin/vericore --version
+./build/install/vericore/bin/vericore analyze .
+./build/install/vericore/bin/vericore reality . --json
+./build/install/vericore/bin/vericore repo-qa "why is this component risky?" --path . --evidence-output output/grounded-evidence.json
+./build/install/vericore/bin/vericore plan "change the component" --evidence output/grounded-evidence.json --output output/engineering-plan.json
+./build/install/vericore/bin/vericore prepare "change the component"
+./build/install/vericore/bin/vericore verify --plan output/engineering-plan.json --contract output/agent-change-contract.json
 ```
 
 A successful `prepare` produces repository-scoped context, plan, and Agent Change Contract artifacts. Do not replace the persisted contract before `verify`.
@@ -69,7 +69,7 @@ A successful `prepare` produces repository-scoped context, plan, and Agent Chang
 ## Local server
 
 ```bash
-./build/install/vericore/bin/codecontext server --host 127.0.0.1 --port 8080
+./build/install/vericore/bin/vericore server --host 127.0.0.1 --port 8080
 curl --fail http://127.0.0.1:8080/health
 ```
 
@@ -92,7 +92,7 @@ For server path validation, configure the narrowest practical value for `VERICOR
 ## Project structure
 
 ```text
-src/main/kotlin/com/codecontext/
+src/main/kotlin/com/vericore/
 ├── Main.kt
 ├── cli/                       # user-facing commands and adapters
 ├── core/

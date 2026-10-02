@@ -60,7 +60,7 @@ object UserConfigStore {
             os.contains("mac") -> File(System.getProperty("user.home"), "Library/Application Support/Vericore")
             else -> {
                 val xdg = System.getenv("XDG_CONFIG_HOME")?.trim().orEmpty()
-                File(if (xdg.isNotEmpty()) xdg else File(System.getProperty("user.home"), ".config").absolutePath, "codecontext")
+                File(if (xdg.isNotEmpty()) xdg else File(System.getProperty("user.home"), ".config").absolutePath, "vericore")
             }
         }
     }

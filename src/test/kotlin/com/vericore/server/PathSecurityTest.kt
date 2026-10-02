@@ -24,7 +24,7 @@ class PathSecurityTest {
 
     @Test
     fun `accepts a real directory inside the temporary workspace`() {
-        val directory = createTempDirectory("codecontext-safe").toFile()
+        val directory = createTempDirectory("vericore-safe").toFile()
         try {
             assertNotNull(sanitizePath(directory.absolutePath))
         } finally {

@@ -59,7 +59,7 @@ class DoctorCommand : CliktCommand(
         }
         check("AI provider", effective.ai.provider.isNotBlank(), effective.ai.provider.ifBlank { "not configured" })
         if (resolvedApiKey.isBlank()) {
-            warn("AI credentials", "not configured (AI commands require a provider key; run 'codecontext setup' to configure one)")
+            warn("AI credentials", "not configured (AI commands require a provider key; run 'vericore setup' to configure one)")
         } else {
             check("AI credentials", true, "configured via $keySource")
         }
@@ -79,11 +79,11 @@ class DoctorCommand : CliktCommand(
         when {
             failures > 0 -> {
                 echo("❌ Vericore needs attention: $failures error(s), $warnings warning(s).")
-                echo("   Fix the errors above, then run 'codecontext doctor' again.")
+                echo("   Fix the errors above, then run 'vericore doctor' again.")
             }
             warnings > 0 -> {
                 echo("⚠ Vericore is ready for deterministic analysis; $warnings optional configuration item(s) need attention.")
-                echo("   Run 'codecontext setup' if you want to enable AI features.")
+                echo("   Run 'vericore setup' if you want to enable AI features.")
             }
             else -> echo("✓ Vericore is ready to use.")
         }

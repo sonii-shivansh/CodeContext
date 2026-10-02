@@ -71,7 +71,7 @@ See [DCO.md](DCO.md) for details.
 
 ## Tests
 
-Tests are grouped under `src/test/kotlin/com/codecontext`:
+Tests are grouped under `src/test/kotlin/com/vericore`:
 
 - `core/`: parser, graph, cache, property, edge-case, and stress tests;
 - `server/`: path-security and rate-limit tests;
