@@ -1,11 +1,39 @@
 # Development Guide
 
-## Prerequisites
+> Build, test, and extend CodeContext without crossing its deterministic, local-first boundaries.
 
-- JDK 21 or newer
+## Before you start
+
+Read [Getting Started](GETTING_STARTED.md) if you have not built CodeContext before.
+
+### Prerequisites
+
+- JDK 21+
 - Git
-- IntelliJ IDEA or another Kotlin-capable editor
-- Bash, PowerShell, or a compatible shell for the Gradle wrapper
+- Kotlin-capable editor
+- Bash, PowerShell, or another shell supported by the Gradle wrapper
+
+## The development loop
+
+Use a small, evidence-driven loop:
+
+```text
+understand
+   ↓
+change
+   ↓
+test
+   ↓
+inspect diff
+   ↓
+update docs/contracts
+   ↓
+CI
+   ↓
+review
+```
+
+For significant behavior changes, document the intended behavior before implementation. Keep one pull request focused on one coherent change.
 
 ## Build and test
 
@@ -15,9 +43,15 @@
 ./gradlew --no-daemon installDist
 ```
 
-GitHub Actions is the authoritative validation environment. When local hardware is unavailable, use CI to validate the application and inspect workflow logs and artifacts before declaring a change complete.
+The installed CLI is:
 
-## Run the CLI
+```bash
+./build/install/codecontext/bin/codecontext --version
+```
+
+GitHub Actions is the authoritative clean-environment validation path. When local hardware is unavailable, use CI to validate the application and inspect the complete workflow logs and artifacts.
+
+## CLI smoke test
 
 ```bash
 ./build/install/codecontext/bin/codecontext --help
@@ -30,7 +64,7 @@ GitHub Actions is the authoritative validation environment. When local hardware 
 ./build/install/codecontext/bin/codecontext verify --plan output/engineering-plan.json --contract output/agent-change-contract.json
 ```
 
-A successful `prepare` produces repository-scoped context, plan, and Agent Change Contract artifacts under `output/`. Do not replace the persisted contract before `verify`.
+A successful `prepare` produces repository-scoped context, plan, and Agent Change Contract artifacts. Do not replace the persisted contract before `verify`.
 
 ## Local server
 
@@ -39,11 +73,13 @@ A successful `prepare` produces repository-scoped context, plan, and Agent Chang
 curl --fail http://127.0.0.1:8080/health
 ```
 
-Keep the server bound to loopback for local development. Do not expose it publicly without authentication, authorization, TLS, trusted-origin controls, quotas, and report-retention controls.
+Keep the server bound to loopback for local development. Do not expose it publicly without an appropriate deployment boundary providing authentication, authorization, TLS, trusted-origin controls, quotas, and report-retention controls.
+
+See [API](API.md).
 
 ## Configuration
 
-Create a local configuration file from the template:
+Create a local configuration file from the template when needed:
 
 ```bash
 cp .codecontext.json.template .codecontext.json
@@ -57,28 +93,30 @@ For server path validation, configure the narrowest practical value for `CODECON
 
 ```text
 src/main/kotlin/com/codecontext/
-  Main.kt
-  cli/                       Clikt commands and application adapters
-  core/
-    ai/                      Grounded evidence and optional AI providers
-    cache/                   Content-hash parse cache
-    config/                  Configuration model and loader
-    generator/               Learning/report helpers
-    graph/                   Dependency graph and PageRank
-    intelligence/            Analysis snapshots and deterministic intelligence
-    parser/                  Java and Kotlin parsers
-    planner/                 Evidence-backed engineering planning
-    qa/                      Grounded repository Q&A retrieval
-    reality/                 Repository-state identity composition
-    scanner/                 Repository and Git scanning
-    temporal/                Evolution analysis
-    workflow/                Prepare/verify and change-safety contracts
-  enterprise/                Multi-repository analysis
-  mcp/                       Local MCP protocol and gateway
-  output/                    Self-contained HTML report generation
-  server/                    Ktor API and security controls
-tests and verification       Unit, property, CLI, server, and E2E validation
-docs/                        Architecture, API, development, PR, security, and status docs
+├── Main.kt
+├── cli/                       # user-facing commands and adapters
+├── core/
+│   ├── ai/                   # optional provider integrations
+│   ├── cache/                # analysis cache
+│   ├── config/               # configuration and credentials
+│   ├── generator/            # report and learning helpers
+│   ├── graph/                # dependency graph algorithms
+│   ├── intelligence/         # deterministic engineering intelligence
+│   ├── parser/               # Java/Kotlin parser contracts
+│   ├── planner/              # evidence-backed planning
+│   ├── qa/                   # grounded repository Q&A
+│   ├── reality/              # repository-state identity
+│   ├── scanner/              # repository and Git scanning
+│   ├── temporal/             # evolution analysis
+│   └── workflow/             # prepare/verify contracts
+├── enterprise/               # organization-oriented capabilities
+├── mcp/                      # local MCP protocol adapter
+├── output/                   # report generation
+└── server/                   # Ktor API boundary
+
+src/test/kotlin/              # unit, property, security, CLI, server, and E2E tests
+docs/                         # architecture, contracts, integration, and contributor docs
+.github/workflows/            # authoritative CI and release verification
 ```
 
 ## Engineering boundaries
@@ -87,20 +125,22 @@ docs/                        Architecture, API, development, PR, security, and s
 - evidence is bounded and repository-relative;
 - AI is optional and must not overwrite deterministic facts;
 - planner output is read-only;
-- Agent Change Contracts are deterministic verification artifacts, not authorization tokens;
-- external input is validated at the boundary;
+- Agent Change Contracts are verification artifacts, not authorization tokens;
+- external input is validated at system boundaries;
 - source is not executed by analysis;
-- public APIs must not expose stack traces, provider bodies, credentials, or unnecessary absolute server paths.
+- public APIs must not expose stack traces, provider bodies, credentials, or unnecessary absolute paths.
+
+For the architectural model, see [Architecture](ARCHITECTURE.md).
 
 ## Adding deterministic intelligence
 
 1. Define a stable result contract.
 2. Implement the signal under `core/`.
 3. Make ordering and tie-breaking deterministic.
-4. Add unit/property tests.
+4. Add unit/property tests, including edge cases.
 5. Convert important facts to grounded evidence where applicable.
 6. Add CLI/REST/MCP adapters only after the core contract is stable.
-7. Update API, architecture, MCP, and implementation-status documentation.
+7. Update the relevant API, architecture, MCP, and implementation-status documentation.
 
 ## Adding a parser
 
@@ -116,11 +156,11 @@ docs/                        Architecture, API, development, PR, security, and s
 3. Return a stable public error shape.
 4. Avoid exposing local filesystem paths or internal exception messages.
 5. Add route and security tests.
-6. Update `docs/API.md`.
+6. Update [API](API.md).
 
 ## Adding AI behavior
 
-AI features follow the evidence-first boundary:
+Keep the evidence-first boundary:
 
 ```text
 Deterministic analysis
@@ -134,31 +174,44 @@ AI reasoning
 Validated response
 ```
 
-Do not introduce model calls directly into parsers, graph algorithms, or security boundaries. Provider-specific behavior belongs behind an abstraction.
+Do not introduce model calls directly into parsers, graph algorithms, or security boundaries. Provider-specific behavior belongs behind an explicit abstraction.
 
-## Reports and frontend assets
+## Reports and generated assets
 
-`ReportGenerator` uses kotlinx.html and embeds the graph data and visualization JavaScript directly into the generated HTML report. Treat source text, commit messages, author names, and descriptions as untrusted content. Changes to HTML or JavaScript serialization require escaping/regression tests. Generated reports must remain usable without a browser CDN dependency.
+Reports must remain self-contained. Treat source text, commit messages, author names, and descriptions as untrusted content. Changes to HTML or JavaScript serialization require escaping/regression tests.
 
 ## Pull requests
 
-Before opening a pull request:
+Before opening or updating a pull request:
 
 ```bash
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon build installDist
 ```
 
-Then run the complete GitHub Actions verification matrix and inspect the complete diff against `main`. Pull requests should describe behavior changes, security impact, configuration changes, schema changes, and validation results.
+Then inspect the complete diff and let the full GitHub Actions matrix run. Do not treat one green local command as release evidence.
 
-For AI-assisted features, additionally document evidence sources, model/provider boundaries, data exposure, uncertainty behavior, and CI verification requirements.
+A pull request should explain:
+
+- what behavior changed;
+- why it changed;
+- compatibility/configuration implications;
+- security/data-handling implications;
+- tests and CI evidence;
+- documentation or schema changes.
+
+For AI-assisted features, also document evidence sources, provider boundaries, data exposure, uncertainty behavior, and CI verification requirements.
 
 ## Release checklist
 
-1. Confirm the application version contract and `version` in `build.gradle.kts` agree.
-2. Update `CHANGELOG.md` and `SECURITY.md` for the supported release line.
-3. Run tests, packaging, CLI smoke tests, server smoke tests, cross-platform distribution smoke tests, and the clean-room live-repository E2E workflow.
+1. Confirm the application version and `build.gradle.kts` agree.
+2. Update `CHANGELOG.md` and implementation-status documentation.
+3. Run tests, packaging, CLI/server smoke tests, cross-platform distribution checks, and the live-repository E2E gate.
 4. Review generated artifacts, checksums, and dependency changes.
 5. Review security and data-handling implications.
-6. Confirm the Agent Change Contract live-gate mutation tests pass.
+6. Confirm Agent Change Contract mutation tests pass.
 7. Tag and publish only from a reviewed, passing commit.
+
+## Documentation ownership
+
+When behavior or a public contract changes, update the relevant documentation in the same pull request. Prefer linking to one authoritative contract over copying the same rules into several files.
