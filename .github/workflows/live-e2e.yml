@@ -184,15 +184,19 @@ jobs:
             grep -q '💡' output/live-gemini-ask.txt
             grep -q '🎯 Confidence:' output/live-gemini-ask.txt
             printf 'status=passed\n' > output/live-gemini-status.txt
-          elif grep -qiE 'HTTP 429|quota exceeded|rate limit' output/live-gemini-ask.txt; then
-            printf 'status=skipped\nreason=Gemini provider quota or rate limit exhausted\n' > output/live-gemini-status.txt
-            echo "::warning::Live Gemini Q&A skipped because the configured Gemini provider reported quota/rate-limit exhaustion. Deterministic E2E checks remain authoritative."
           else
-            echo "Live Gemini Q&A failed for a reason other than quota/rate limiting."
-            exit "$status"
+            response="$(cat output/live-gemini-ask.txt)"
+            if [[ "$response" == *"HTTP 429"* || "$response" == *"quota exceeded"* || "$response" == *"rate limit"* || "$response" == *"RESOURCE_EXHAUSTED"* ]]; then
+              printf 'status=skipped\nreason=Gemini provider quota or rate limit exhausted\n' > output/live-gemini-status.txt
+              echo "::warning::Live Gemini Q&A skipped because the configured Gemini provider reported quota/rate-limit exhaustion. Deterministic E2E checks remain authoritative."
+            else
+              echo "Live Gemini Q&A failed for a reason other than quota/rate limiting."
+              exit "$status"
+            fi
           fi
 
       - name: Start REST server
+        if: ${{ always() }}
         working-directory: ${{ runner.temp }}/real-project
         shell: bash
         run: |
@@ -207,6 +211,7 @@ jobs:
           exit 1
 
       - name: Verify REST API against real project
+        if: ${{ always() }}
         working-directory: ${{ runner.temp }}/real-project
         run: |
           curl --fail --silent http://127.0.0.1:18080/ | grep -F "CodeContext API is running"
