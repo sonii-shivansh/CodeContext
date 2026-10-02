@@ -64,12 +64,6 @@ object UserConfigStore {
         val explicitEnvironment = System.getenv(CONFIG_HOME_ENV)?.trim().orEmpty()
         if (explicitEnvironment.isNotEmpty()) return File(explicitEnvironment)
 
-        val legacyProperty = System.getProperty(LEGACY_CONFIG_HOME_PROPERTY)?.trim().orEmpty()
-        if (legacyProperty.isNotEmpty()) return File(legacyProperty)
-
-        val legacyEnvironment = System.getenv(LEGACY_CONFIG_HOME_ENV)?.trim().orEmpty()
-        if (legacyEnvironment.isNotEmpty()) return File(legacyEnvironment)
-
         val os = System.getProperty("os.name", "").lowercase()
         return when {
             os.contains("win") -> File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "Vericore")
@@ -81,10 +75,7 @@ object UserConfigStore {
         }
     }
 
-    private fun legacyConfigFile(): File {
-        val legacyDirectory = legacyConfigDirectory()
-        return File(legacyDirectory, "config.json")
-    }
+    private fun legacyConfigFile(): File = File(legacyConfigDirectory(), "config.json")
 
     private fun legacyConfigDirectory(): File {
         val explicitProperty = System.getProperty(LEGACY_CONFIG_HOME_PROPERTY)?.trim().orEmpty()
