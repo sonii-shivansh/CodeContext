@@ -22,6 +22,7 @@ import com.codecontext.cli.ServerCommand
 import com.codecontext.cli.SetupCommand
 import com.codecontext.cli.VerifyCommand
 import com.github.ajalt.clikt.core.subcommands
+import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     try {
@@ -50,5 +51,8 @@ fun main(args: Array<String>) {
             .main(args)
     } catch (e: Throwable) {
         com.codecontext.cli.ErrorHandler.handle(e)
+        // ErrorHandler intentionally owns user-facing formatting. Once an exception
+        // reaches this boundary, the process must still report failure to scripts/CI.
+        exitProcess(1)
     }
 }
