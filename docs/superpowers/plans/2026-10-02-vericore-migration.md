@@ -1,6 +1,6 @@
 # Vericore Migration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rename CodeContext to Vericore while preserving the PR #90 known-good behavior and introducing only deliberate, tested compatibility paths.
 
@@ -90,15 +90,15 @@
 - Modify: environment-variable handling
 - Modify: related tests/fixtures
 
-- [ ] Add failing tests for canonical `.vericore*` and `VERICORE_*` behavior.
-- [ ] Implement canonical Vericore configuration namespace.
-- [ ] Rename generated architecture-contract artifact to `.vericore-architecture-contract.json` and template.
-- [ ] Update generated-artifact filtering so Vericore-generated files never create false dirty state.
-- [ ] If legacy `.codecontext*`/`CODECONTEXT_*` compatibility is retained, mark it deprecated and test migration behavior.
-- [ ] Run repository-state and configuration tests.
-- [ ] Run live `context-snapshot`/`context-diff` checks against a clean repository.
-- [ ] Gate: generated Vericore artifacts produce `Dirty: false` and real user changes remain detectable.
-- [ ] Commit Phase 3.
+- [x] Add failing tests for canonical `.vericore*` and `VERICORE_*` behavior.
+- [x] Implement canonical Vericore configuration namespace.
+- [x] Rename generated architecture-contract artifact to `.vericore-architecture-contract.json` and template.
+- [x] Update generated-artifact filtering so Vericore-generated files never create false dirty state.
+- [x] If legacy `.codecontext*`/`CODECONTEXT_*` compatibility is retained, mark it deprecated and test migration behavior.
+- [x] Run repository-state and configuration tests.
+- [x] Run live `context-snapshot`/`context-diff` checks against a clean repository.
+- [x] Gate: generated Vericore artifacts produce `Dirty: false` and real user changes remain detectable.
+- [x] Commit Phase 3.
 
 ### Phase 4: REST and MCP Identity
 
