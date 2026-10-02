@@ -79,6 +79,12 @@ object McpProtocol {
                 "codecontext_impact_analysis" -> impactAnalysis(args)
                 "codecontext_architecture_analysis" -> architectureAnalysis(args)
                 "codecontext_pr_intelligence" -> prIntelligence(args)
+                "codecontext_get_engineering_reality" -> textResult(EngineeringContextGateway.reality(requireRepoPath(args)))
+                "codecontext_get_context_snapshot" -> textResult(EngineeringContextGateway.snapshot(requireRepoPath(args)))
+                "codecontext_get_context_diff" -> contextDiff(args)
+                "codecontext_prepare_change" -> textResult(EngineeringContextGateway.prepare(requireRepoPath(args), requiredString(args, "changeSummary")))
+                "codecontext_get_evidence" -> textResult(EngineeringContextGateway.evidence(requireRepoPath(args), args["changeSummary"]?.jsonPrimitive?.content ?: "Repository understanding"))
+                "codecontext_verify_change" -> textResult(EngineeringContextGateway.verify(requireRepoPath(args), args["plan"]?.jsonObject ?: error("plan is required")))
                 else -> return errorResponse(id, -32602, "Unknown tool: $name")
             })
         } catch (e: IllegalArgumentException) {
@@ -87,6 +93,12 @@ object McpProtocol {
             System.err.println("MCP tool '$name' failed: ${e::class.simpleName}")
             errorResponse(id, -32603, "Tool execution failed")
         }
+    }
+
+    private fun contextDiff(args: JsonObject): JsonObject {
+        val before = args["before"]?.jsonObject ?: error("before snapshot is required")
+        val after = args["after"]?.jsonObject ?: error("after snapshot is required")
+        return textResult(EngineeringContextGateway.diff(before, after))
     }
 
     private fun analyzeRepository(args: JsonObject): JsonObject {
@@ -122,13 +134,7 @@ object McpProtocol {
         val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
         val pathLookup = enrichedFiles.associateBy { it.file.absolutePath.replace('\\', '/') }
         val changedAbsolute = changedPaths.map { java.io.File(path, it).absolutePath.replace('\\', '/') }
-        val result = ChangeImpactEngine.analyze(
-            graph.graph,
-            changedAbsolute,
-            graph.pageRankScores,
-            pathLookup.mapValues { it.value.gitMetadata.changeFrequency },
-            pathLookup.mapValues { it.value.packageName }
-        )
+        val result = ChangeImpactEngine.analyze(graph.graph, changedAbsolute, graph.pageRankScores, pathLookup.mapValues { it.value.gitMetadata.changeFrequency }, pathLookup.mapValues { it.value.packageName })
         return textResult(json.encodeToString(com.codecontext.core.intelligence.ChangeImpactResult.serializer(), result))
     }
 
@@ -146,11 +152,7 @@ object McpProtocol {
         val head = args["headRevision"]?.jsonPrimitive?.content
         require((base == null) == (head == null)) { "baseRevision and headRevision must be supplied together" }
         if (base != null) require(base.length <= 256 && head!!.length <= 256) { "Git revisions are too long" }
-        val changeSet = if (base == null) {
-            GitChangeSetBuilder.fromWorkingTree(path)
-        } else {
-            GitChangeSetBuilder.fromRevisions(path, base, head!!)
-        }
+        val changeSet = if (base == null) GitChangeSetBuilder.fromWorkingTree(path) else GitChangeSetBuilder.fromRevisions(path, base, head!!)
         val result = runBlocking { PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.loadForRepository(path)) }
         return textResult(json.encodeToString(com.codecontext.core.intelligence.PRIntelligenceResult.serializer(), result))
     }
@@ -161,68 +163,30 @@ object McpProtocol {
         return sanitizePath(input) ?: error("Invalid or unsafe repository path")
     }
 
+    private fun requireRepoPath(args: JsonObject): String = safeRepoPath(args)
+    private fun requiredString(args: JsonObject, key: String): String = args[key]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: error("$key is required")
+
     private fun toolDefinitions(): JsonArray = buildJsonArray {
         add(tool("codecontext_analyze_repository", "Analyze a repository and return deterministic structure, graph, and hotspot evidence.", repositorySchema()))
         add(tool("codecontext_impact_analysis", "Calculate deterministic dependency impact for changed repository-relative paths.", buildJsonObject {
-            put("type", JsonPrimitive("object"))
-            put("required", buildJsonArray { add(JsonPrimitive("repoPath")); add(JsonPrimitive("changedPaths")) })
-            put("properties", buildJsonObject {
-                put("repoPath", stringProperty("Absolute repository path"))
-                put("changedPaths", buildJsonObject {
-                    put("type", JsonPrimitive("array"))
-                    put("items", stringProperty("Repository-relative changed path"))
-                    put("maxItems", JsonPrimitive(100))
-                })
-            })
+            put("type", JsonPrimitive("object")); put("required", buildJsonArray { add(JsonPrimitive("repoPath")); add(JsonPrimitive("changedPaths")) }); put("properties", buildJsonObject { put("repoPath", stringProperty("Absolute repository path")); put("changedPaths", buildJsonObject { put("type", JsonPrimitive("array")); put("items", stringProperty("Repository-relative changed path")); put("maxItems", JsonPrimitive(100)) }) })
         }))
         add(tool("codecontext_architecture_analysis", "Analyze architecture boundaries, dependencies, and architectural signals.", repositorySchema()))
-        add(tool("codecontext_pr_intelligence", "Analyze working-tree or revision-to-revision changes and return PR intelligence.", buildJsonObject {
-            put("type", JsonPrimitive("object"))
-            put("required", buildJsonArray { add(JsonPrimitive("repoPath")) })
-            put("properties", buildJsonObject {
-                put("repoPath", stringProperty("Absolute repository path"))
-                put("baseRevision", stringProperty("Optional Git base revision"))
-                put("headRevision", stringProperty("Optional Git head revision"))
-            })
-        }))
+        add(tool("codecontext_pr_intelligence", "Analyze working-tree or revision-to-revision changes and return PR intelligence.", buildJsonObject { put("type", JsonPrimitive("object")); put("required", buildJsonArray { add(JsonPrimitive("repoPath")) }); put("properties", buildJsonObject { put("repoPath", stringProperty("Absolute repository path")); put("baseRevision", stringProperty("Optional Git base revision")); put("headRevision", stringProperty("Optional Git head revision")) }) }))
+        add(tool("codecontext_get_engineering_reality", "Return the deterministic repository-state snapshot an agent should trust before editing.", repositorySchema()))
+        add(tool("codecontext_get_context_snapshot", "Return a content-addressed engineering context snapshot.", repositorySchema()))
+        add(tool("codecontext_get_context_diff", "Compare two engineering context snapshots without rescanning the repository.", buildJsonObject { put("type", JsonPrimitive("object")); put("required", buildJsonArray { add(JsonPrimitive("before")); add(JsonPrimitive("after")) }); put("properties", buildJsonObject { put("before", buildJsonObject { put("type", JsonPrimitive("object")) }); put("after", buildJsonObject { put("type", JsonPrimitive("object")) }) }) }))
+        add(tool("codecontext_prepare_change", "Build grounded evidence and a deterministic engineering plan before a change.", buildJsonObject { put("type", JsonPrimitive("object")); put("required", buildJsonArray { add(JsonPrimitive("repoPath")); add(JsonPrimitive("changeSummary")) }); put("properties", buildJsonObject { put("repoPath", stringProperty("Absolute repository path")); put("changeSummary", stringProperty("Requested engineering change")) }) }))
+        add(tool("codecontext_get_evidence", "Return grounded repository evidence suitable for an agent context window.", buildJsonObject { put("type", JsonPrimitive("object")); put("required", buildJsonArray { add(JsonPrimitive("repoPath")) }); put("properties", buildJsonObject { put("repoPath", stringProperty("Absolute repository path")); put("changeSummary", stringProperty("Optional evidence focus")) }) }))
+        add(tool("codecontext_verify_change", "Verify a working-tree change against a previously generated engineering plan.", buildJsonObject { put("type", JsonPrimitive("object")); put("required", buildJsonArray { add(JsonPrimitive("repoPath")); add(JsonPrimitive("plan")) }); put("properties", buildJsonObject { put("repoPath", stringProperty("Absolute repository path")); put("plan", buildJsonObject { put("type", JsonPrimitive("object")); put("description", JsonPrimitive("EngineeringPlan JSON returned by codecontext_prepare_change")) }) }) }))
     }
 
-    private fun repositorySchema(): JsonObject = buildJsonObject {
-        put("type", JsonPrimitive("object"))
-        put("required", buildJsonArray { add(JsonPrimitive("repoPath")) })
-        put("properties", buildJsonObject { put("repoPath", stringProperty("Absolute repository path")) })
-    }
-
-    private fun stringProperty(description: String): JsonObject = buildJsonObject {
-        put("type", JsonPrimitive("string"))
-        put("description", JsonPrimitive(description))
-    }
-
-    private fun tool(name: String, description: String, inputSchema: JsonObject): JsonObject = buildJsonObject {
-        put("name", JsonPrimitive(name))
-        put("description", JsonPrimitive(description))
-        put("inputSchema", inputSchema)
-    }
-
-    private fun textResult(text: String): JsonObject = buildJsonObject {
-        put("content", buildJsonArray { add(buildJsonObject { put("type", JsonPrimitive("text")); put("text", JsonPrimitive(text)) }) })
-        put("isError", JsonPrimitive(false))
-    }
-
-    private fun resultResponse(id: JsonElement?, result: JsonObject): JsonObject = buildJsonObject {
-        put("jsonrpc", JsonPrimitive("2.0"))
-        if (id != null) put("id", id)
-        put("result", result)
-    }
-
-    private fun errorResponse(id: JsonElement?, code: Int, message: String): JsonObject = buildJsonObject {
-        put("jsonrpc", JsonPrimitive("2.0"))
-        if (id != null) put("id", id)
-        put("error", buildJsonObject {
-            put("code", JsonPrimitive(code))
-            put("message", JsonPrimitive(message))
-        })
-    }
-
+    private fun repositorySchema(): JsonObject = buildJsonObject { put("type", JsonPrimitive("object")); put("required", buildJsonArray { add(JsonPrimitive("repoPath")) }); put("properties", buildJsonObject { put("repoPath", stringProperty("Absolute repository path")) }) }
+    private fun stringProperty(description: String): JsonObject = buildJsonObject { put("type", JsonPrimitive("string")); put("description", JsonPrimitive(description)) }
+    private fun tool(name: String, description: String, inputSchema: JsonObject): JsonObject = buildJsonObject { put("name", JsonPrimitive(name)); put("description", JsonPrimitive(description)); put("inputSchema", inputSchema) }
+    private fun textResult(payload: JsonObject): JsonObject = buildJsonObject { put("content", buildJsonArray { add(buildJsonObject { put("type", JsonPrimitive("text")); put("text", JsonPrimitive(json.encodeToString(JsonObject.serializer(), payload))) }) }); put("isError", JsonPrimitive(false)) }
+    private fun textResult(text: String): JsonObject = buildJsonObject { put("content", buildJsonArray { add(buildJsonObject { put("type", JsonPrimitive("text")); put("text", JsonPrimitive(text)) }) }); put("isError", JsonPrimitive(false)) }
+    private fun resultResponse(id: JsonElement?, result: JsonObject): JsonObject = buildJsonObject { put("jsonrpc", JsonPrimitive("2.0")); if (id != null) put("id", id); put("result", result) }
+    private fun errorResponse(id: JsonElement?, code: Int, message: String): JsonObject = buildJsonObject { put("jsonrpc", JsonPrimitive("2.0")); if (id != null) put("id", id); put("error", buildJsonObject { put("code", JsonPrimitive(code)); put("message", JsonPrimitive(message)) }) }
     private fun emptyResponse(): JsonObject = buildJsonObject {}
 }
