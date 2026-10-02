@@ -72,11 +72,9 @@ object ConfigLoader {
         }
     }
 
-    /** Load project configuration relative to the repository being analyzed, not the CLI process cwd. */
     fun loadForRepository(repoPath: String): CodeContextConfig =
         load(File(repoPath).canonicalFile.resolve(DEFAULT_CONFIG_FILE).path)
 
-    /** Resolves environment -> project credential -> user credential -> defaults. */
     fun loadEffective(
         configPath: String = DEFAULT_CONFIG_FILE,
         environment: Map<String, String> = System.getenv()
@@ -91,35 +89,19 @@ object ConfigLoader {
         )
         val projectKey = project.ai.apiKey.trim().takeIf { it.isNotEmpty() }
         val userKey = user?.apiKey?.trim()?.takeIf { it.isNotEmpty() }
-
         val key = environmentKey ?: projectKey ?: userKey.orEmpty()
-        val provider = firstNonBlank(
-            environment[AI_PROVIDER],
-            environment[LEGACY_AI_PROVIDER]
-        ) ?: if (projectKey == null && user != null) user.provider else project.ai.provider
-        val configuredModel = firstNonBlank(
-            environment[AI_MODEL],
-            environment[LEGACY_AI_MODEL]
-        ) ?: if (projectKey == null && user != null) user.model else project.ai.model
+        val provider = firstNonBlank(environment[AI_PROVIDER], environment[LEGACY_AI_PROVIDER])
+            ?: if (projectKey == null && user != null) user.provider else project.ai.provider
+        val configuredModel = firstNonBlank(environment[AI_MODEL], environment[LEGACY_AI_MODEL])
+            ?: if (projectKey == null && user != null) user.model else project.ai.model
         val model = if (configuredModel == LEGACY_GEMINI_MODEL) DEFAULT_GEMINI_MODEL else configuredModel
-
-        return project.copy(
-            ai = project.ai.copy(
-                enabled = project.ai.enabled || key.isNotBlank(),
-                provider = provider,
-                apiKey = key,
-                model = model
-            )
-        )
+        return project.copy(ai = project.ai.copy(enabled = project.ai.enabled || key.isNotBlank(), provider = provider, apiKey = key, model = model))
     }
 
     fun createDefault(path: String = DEFAULT_CONFIG_FILE) {
         try {
             val config = CodeContextConfig()
-            val json = Json {
-                prettyPrint = true
-                encodeDefaults = true
-            }
+            val json = Json { prettyPrint = true; encodeDefaults = true }
             File(path).writeText(json.encodeToString(config))
             logger.info { "Created default config at $path" }
             println("✅ Created default config at $path")
@@ -132,7 +114,9 @@ object ConfigLoader {
         if (requested.exists() || requested.name != DEFAULT_CONFIG_FILE) return requested
         val legacy = File(requested.parentFile ?: File("."), LEGACY_CONFIG_FILE)
         if (legacy.exists()) {
-            logger.warn { "Using legacy CodeContext configuration ${legacy.path}; migrate to ${requested.path}" }
+            val message = "Deprecated CodeContext configuration detected at ${legacy.path}; migrate to ${requested.path}."
+            logger.warn { message }
+            System.err.println("⚠️ $message")
             return legacy
         }
         return requested
