@@ -112,13 +112,14 @@ class VericoreConfigurationNamespaceTest {
         Files.writeString(legacyHome.resolve("config.json"), """{"ai":{"provider":"gemini","apiKey":"legacy-key","model":"gemini-2.5-flash"}}""")
         System.clearProperty("vericore.config.home")
         System.setProperty("codecontext.config.home", legacyHome.toString())
+        val canonicalPath = UserConfigStore.configFile().path
         val originalErr = System.err
         val captured = ByteArrayOutputStream()
         try {
             System.setErr(PrintStream(captured))
             assertEquals("legacy-key", requireNotNull(UserConfigStore.load()).ai.apiKey)
             assertTrue(captured.toString().contains("Deprecated CodeContext user configuration"))
-            assertTrue(captured.toString().contains(".config/vericore/config.json"))
+            assertTrue(captured.toString().contains(canonicalPath))
         } finally {
             System.setErr(originalErr)
         }
