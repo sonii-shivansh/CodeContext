@@ -3,6 +3,7 @@ package com.codecontext.cli
 import com.codecontext.core.ai.AISetup
 import com.codecontext.core.ai.AISetupResult
 import com.codecontext.core.config.UserConfigStore
+import com.codecontext.core.exceptions.ConfigurationException
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -18,9 +19,9 @@ class SetupCommand : CliktCommand(
 
     override fun run() {
         if (!provider.equals("gemini", ignoreCase = true)) {
-            echo("❌ Unsupported provider: $provider")
-            echo("   Supported provider: gemini")
-            return
+            throw ConfigurationException(
+                "Unsupported provider: $provider. Supported provider: gemini"
+            )
         }
 
         val existing = UserConfigStore.load()?.ai
