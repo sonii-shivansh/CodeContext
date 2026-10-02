@@ -23,18 +23,20 @@ data class UserConfig(
 object UserConfigStore {
     private const val CONFIG_HOME_ENV = "VERICORE_CONFIG_HOME"
     private const val CONFIG_HOME_PROPERTY = "vericore.config.home"
+    private const val LEGACY_CONFIG_HOME_ENV = "CODECONTEXT_CONFIG_HOME"
+    private const val LEGACY_CONFIG_HOME_PROPERTY = "codecontext.config.home"
 
-    private val json = Json {
-        prettyPrint = true
-        encodeDefaults = true
-    }
+    private val json = Json { prettyPrint = true; encodeDefaults = true }
 
     fun configFile(): File = File(configDirectory(), "config.json")
 
     fun load(): UserConfig? {
         val file = configFile()
-        if (!file.isFile) return null
-        return runCatching { json.decodeFromString<UserConfig>(file.readText()) }.getOrNull()
+        if (file.isFile) return runCatching { json.decodeFromString<UserConfig>(file.readText()) }.getOrNull()
+        val legacy = legacyConfigFile()
+        if (!legacy.isFile) return null
+        System.err.println("⚠️ Deprecated CodeContext user configuration detected at ${legacy.path}; migrate it to the Vericore configuration directory.")
+        return runCatching { json.decodeFromString<UserConfig>(legacy.readText()) }.getOrNull()
     }
 
     fun saveAi(provider: String, apiKey: String, model: String) {
@@ -50,10 +52,8 @@ object UserConfigStore {
     private fun configDirectory(): File {
         val explicitProperty = System.getProperty(CONFIG_HOME_PROPERTY)?.trim().orEmpty()
         if (explicitProperty.isNotEmpty()) return File(explicitProperty)
-
         val explicitEnvironment = System.getenv(CONFIG_HOME_ENV)?.trim().orEmpty()
         if (explicitEnvironment.isNotEmpty()) return File(explicitEnvironment)
-
         val os = System.getProperty("os.name", "").lowercase()
         return when {
             os.contains("win") -> File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "Vericore")
@@ -65,12 +65,25 @@ object UserConfigStore {
         }
     }
 
+    private fun legacyConfigFile(): File {
+        val property = System.getProperty(LEGACY_CONFIG_HOME_PROPERTY)?.trim().orEmpty()
+        val env = System.getenv(LEGACY_CONFIG_HOME_ENV)?.trim().orEmpty()
+        if (property.isNotEmpty()) return File(property, "config.json")
+        if (env.isNotEmpty()) return File(env, "config.json")
+        val os = System.getProperty("os.name", "").lowercase()
+        return when {
+            os.contains("win") -> File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "CodeContext/config.json")
+            os.contains("mac") -> File(System.getProperty("user.home"), "Library/Application Support/CodeContext/config.json")
+            else -> {
+                val xdg = System.getenv("XDG_CONFIG_HOME")?.trim().orEmpty()
+                File(if (xdg.isNotEmpty()) xdg else File(System.getProperty("user.home"), ".config").absolutePath, "codecontext/config.json")
+            }
+        }
+    }
+
     private fun restrictPermissions(file: File) {
         runCatching {
-            Files.setPosixFilePermissions(
-                file.toPath(),
-                setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
-            )
+            Files.setPosixFilePermissions(file.toPath(), setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE))
         }
     }
 }
