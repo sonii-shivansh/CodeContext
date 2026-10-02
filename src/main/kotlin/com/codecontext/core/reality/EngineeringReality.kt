@@ -45,10 +45,8 @@ object EngineeringRealityEngine {
         analysis: AnalysisSnapshot,
         context: EngineeringContextSnapshot
     ): EngineeringRealitySnapshot {
-        require(analysis.repository.languages.sorted() == context.languages.sorted()) {
-            "Analysis/context language sets differ; generate both artifacts from the same repository state."
-        }
-
+        // Provenance/state identity is the first boundary: if the analysis is stale,
+        // report that directly before evaluating secondary semantic compatibility.
         require(
             analysis.repository.repositoryCommit == null ||
                 context.repositoryCommit == null ||
@@ -62,6 +60,10 @@ object EngineeringRealityEngine {
                 analysis.repository.repositoryStateDigest == context.snapshotDigest
         ) {
             "Analysis snapshot is stale: its source-state digest does not match the current repository state. Run 'codecontext analyze' again."
+        }
+
+        require(analysis.repository.languages.sorted() == context.languages.sorted()) {
+            "Analysis/context language sets differ; generate both artifacts from the same repository state."
         }
 
         // analyzedAtEpochMillis is deliberately excluded from the identity. Re-running
