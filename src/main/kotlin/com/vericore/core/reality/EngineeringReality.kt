@@ -52,14 +52,14 @@ object EngineeringRealityEngine {
                 context.repositoryCommit == null ||
                 analysis.repository.repositoryCommit == context.repositoryCommit
         ) {
-            "Analysis snapshot is stale: its Git commit does not match the current repository state. Run 'codecontext analyze' again."
+            "Analysis snapshot is stale: its Git commit does not match the current repository state. Run 'vericore analyze' again."
         }
 
         require(
             analysis.repository.repositoryStateDigest == null ||
                 analysis.repository.repositoryStateDigest == context.snapshotDigest
         ) {
-            "Analysis snapshot is stale: its source-state digest does not match the current repository state. Run 'codecontext analyze' again."
+            "Analysis snapshot is stale: its source-state digest does not match the current repository state. Run 'vericore analyze' again."
         }
 
         require(analysis.repository.languages.sorted() == context.languages.sorted()) {
