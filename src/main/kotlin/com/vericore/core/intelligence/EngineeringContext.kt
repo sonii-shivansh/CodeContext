@@ -138,7 +138,9 @@ object EngineeringContextEngine {
 
     private fun isGeneratedPath(path: String): Boolean {
         val normalized = path.replace(File.separatorChar, '/').trimStart('/')
-        return normalized == ".codecontext" || normalized.startsWith(".codecontext/") ||
+        return normalized == ".vericore" || normalized.startsWith(".vericore/") ||
+            normalized == ".vericore-architecture-contract.json" ||
+            normalized == ".codecontext" || normalized.startsWith(".codecontext/") ||
             normalized == ".codecontext-architecture-contract.json" ||
             normalized == "output" || normalized.startsWith("output/")
     }
