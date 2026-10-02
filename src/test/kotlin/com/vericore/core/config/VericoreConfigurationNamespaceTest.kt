@@ -64,6 +64,8 @@ class VericoreConfigurationNamespaceTest {
         val config = ConfigLoader.loadEffective(
             project.toString(),
             environment = mapOf(
+                "VERICORE_GEMINI_API_KEY" to "vericore-key",
+                "GEMINI_API_KEY" to "legacy-key",
                 "VERICORE_AI_PROVIDER" to "vericore-provider",
                 "CODECONTEXT_AI_PROVIDER" to "legacy-provider",
                 "VERICORE_AI_MODEL" to "vericore-model",
@@ -71,6 +73,7 @@ class VericoreConfigurationNamespaceTest {
             )
         )
 
+        assertEquals("vericore-key", config.ai.apiKey)
         assertEquals("vericore-provider", config.ai.provider)
         assertEquals("vericore-model", config.ai.model)
     }
