@@ -69,11 +69,11 @@ jobs:
       - name: Verify installed CLI
         shell: pwsh
         run: |
-          $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
+          $version = (& .\build\install\vericore\bin\vericore.bat --version).Trim()
           if ($version -notmatch [regex]::Escape('${{ steps.version.outputs.version }}')) { throw "Unexpected CLI version: $version" }
 
       - name: Upload distribution
         uses: actions/upload-artifact@v7
         with:
-          name: codecontext-dist-windows
-          path: build/install/codecontext/
+          name: vericore-dist-windows
+          path: build/install/vericore/
