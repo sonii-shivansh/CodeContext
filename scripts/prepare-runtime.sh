@@ -48,8 +48,8 @@ if [[ ! -f "$SCRIPT" ]]; then
   exit 1
 fi
 
-if ! grep -q 'CODECONTEXT_BUNDLED_JAVA' "$SCRIPT"; then
-  sed -i '/^# Add default JVM options here/i\\# Prefer the runtime bundled with this distribution.\nif [ -x "$APP_HOME/jre/bin/java" ]; then\n    JAVA_HOME="$APP_HOME/jre"\n    export JAVA_HOME\nfi\n# CODECONTEXT_BUNDLED_JAVA' "$SCRIPT"
+if ! grep -q 'VERICORE_BUNDLED_JAVA' "$SCRIPT"; then
+  sed -i '/^# Add default JVM options here/i\\# Prefer the runtime bundled with this distribution.\nif [ -x "$APP_HOME/jre/bin/java" ]; then\n    JAVA_HOME="$APP_HOME/jre"\n    export JAVA_HOME\nfi\n# VERICORE_BUNDLED_JAVA' "$SCRIPT"
 fi
 
 chmod +x "$SCRIPT"
