@@ -50,3 +50,5 @@ jobs:
           assert diff["summary"]["modified"] == 0
           assert diff["changes"] == []
           PY
+
+# Phase 3 live-gate trigger commit; remove this workflow after validation.
