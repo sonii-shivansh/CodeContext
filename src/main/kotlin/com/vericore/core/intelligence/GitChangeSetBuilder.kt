@@ -106,10 +106,12 @@ object GitChangeSetBuilder {
             .sortedWith(compareBy<ChangedFile> { it.path }.thenBy { it.changeType.name })
     }
 
-    /** Paths owned by CodeContext itself must not become repository change evidence. */
+    /** Paths owned by Vericore itself must not become repository change evidence. */
     private fun isToolGeneratedPath(path: String): Boolean {
         val normalized = path.replace('\\', '/').trimStart('/')
-        return normalized == ".codecontext" ||
+        return normalized == ".vericore" ||
+            normalized.startsWith(".vericore/") ||
+            normalized == ".codecontext" ||
             normalized.startsWith(".codecontext/") ||
             normalized == "output" ||
             normalized.startsWith("output/")
