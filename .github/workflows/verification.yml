@@ -95,13 +95,48 @@ jobs:
           from pathlib import Path
           snapshot = json.loads(Path("output/analysis-snapshot.json").read_text())
           risks = json.loads(Path("output/engineering-risks.json").read_text())
-          assert snapshot["schemaVersion"] == "1.0"
+          assert snapshot["schemaVersion"] == "1.1"
           assert snapshot["metrics"]["totalFiles"] > 0
           assert snapshot["metrics"]["totalNodes"] >= snapshot["metrics"]["totalFiles"]
           assert isinstance(snapshot["hotspots"], list)
           assert isinstance(risks, list)
           assert all(0 <= item["score"] <= 100 for item in risks)
+          assert "repositoryCommit" in snapshot["repository"]
+          assert "repositoryStateDigest" in snapshot["repository"]
+          assert snapshot["repository"]["repositoryStateDigest"]
           PY
+
+      - name: Verify Engineering Reality state binding
+        shell: bash
+        run: |
+          CLI=./build/install/codecontext/bin/codecontext
+          "$CLI" reality . --json
+          test -s output/engineering-reality.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          reality = json.loads(Path("output/engineering-reality.json").read_text())
+          assert reality["schemaVersion"] == "1.0"
+          assert reality["analysisSchemaVersion"] == "1.1"
+          assert reality["repositoryCommit"]
+          assert reality["analysisDigest"]
+          assert reality["contextDigest"]
+          assert reality["realityDigest"]
+          PY
+
+          probe="src/CodeContextRealityStaleStateProbe.java"
+          printf '%s\n' 'class CodeContextRealityStaleStateProbe {}' > "$probe"
+          if "$CLI" reality . --json > /tmp/reality-stale.txt 2>&1; then
+            cat /tmp/reality-stale.txt
+            rm -f "$probe"
+            echo "Expected stale analysis rejection, but reality generation succeeded."
+            exit 1
+          fi
+          grep -F "source-state digest" /tmp/reality-stale.txt
+          rm -f "$probe"
+
+          "$CLI" reality . --json
+          test -s output/engineering-reality.json
 
       - name: Generate grounded repository evidence
         run: |

@@ -6,11 +6,12 @@ Engineering Reality is CodeContext's composition layer for answering:
 
 > **Which repository facts belong to the same engineering state?**
 
-It does not replace analysis, architecture, Git, or AI. It binds deterministic artifacts together with explicit schema versions and digests.
+It does not replace analysis, architecture, Git, or AI. It binds deterministic artifacts together with explicit schema versions and digests, and it refuses to combine an analysis produced from a different repository state.
 
 ## Contents
 
 - [Why it exists](#why-it-exists)
+- [State binding](#state-binding)
 - [Pipeline](#pipeline)
 - [Artifact contract](#artifact-contract)
 - [CLI](#cli)
@@ -23,16 +24,45 @@ A repository has several valid views of reality: source/dependency analysis, fil
 
 Engineering Reality introduces an explicit identity boundary.
 
+## State binding
+
+The analysis snapshot now records two pieces of provenance when available:
+
+- the Git `HEAD` observed during analysis;
+- a digest of the source-file state observed during analysis.
+
+When `codecontext reality` runs, it creates a fresh engineering-context snapshot and compares those values. A mismatch is rejected instead of producing a plausible-looking but stale reality artifact.
+
+```mermaid
+flowchart TD
+    A[Analyze repository] --> B[Analysis Snapshot]
+    B --> B1[Git commit + source-state digest]
+    C[Current repository] --> D[Engineering Context]
+    D --> D1[Git commit + source-state digest]
+    B1 --> E{Same state?}
+    D1 --> E
+    E -->|Yes| F[Engineering Reality]
+    E -->|No| G[Reject stale analysis]
+```
+
+<details>
+<summary><strong>Why both commit and source-state digest?</strong></summary>
+
+A Git commit identifies the committed tree, but a developer can have uncommitted source changes. The source-state digest covers the files CodeContext can analyze, so a dirty working tree cannot silently reuse an older analysis from the same `HEAD`.
+
+</details>
+
 ## Pipeline
 
 ```mermaid
 flowchart LR
     A[Source + Git] --> B[Analysis Snapshot]
     A --> C[Engineering Context]
-    B --> D[Engineering Reality]
+    B --> D[State Binding]
     C --> D
-    D --> E[CLI / REST / MCP]
-    E --> F[AI Agents]
+    D --> E[Engineering Reality]
+    E --> F[CLI / REST / MCP]
+    F --> G[AI Agents]
 ```
 
 <details>
@@ -77,11 +107,13 @@ Then create the combined reality artifact:
 codecontext reality . --json
 ```
 
-The artifact is written to:
+The command validates that the analysis still belongs to the current repository state before writing:
 
 ```text
 output/engineering-reality.json
 ```
+
+If the repository changed after analysis, rerun `codecontext analyze` before generating reality.
 
 The command is read-only: it does not modify source code, Git state, commits, or branches.
 
@@ -94,7 +126,7 @@ sequenceDiagram
     participant Repo as Repository
     Agent->>CC: Request repository understanding
     CC->>Repo: Read deterministic state
-    CC->>CC: Bind analysis + context identity
+    CC->>CC: Validate state binding
     CC-->>Agent: Evidence + realityDigest
     Agent->>CC: Propose change
     CC-->>Agent: Impact / architecture / verification evidence

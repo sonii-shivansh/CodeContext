@@ -1,9 +1,11 @@
 package com.codecontext.core.intelligence
 
 import com.codecontext.core.parser.ParsedFile
+import com.codecontext.core.scanner.RepositoryScanner
+import java.io.File
 import kotlinx.serialization.Serializable
 
-const val ANALYSIS_SCHEMA_VERSION = "1.0"
+const val ANALYSIS_SCHEMA_VERSION = "1.1"
 
 /**
  * Stable, machine-readable representation of an analysis run.
@@ -26,7 +28,11 @@ data class AnalysisSnapshot(
 data class RepositorySnapshot(
     val path: String,
     val analyzedAtEpochMillis: Long,
-    val languages: List<String>
+    val languages: List<String>,
+    /** Git HEAD observed while the analysis snapshot was produced, when available. */
+    val repositoryCommit: String? = null,
+    /** Digest of the source-file state observed while the analysis snapshot was produced. */
+    val repositoryStateDigest: String? = null
 )
 
 @Serializable
@@ -81,6 +87,13 @@ object AnalysisSnapshotBuilder {
         val fileByPath = parsedFiles.associateBy { it.file.absolutePath }
         val orderedFiles = parsedFiles.sortedBy { it.file.absolutePath }
 
+        // Bind the analysis to the exact repository state it observed. This lets the
+        // Engineering Reality layer reject a stale analysis instead of combining it
+        // with a newer working tree or commit.
+        val repositoryState = runCatching {
+            EngineeringContextEngine.snapshot(File(repositoryPath).canonicalFile, RepositoryScanner())
+        }.getOrNull()
+
         val files = orderedFiles.map { file ->
             val path = file.file.absolutePath
             FileSnapshot(
@@ -133,7 +146,9 @@ object AnalysisSnapshotBuilder {
             repository = RepositorySnapshot(
                 path = repositoryPath,
                 analyzedAtEpochMillis = System.currentTimeMillis(),
-                languages = languages
+                languages = languages,
+                repositoryCommit = repositoryState?.repositoryCommit,
+                repositoryStateDigest = repositoryState?.snapshotDigest
             ),
             metrics = AnalysisMetrics(
                 totalFiles = orderedFiles.size,
