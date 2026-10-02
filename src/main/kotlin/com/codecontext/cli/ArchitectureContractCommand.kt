@@ -65,7 +65,7 @@ class ArchitectureContractCommand : CliktCommand(
         echo("├─ Findings: ${architecture.findings.size}")
         echo("├─ Cycles: ${architecture.cycles.size}")
         echo("├─ Violations: ${result.violations.size}")
-        echo("└─ Decision: ${decision.decisionId}")
+        echo("└─ Contract fingerprint: ${decision.decisionId}")
         if (!result.passed) {
             result.violations.take(30).forEach { violation ->
                 echo("   ${violation.ruleId}: ${violation.message}")

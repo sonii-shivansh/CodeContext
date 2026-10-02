@@ -47,6 +47,15 @@ class ChangeImpactEngineTest {
     }
 
     @Test
+    fun `repository relative changed path resolves to graph vertex`() {
+        val result = ChangeImpactEngine.analyze(graph(), listOf("a/Service.kt"))
+
+        assertEquals(1, result.summary.changedFiles)
+        assertEquals(listOf("/repo/a/Service.kt"), result.changedPaths)
+        assertTrue(result.nodes.any { it.path.endsWith("Controller.kt") && it.depth == 1 })
+    }
+
+    @Test
     fun `test candidates are identified deterministically`() {
         val result = ChangeImpactEngine.analyze(graph(), listOf("/repo/b/Repository.kt"))
         assertEquals(1, result.summary.testCandidates)

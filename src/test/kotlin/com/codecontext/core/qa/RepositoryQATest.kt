@@ -23,6 +23,13 @@ class RepositoryQATest {
     }
 
     @Test
+    fun `does not treat question words as entities`() {
+        val question = RepositoryQuestionClassifier.classify("Which files are the main architectural hotspots?")
+        assertEquals(QuestionIntent.ARCHITECTURE, question.intent)
+        assertEquals(null, question.entity)
+    }
+
+    @Test
     fun `ranks exact entity evidence first`() {
         val question = RepositoryQuestionClassifier.classify("What is the risk of `PaymentService`?")
         val result = RepositoryEvidenceRetriever().retrieve(question, evidence)

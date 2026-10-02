@@ -14,6 +14,7 @@ class DoctorCommand : CliktCommand(
 ) {
     override fun run() {
         var failures = 0
+        var warnings = 0
 
         fun check(label: String, ok: Boolean, detail: String) {
             if (ok) echo("✓ $label — $detail")
@@ -21,6 +22,11 @@ class DoctorCommand : CliktCommand(
                 failures++
                 echo("❌ $label — $detail")
             }
+        }
+
+        fun warn(label: String, detail: String) {
+            warnings++
+            echo("⚠ $label — $detail")
         }
 
         echo("CodeContext doctor")
@@ -51,8 +57,12 @@ class DoctorCommand : CliktCommand(
             userConfig?.ai?.apiKey?.isNotBlank() == true -> "user configuration"
             else -> "not configured"
         }
-        check("AI provider", effective.ai.provider.isNotBlank(), effective.ai.provider)
-        check("AI credentials", resolvedApiKey.isNotBlank(), keySource)
+        check("AI provider", effective.ai.provider.isNotBlank(), effective.ai.provider.ifBlank { "not configured" })
+        if (resolvedApiKey.isBlank()) {
+            warn("AI credentials", "not configured (AI commands require a provider key; run 'codecontext setup' to configure one)")
+        } else {
+            check("AI credentials", true, "configured via $keySource")
+        }
 
         if (effective.ai.provider.equals("gemini", ignoreCase = true) && resolvedApiKey.isNotBlank()) {
             echo("   Validating Gemini credentials...")
@@ -66,10 +76,16 @@ class DoctorCommand : CliktCommand(
         }
 
         echo("")
-        if (failures == 0) echo("✓ CodeContext is ready to use.")
-        else {
-            echo("❌ $failures check(s) need attention.")
-            echo("   Run 'codecontext setup' for interactive AI setup.")
+        when {
+            failures > 0 -> {
+                echo("❌ CodeContext needs attention: $failures error(s), $warnings warning(s).")
+                echo("   Fix the errors above, then run 'codecontext doctor' again.")
+            }
+            warnings > 0 -> {
+                echo("⚠ CodeContext is ready for deterministic analysis; $warnings optional configuration item(s) need attention.")
+                echo("   Run 'codecontext setup' if you want to enable AI features.")
+            }
+            else -> echo("✓ CodeContext is ready to use.")
         }
     }
 }

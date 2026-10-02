@@ -50,7 +50,11 @@ object ChangeImpactEngine {
         val pageRankByNormalizedPath = pageRankScores.mapKeys { normalize(it.key) }
         val churnByNormalizedPath = churnByPath.mapKeys { normalize(it.key) }
         val packageByNormalizedPath = packageByPath.mapKeys { normalize(it.key) }
-        val normalizedChanges = changedPaths.map(::normalize).filter(vertexByNormalizedPath::containsKey).distinct().sorted()
+        val normalizedChanges = changedPaths
+            .map(::normalize)
+            .mapNotNull { resolveGraphPath(it, vertexByNormalizedPath) }
+            .distinct()
+            .sorted()
         val changedVertices = normalizedChanges.map { vertexByNormalizedPath.getValue(it) }
         val distances = linkedMapOf<String, Int>()
         val queue = ArrayDeque<String>()
@@ -117,6 +121,14 @@ object ChangeImpactEngine {
                 maxDepth = distances.values.maxOrNull() ?: 0
             )
         )
+    }
+
+    private fun resolveGraphPath(input: String, vertices: Map<String, String>): String? {
+        vertices[input]?.let { return normalize(it) }
+        if (input.isBlank() || input.contains(":/")) return null
+        val suffix = "/${input.trimStart('/')}"
+        val matches = vertices.keys.filter { it.endsWith(suffix) }
+        return matches.singleOrNull()
     }
 
     private fun findTestCandidates(vertices: Set<String>, changedPaths: List<String>): Set<String> {
