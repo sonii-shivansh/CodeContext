@@ -16,6 +16,7 @@ import com.codecontext.cli.MainCommand
 import com.codecontext.cli.McpCommand
 import com.codecontext.cli.PRIntelligenceCommand
 import com.codecontext.cli.PrepareCommand
+import com.codecontext.cli.RealityCommand
 import com.codecontext.cli.RepositoryQACommand
 import com.codecontext.cli.ServerCommand
 import com.codecontext.cli.SetupCommand
@@ -33,6 +34,7 @@ fun main(args: Array<String>) {
                 ArchitectureContractCommand(),
                 EngineeringContextSnapshotCommand(),
                 EngineeringContextDiffCommand(),
+                RealityCommand(),
                 PRIntelligenceCommand(),
                 RepositoryQACommand(),
                 EngineeringPlanCommand(),
