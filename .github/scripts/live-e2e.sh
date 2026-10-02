@@ -9,7 +9,7 @@ mkdir -p "$OUT"
 
 run_cc() {
   echo "+ codecontext $*"
-  "$CLI" "$@"
+  timeout --signal=TERM --kill-after=30s 8m "$CLI" "$@"
 }
 
 first_source() {
@@ -63,7 +63,8 @@ cp "$OUT/engineering-context.json" "$OUT/engineering-context-baseline.json"
 run_cc context-diff "$OUT/engineering-context-baseline.json" "$OUT/engineering-context.json" --json
 assert_file "$OUT/engineering-context-diff.json"
 
-run_cc evolution
+# One-month temporal sampling keeps the live test representative while bounded on public CI runners.
+run_cc evolution --months 1 --interval 30
 run_cc pr-intelligence . --base HEAD~1 --head HEAD --json
 assert_file "$OUT/pr-intelligence.json"
 
