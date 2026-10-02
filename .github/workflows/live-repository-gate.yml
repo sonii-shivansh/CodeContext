@@ -1,0 +1,175 @@
+name: Live Repository Release Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'GitHub repository to test, owner/name'
+        required: false
+        default: spring-projects/spring-petclinic
+      ref:
+        description: 'Optional repository ref'
+        required: false
+        default: main
+      run_gemini:
+        description: 'Run live Gemini provider test when GEMINI_API_KEY is configured'
+        required: false
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      repository:
+        required: false
+        type: string
+        default: spring-projects/spring-petclinic
+      ref:
+        required: false
+        type: string
+        default: main
+      run_gemini:
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  live-release-gate:
+    name: Complete live repository release gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TARGET_REPOSITORY: ${{ inputs.repository || 'spring-projects/spring-petclinic' }}
+      TARGET_REF: ${{ inputs.ref || 'main' }}
+      HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' && (inputs.run_gemini == true || inputs.run_gemini == '') }}
+
+    steps:
+      - name: Checkout CodeContext
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: gradle
+
+      - name: Build and test CodeContext
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+
+      - name: Clone live target repository
+        run: |
+          rm -rf "$RUNNER_TEMP/target"
+          git clone --depth 50 --branch "$TARGET_REF" "https://github.com/$TARGET_REPOSITORY.git" "$RUNNER_TEMP/target"
+          cd "$RUNNER_TEMP/target"
+          test -d .git
+          git status --short
+          git rev-parse HEAD > "$RUNNER_TEMP/target-before.sha"
+
+      - name: Run complete CLI surface
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          "$CLI" --version
+          "$CLI" doctor
+          "$CLI" analyze .
+          "$CLI" architecture . --json
+          SOURCE_FILE="$(find . -type f \( -name '*.java' -o -name '*.kt' \) | grep -v '/build/' | head -1)"
+          test -n "$SOURCE_FILE"
+          "$CLI" impact . "$SOURCE_FILE" --json
+          cp output/architecture.json output/architecture-baseline.json
+          "$CLI" architecture-drift . --baseline output/architecture-baseline.json --json
+          "$CLI" architecture-contract . --json
+          "$CLI" context-snapshot . --json
+          cp output/engineering-context.json output/engineering-context-baseline.json
+          "$CLI" context-diff output/engineering-context-baseline.json output/engineering-context.json --json
+          "$CLI" evolution
+          "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
+
+      - name: Grounded intelligence and preparation
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json > output/repo-qa.json
+          test -s output/repo-qa.json
+          test -s output/grounded-evidence.json
+          "$CLI" plan "Improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
+          "$CLI" prepare "Improve the repository safely"
+          test -s output/engineering-plan.json
+          test -s output/engineering-context.json
+          "$CLI" verify --output output/verify.json
+          test -s output/verify.json
+
+      - name: MCP protocol and gateway smoke test
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"codecontext_get_engineering_reality","arguments":{"path":"."}}}' \
+            '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"codecontext_get_context_snapshot","arguments":{"path":"."}}}' \
+            | "$CLI" mcp > output/mcp-release-gate.jsonl
+          grep -q 'codecontext_get_engineering_reality' output/mcp-release-gate.jsonl
+          grep -q 'codecontext_get_context_snapshot' output/mcp-release-gate.jsonl
+
+      - name: REST API live repository smoke test
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          "$CLI" server --host 127.0.0.1 --port 18080 > server.log 2>&1 &
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:18080/health > output/rest-health.json && break
+            sleep 1
+          done
+          test -s output/rest-health.json
+          curl --fail --silent http://127.0.0.1:18080/ > output/rest-root.txt
+          grep -F 'CodeContext API is running' output/rest-root.txt
+          curl --fail --silent -H 'Content-Type: application/json' -d '{"repoPath":"."}' http://127.0.0.1:18080/architecture > output/rest-architecture.json
+          test -s output/rest-architecture.json
+          status=$(curl --silent --output /tmp/traversal.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":"/tmp/../etc"}' http://127.0.0.1:18080/analyze)
+          test "$status" = '400'
+
+      - name: Live Gemini smoke test
+        if: ${{ env.HAS_GEMINI == 'true' }}
+        working-directory: ${{ runner.temp }}/target
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          set +e
+          "$CLI" ask "Summarize the architecture using only repository evidence." 2>&1 | tee output/live-gemini.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          test -s output/live-gemini.txt
+          if grep -Eiq 'HTTP[[:space:]]*429|quota[^[:alnum:]]*(exceeded|exhausted)|rate[[:space:]-]*limit|RESOURCE_EXHAUSTED' output/live-gemini.txt; then
+            echo 'Gemini provider quota/rate limit exhausted; deterministic gate remains authoritative.'
+          else
+            test "$status" -eq 0
+            ! grep -q 'AI features disabled' output/live-gemini.txt
+          fi
+
+      - name: Verify target repository was not modified
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          before=$(cat "$RUNNER_TEMP/target-before.sha")
+          after=$(git rev-parse HEAD)
+          test "$before" = "$after"
+          test -z "$(git status --porcelain)"
+
+      - name: Upload release-gate evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: codecontext-live-release-gate
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/target/output/
+            ${{ runner.temp }}/target/server.log
