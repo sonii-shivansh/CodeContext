@@ -35,14 +35,24 @@ object EngineeringContextGateway {
     fun architectureDrift(repoPath: String, baseline: JsonObject): JsonObject { val root = repository(repoPath); val baselineResult = json.decodeFromJsonElement(ArchitectureIntelligenceResult.serializer(), baseline); val config = ConfigLoader.loadForRepository(root.path); val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }; val graph = RobustDependencyGraph(); graph.build(parsed).getOrThrow(); graph.analyze().getOrThrow(); val drift: ArchitectureDriftResult = ArchitectureDriftEngine.compare(baselineResult, ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)); return json.encodeToJsonElement(ArchitectureDriftResult.serializer(), drift).jsonObject }
     fun architectureContract(repoPath: String, contract: JsonObject?): JsonObject { val root = repository(repoPath); val config = ConfigLoader.loadForRepository(root.path); val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }; val graph = RobustDependencyGraph(); graph.build(parsed).getOrThrow(); graph.analyze().getOrThrow(); val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture); val contractValue = contract?.let { json.decodeFromJsonElement(ArchitectureContract.serializer(), it) } ?: root.resolve(".codecontext-architecture-contract.json").takeIf { it.exists() }?.let { json.decodeFromString<ArchitectureContract>(it.readText()) } ?: ArchitectureContract(); return json.encodeToJsonElement(ArchitectureContractResult.serializer(), ArchitectureContractEngine.evaluate(architecture, contractValue)).jsonObject }
     fun prepare(repoPath: String, changeSummary: String): JsonObject { val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }; return json.encodeToJsonElement(com.codecontext.core.workflow.EngineeringPreparationResult.serializer(), result).jsonObject }
-    fun changeContract(repoPath: String, changeSummary: String): JsonObject { val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }; return json.encodeToJsonElement(AgentChangeContract.serializer(), result.contract).jsonObject }
+    /** Returns the exact persisted contract created by prepare; it never creates a new contract. */
+    fun changeContract(repoPath: String): JsonObject {
+        val root = repository(repoPath)
+        val contractFile = root.resolve("output/agent-change-contract.json")
+        require(contractFile.isFile) { "Immutable agent change contract not found: ${contractFile.path}. Run prepare first." }
+        val contract = json.decodeFromString<AgentChangeContract>(contractFile.readText())
+        return json.encodeToJsonElement(AgentChangeContract.serializer(), contract).jsonObject
+    }
     fun evidence(repoPath: String, changeSummary: String): JsonObject { val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }; return json.encodeToJsonElement(com.codecontext.core.ai.GroundedEvidence.serializer(), result.evidence).jsonObject }
     fun changeSafety(repoPath: String, plan: JsonObject): JsonObject { val root = repository(repoPath); val engineeringPlan = json.decodeFromJsonElement(EngineeringPlan.serializer(), plan); val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path); val result = ChangeSafetyAnalyzer.verify(changeSet.files, engineeringPlan.plannedPaths.ifEmpty { engineeringPlan.affectedComponents }); return json.encodeToJsonElement(com.codecontext.core.workflow.ChangeSafetyResult.serializer(), result).jsonObject }
     fun verify(repoPath: String, plan: JsonObject, contract: JsonObject? = null): JsonObject {
         val root = repository(repoPath)
         val engineeringPlan = json.decodeFromJsonElement(EngineeringPlan.serializer(), plan)
-        val persisted = contract ?: root.resolve("output/agent-change-contract.json").takeIf { it.isFile }?.let { json.decodeFromString<AgentChangeContract>(it.readText()).let { value -> json.encodeToJsonElement(AgentChangeContract.serializer(), value).jsonObject } }
-        require(persisted != null) { "Immutable agent change contract is required; run prepare first." }
+        val persisted = contract ?: json.decodeFromString<AgentChangeContract>(run {
+            val file = root.resolve("output/agent-change-contract.json")
+            require(file.isFile) { "Immutable agent change contract is required; run prepare first." }
+            file.readText()
+        }).let { json.encodeToJsonElement(AgentChangeContract.serializer(), it).jsonObject }
         val preparedContract = json.decodeFromJsonElement(AgentChangeContract.serializer(), persisted)
         val result = runBlocking { EngineeringVerification.verify(root.path, engineeringPlan, preparedContract) }
         return json.encodeToJsonElement(com.codecontext.core.workflow.EngineeringVerificationResult.serializer(), result).jsonObject

@@ -31,9 +31,6 @@ data class EngineeringVerificationResult(
 
 /** Runs deterministic post-change checks against the exact persisted contract produced by prepare. */
 object EngineeringVerification {
-    suspend fun verify(repoPath: String, plan: EngineeringPlan): EngineeringVerificationResult =
-        verify(repoPath, plan, AgentChangeContract.fromPlan(plan))
-
     suspend fun verify(repoPath: String, plan: EngineeringPlan, contract: AgentChangeContract): EngineeringVerificationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
