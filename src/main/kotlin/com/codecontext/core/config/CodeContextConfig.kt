@@ -65,6 +65,10 @@ object ConfigLoader {
         }
     }
 
+    /** Load project configuration relative to the repository being analyzed, not the CLI process cwd. */
+    fun loadForRepository(repoPath: String): CodeContextConfig =
+        load(File(repoPath).canonicalFile.resolve(".codecontext.json").path)
+
     /** Resolves environment -> project credential -> user credential -> defaults. */
     fun loadEffective(configPath: String = ".codecontext.json"): CodeContextConfig {
         val project = load(configPath)

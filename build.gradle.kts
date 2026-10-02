@@ -60,6 +60,7 @@ application {
 
 tasks.test {
     useJUnitPlatform()
+    workingDir(project.projectDir)
 }
 
 kotlin {
