@@ -8,8 +8,8 @@ import java.io.File
 import java.nio.file.Files
 
 class ReportGeneratorTest : StringSpec({
-    "generated reports should be self-contained and not load visualization code from a CDN" {
-        val tempDir = Files.createTempDirectory("codecontext-report-test").toFile()
+    "generated reports should be self-contained and branded as Vericore" {
+        val tempDir = Files.createTempDirectory("vericore-report-test").toFile()
         try {
             val parsedFiles = listOf(
                 ParsedFile(File(tempDir, "A.kt"), "example", emptyList()),
@@ -25,7 +25,8 @@ class ReportGeneratorTest : StringSpec({
 
             ("unpkg.com" in html) shouldBe false
             ("https://" in html) shouldBe false
-            html.contains("CodeContext Analysis Report") shouldBe true
+            html.contains("Vericore Analysis Report") shouldBe true
+            html.contains("CodeContext Analysis Report") shouldBe false
         } finally {
             tempDir.deleteRecursively()
         }
