@@ -6,6 +6,7 @@ import java.nio.file.attribute.PosixFilePermission
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import mu.KotlinLogging
 
 @Serializable
 data class StoredAIConfig(
@@ -19,11 +20,14 @@ data class UserConfig(
     val ai: StoredAIConfig = StoredAIConfig()
 )
 
-/** Stores credentials outside the repository so secrets never need to live in .codecontext.json. */
+/** Stores credentials outside the repository so secrets never need to live in .vericore.json. */
 object UserConfigStore {
-    private const val CONFIG_HOME_ENV = "CODECONTEXT_CONFIG_HOME"
-    private const val CONFIG_HOME_PROPERTY = "codecontext.config.home"
+    private const val CONFIG_HOME_ENV = "VERICORE_CONFIG_HOME"
+    private const val LEGACY_CONFIG_HOME_ENV = "CODECONTEXT_CONFIG_HOME"
+    private const val CONFIG_HOME_PROPERTY = "vericore.config.home"
+    private const val LEGACY_CONFIG_HOME_PROPERTY = "codecontext.config.home"
 
+    private val logger = KotlinLogging.logger {}
     private val json = Json {
         prettyPrint = true
         encodeDefaults = true
@@ -32,9 +36,15 @@ object UserConfigStore {
     fun configFile(): File = File(configDirectory(), "config.json")
 
     fun load(): UserConfig? {
-        val file = configFile()
-        if (!file.isFile) return null
-        return runCatching { json.decodeFromString<UserConfig>(file.readText()) }.getOrNull()
+        val canonical = configFile()
+        if (canonical.isFile) return read(canonical)
+
+        val legacy = legacyConfigFile()
+        if (legacy.isFile) {
+            logger.warn { "Using legacy CodeContext user configuration ${legacy.path}; migrate to ${canonical.path}" }
+            return read(legacy)
+        }
+        return null
     }
 
     fun saveAi(provider: String, apiKey: String, model: String) {
@@ -45,13 +55,42 @@ object UserConfigStore {
         restrictPermissions(file)
     }
 
-    fun delete(): Boolean = configFile().delete()
+    fun delete(): Boolean = configFile().delete() || legacyConfigFile().delete()
 
     private fun configDirectory(): File {
         val explicitProperty = System.getProperty(CONFIG_HOME_PROPERTY)?.trim().orEmpty()
         if (explicitProperty.isNotEmpty()) return File(explicitProperty)
 
         val explicitEnvironment = System.getenv(CONFIG_HOME_ENV)?.trim().orEmpty()
+        if (explicitEnvironment.isNotEmpty()) return File(explicitEnvironment)
+
+        val legacyProperty = System.getProperty(LEGACY_CONFIG_HOME_PROPERTY)?.trim().orEmpty()
+        if (legacyProperty.isNotEmpty()) return File(legacyProperty)
+
+        val legacyEnvironment = System.getenv(LEGACY_CONFIG_HOME_ENV)?.trim().orEmpty()
+        if (legacyEnvironment.isNotEmpty()) return File(legacyEnvironment)
+
+        val os = System.getProperty("os.name", "").lowercase()
+        return when {
+            os.contains("win") -> File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "Vericore")
+            os.contains("mac") -> File(System.getProperty("user.home"), "Library/Application Support/Vericore")
+            else -> {
+                val xdg = System.getenv("XDG_CONFIG_HOME")?.trim().orEmpty()
+                File(if (xdg.isNotEmpty()) xdg else File(System.getProperty("user.home"), ".config").absolutePath, "vericore")
+            }
+        }
+    }
+
+    private fun legacyConfigFile(): File {
+        val legacyDirectory = legacyConfigDirectory()
+        return File(legacyDirectory, "config.json")
+    }
+
+    private fun legacyConfigDirectory(): File {
+        val explicitProperty = System.getProperty(LEGACY_CONFIG_HOME_PROPERTY)?.trim().orEmpty()
+        if (explicitProperty.isNotEmpty()) return File(explicitProperty)
+
+        val explicitEnvironment = System.getenv(LEGACY_CONFIG_HOME_ENV)?.trim().orEmpty()
         if (explicitEnvironment.isNotEmpty()) return File(explicitEnvironment)
 
         val os = System.getProperty("os.name", "").lowercase()
@@ -64,6 +103,9 @@ object UserConfigStore {
             }
         }
     }
+
+    private fun read(file: File): UserConfig? =
+        runCatching { json.decodeFromString<UserConfig>(file.readText()) }.getOrNull()
 
     private fun restrictPermissions(file: File) {
         runCatching {
