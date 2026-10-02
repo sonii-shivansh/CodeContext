@@ -40,8 +40,8 @@ class EngineeringContextTest : StringSpec({
         diff.changes shouldBe emptyList()
     }
 
-    "snapshot ignores CodeContext generated output changes" {
-        val root = java.nio.file.Files.createTempDirectory("codecontext-context-output-").toFile()
+    "snapshot ignores Vericore and legacy generated output changes but keeps user config changes" {
+        val root = java.nio.file.Files.createTempDirectory("vericore-context-output-").toFile()
         try {
             root.resolve("src/App.kt").apply {
                 parentFile.mkdirs()
@@ -52,11 +52,17 @@ class EngineeringContextTest : StringSpec({
                 writeText("generated")
             }
             root.resolve("output/generated.kt").writeText("class Generated")
-            root.resolve(".codecontext/cache.kt").apply {
+            root.resolve(".vericore/cache.kt").apply {
                 parentFile.mkdirs()
                 writeText("class Cache")
             }
-            root.resolve(".codecontext-architecture-contract.json").writeText("generated contract")
+            root.resolve(".vericore-architecture-contract.json").writeText("generated contract")
+            root.resolve(".codecontext/cache.kt").apply {
+                parentFile.mkdirs()
+                writeText("class LegacyCache")
+            }
+            root.resolve(".codecontext-architecture-contract.json").writeText("legacy generated contract")
+            root.resolve(".vericore.json").writeText("{\"maxFilesAnalyze\":17}")
 
             val snapshot = EngineeringContextEngine.snapshot(
                 root,
@@ -65,7 +71,7 @@ class EngineeringContextTest : StringSpec({
                 )
             )
 
-            snapshot.files.map { it.path } shouldBe listOf("src/App.kt")
+            snapshot.files.map { it.path } shouldBe listOf(".vericore.json", "src/App.kt")
             snapshot.changedPaths shouldBe emptyList()
             snapshot.languages shouldBe listOf("Kotlin")
             snapshot.dirty shouldBe false
