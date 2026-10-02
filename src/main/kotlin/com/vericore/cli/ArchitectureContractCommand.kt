@@ -1,6 +1,7 @@
 package com.vericore.cli
 
 import com.vericore.core.cache.CacheManager
+import com.vericore.core.config.ArchitectureContractFileResolver
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.ArchitectureContract
@@ -41,9 +42,13 @@ class ArchitectureContractCommand : CliktCommand(
         graph.analyze().getOrThrow()
         val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
         val json = Json { ignoreUnknownKeys = false; prettyPrint = true; encodeDefaults = true }
-        val file = resolveContractFile(root)
-        val contract = if (file.exists()) {
-            json.decodeFromString<ArchitectureContract>(file.readText())
+        val resolution = contractPath?.let { ArchitectureContractFileResolver.Resolution(File(it), usedLegacy = false) }
+            ?: ArchitectureContractFileResolver.resolve(root)
+        if (resolution.usedLegacy) {
+            echo("⚠️ Using legacy CodeContext architecture contract. Migrate to .vericore-architecture-contract.json")
+        }
+        val contract = if (resolution.file.exists()) {
+            json.decodeFromString<ArchitectureContract>(resolution.file.readText())
         } else {
             ArchitectureContract()
         }
@@ -72,19 +77,5 @@ class ArchitectureContractCommand : CliktCommand(
             }
             throw IllegalStateException("Architecture contract failed")
         }
-    }
-
-    private fun resolveContractFile(root: File): File {
-        contractPath?.let { return File(it) }
-
-        val canonical = root.resolve(".vericore-architecture-contract.json")
-        if (canonical.exists()) return canonical
-
-        val legacy = root.resolve(".codecontext-architecture-contract.json")
-        if (legacy.exists()) {
-            echo("⚠️ Using legacy CodeContext architecture contract. Migrate to .vericore-architecture-contract.json")
-            return legacy
-        }
-        return canonical
     }
 }
