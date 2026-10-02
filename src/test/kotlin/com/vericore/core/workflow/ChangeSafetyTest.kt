@@ -31,7 +31,12 @@ class ChangeSafetyTest {
     @Test
     fun ignoresGeneratedArtifactsFromSafetyScope() {
         val result = ChangeSafetyAnalyzer.verify(
-            listOf(ChangedFile("output/engineering-context.json", ChangeType.MODIFIED), ChangedFile("src/main/App.kt", ChangeType.MODIFIED)),
+            listOf(
+                ChangedFile("output/engineering-context.json", ChangeType.MODIFIED),
+                ChangedFile(".vericore/cache/index.json", ChangeType.MODIFIED),
+                ChangedFile(".codecontext/cache/legacy.json", ChangeType.MODIFIED),
+                ChangedFile("src/main/App.kt", ChangeType.MODIFIED)
+            ),
             listOf("src/main/App.kt")
         )
         assertEquals(SafetyStatus.PASS, result.status)
