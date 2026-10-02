@@ -11,7 +11,8 @@ run "$APP" analyze "$REPO" >/dev/null
 run "$APP" reality "$REPO" --json >/dev/null
 run "$APP" architecture "$REPO" --json >/dev/null
 run "$APP" context-snapshot "$REPO" --json >/dev/null
-run "$APP" evolution "$REPO" >/dev/null
+# evolution operates on the current working repository and intentionally has no positional repo argument.
+run "$APP" evolution >/dev/null
 rm -rf output
 run "$APP" prepare "audit release workflow" --path "$REPO" >/dev/null
 [[ -s output/engineering-context.json && -s output/engineering-plan.json && -s output/agent-change-contract.json ]]
