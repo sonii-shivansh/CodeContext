@@ -6,6 +6,8 @@
 
 CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a prepare→change→verify safety loop.
 
+> **North-star direction:** CodeContext is evolving toward an explicit **engineering reality layer** that lets developers and AI agents reason about a repository state without silently mixing evidence from different states.
+
 ## Current status
 
 The `main` branch is validated against the **v0.6.0** release line. The repository implements:
@@ -21,6 +23,7 @@ The `main` branch is validated against the **v0.6.0** release line. The reposito
 - Architecture Intelligence and deterministic architecture contracts
 - versioned analysis/evidence artifacts
 - deterministic engineering-context snapshots and diffs
+- deterministic **Engineering Reality** identity across analysis + repository state
 - grounded repository Q&A retrieval
 - deterministic, evidence-backed engineering planning
 - evidence-first `prepare` workflow
@@ -53,9 +56,10 @@ Then, from the repository you want to analyze:
 
 ```text
 codecontext analyze .
+codecontext reality . --json
 ```
 
-The default report is written to `output/index.html` and can be opened without a network connection.
+The default report is written to `output/index.html`. The machine-readable artifacts are written under the analyzed repository's `output/` directory.
 
 For source development:
 
@@ -115,6 +119,9 @@ codecontext architecture-contract /path/to/repository --contract /path/to/.codec
 codecontext context-snapshot /path/to/repository --json
 codecontext context-diff output/before.json output/after.json --json
 
+# Bind analysis + repository state into one deterministic identity
+codecontext reality /path/to/repository --json
+
 # Grounded repository Q&A
 codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
 
@@ -140,6 +147,10 @@ codecontext mcp
 The recommended developer loop is:
 
 ```text
+codecontext analyze .
+        ↓
+codecontext reality . --json
+        ↓
 codecontext prepare "<change>"
         ↓
 implement the change
@@ -151,7 +162,7 @@ run tests / review findings
 
 Use `codecontext <command> --help` for the exact options in the installed version.
 
-See [docs/CHANGE_SAFETY.md](docs/CHANGE_SAFETY.md) for the workflow contract.
+See [docs/CHANGE_SAFETY.md](docs/CHANGE_SAFETY.md) for the workflow contract and [docs/ENGINEERING_REALITY.md](docs/ENGINEERING_REALITY.md) for the reality identity contract.
 
 ## MCP / AI-agent integration
 
@@ -167,29 +178,29 @@ See [docs/MCP.md](docs/MCP.md) for agent configuration guidance and protocol det
 
 ## Architecture
 
-```text
-Repository + Git
-       ↓
-Scanner / Parsers / Git Intelligence
-       ↓
-Dependency Graph + Analysis Snapshot
-       ↓
-Deterministic Intelligence
- ┌─────┼─────┬──────┬──────────────┐
-Risk  Impact  PR  Architecture  Evolution
-                   ↓
-             Architecture Contract
-       ↓
-Grounded Evidence
-   ↙          ↘
-Q&A          Planner
-   ↘          ↙
- Optional AI reasoning
-       ↓
- Prepare → Change → Verify
-       ↓
- CLI / REST / MCP / CI
+```mermaid
+flowchart TD
+    A[Repository + Git] --> B[Scanner / Parsers / Git Intelligence]
+    B --> C[Analysis Snapshot]
+    B --> D[Engineering Context]
+    C --> E[Engineering Reality]
+    D --> E
+    E --> F[Deterministic Intelligence]
+    F --> G[Grounded Evidence]
+    G --> H[Q&A / Planner / Verification]
+    G --> I[Optional AI]
+    H --> J[CLI / REST / MCP / CI]
+    I --> J
 ```
+
+<details>
+<summary><strong>Why the reality layer exists</strong></summary>
+
+An AI agent should not have to guess whether two artifacts were generated from the same repository state. `engineering-reality.json` binds deterministic analysis and repository-context identities together through explicit schema versions and digests.
+
+See [Engineering Reality](docs/ENGINEERING_REALITY.md).
+
+</details>
 
 ## Configuration
 
@@ -237,6 +248,7 @@ GitHub Actions is the project's authoritative clean-environment verification pat
 See:
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Engineering Reality](docs/ENGINEERING_REALITY.md)
 - [API reference](docs/API.md)
 - [MCP / AI-agent integration](docs/MCP.md)
 - [Change Safety Loop](docs/CHANGE_SAFETY.md)
