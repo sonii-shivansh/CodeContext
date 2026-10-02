@@ -83,7 +83,6 @@ jobs:
             "$@" 2>&1 | tee "$OUT/$name.txt"
           }
 
-          # Every command registered by com.codecontext.Main is represented here.
           capture 00-version "$CLI" --version
           capture 01-doctor "$CLI" doctor
           capture 02-analyze "$CLI" analyze .
@@ -109,8 +108,13 @@ jobs:
           capture 15-verify "$CLI" verify --output output/final-verify.json
 
           # setup is intentionally exercised with an unsupported provider so it never
-          # asks for or stores a real credential in CI.
-          capture 16-setup-invalid "$CLI" setup --provider unsupported
+          # asks for or stores a real credential in CI. Its non-zero exit is expected.
+          echo "===== 16-setup-invalid ====="
+          set +e
+          "$CLI" setup --provider unsupported 2>&1 | tee "$OUT/16-setup-invalid.txt"
+          SETUP_STATUS=${PIPESTATUS[0]}
+          set -e
+          test "$SETUP_STATUS" -ne 0
 
           python3 - <<'PY'
           from pathlib import Path
@@ -130,7 +134,7 @@ jobs:
               assert 'Exception in thread' not in text, f'unclean exception output in {name}'
           json_outputs = {
               '03-architecture.txt': 'architecture.json',
-              '04-impact.txt': 'impact.json',
+              '04-impact.txt': 'change-impact.json',
               '06-architecture-contract.txt': 'architecture-contract.json',
               '07-context-snapshot.txt': 'engineering-context.json',
               '09-reality.txt': 'engineering-reality.json',
