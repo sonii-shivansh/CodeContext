@@ -23,7 +23,7 @@ class ArchitectureContractCommand : CliktCommand(
     help = "Evaluate repository architecture against a deterministic contract"
 ) {
     private val path by argument("path", help = "Repository path")
-    private val contractPath by option("--contract", help = "Architecture contract JSON; defaults to .codecontext-architecture-contract.json")
+    private val contractPath by option("--contract", help = "Architecture contract JSON; defaults to .vericore-architecture-contract.json")
     private val jsonOutput by option("--json", help = "Write machine-readable contract result").flag()
     private val recordPath by option("--record", help = "Persist the deterministic contract decision history")
 
@@ -41,7 +41,7 @@ class ArchitectureContractCommand : CliktCommand(
         graph.analyze().getOrThrow()
         val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
         val json = Json { ignoreUnknownKeys = false; prettyPrint = true; encodeDefaults = true }
-        val file = File(contractPath ?: File(root, ".codecontext-architecture-contract.json").path)
+        val file = resolveContractFile(root)
         val contract = if (file.exists()) {
             json.decodeFromString<ArchitectureContract>(file.readText())
         } else {
@@ -72,5 +72,19 @@ class ArchitectureContractCommand : CliktCommand(
             }
             throw IllegalStateException("Architecture contract failed")
         }
+    }
+
+    private fun resolveContractFile(root: File): File {
+        contractPath?.let { return File(it) }
+
+        val canonical = root.resolve(".vericore-architecture-contract.json")
+        if (canonical.exists()) return canonical
+
+        val legacy = root.resolve(".codecontext-architecture-contract.json")
+        if (legacy.exists()) {
+            echo("⚠️ Using legacy CodeContext architecture contract. Migrate to .vericore-architecture-contract.json")
+            return legacy
+        }
+        return canonical
     }
 }
