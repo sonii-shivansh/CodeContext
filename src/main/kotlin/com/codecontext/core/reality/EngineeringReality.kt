@@ -49,9 +49,28 @@ object EngineeringRealityEngine {
             "Analysis/context language sets differ; generate both artifacts from the same repository state."
         }
 
-        val analysisDigest = sha256(json.encodeToString(AnalysisSnapshot.serializer(), analysis))
+        // analyzedAtEpochMillis is deliberately excluded from the identity. Re-running
+        // analysis against unchanged repository state must not create a new reality digest.
+        val analysisDigest = sha256(
+            buildString {
+                append(analysis.schemaVersion).append('|')
+                append(analysis.repository.languages.sorted()).append('|')
+                append(analysis.metrics).append('|')
+                analysis.files.sortedBy { it.path }.forEach { append(it).append('|') }
+                analysis.hotspots.sortedBy { it.path }.forEach { append(it).append('|') }
+                append(analysis.architecture)
+            }
+        )
         val contextDigest = sha256(
-            json.encodeToString(EngineeringContextSnapshot.serializer(), context)
+            buildString {
+                append(context.schemaVersion).append('|')
+                append(context.repositoryCommit.orEmpty()).append('|')
+                context.files.sortedBy { it.path }.forEach { append(it).append('|') }
+                append(context.languages.sorted()).append('|')
+                append(context.dirty).append('|')
+                append(context.changedPaths.sorted()).append('|')
+                append(context.snapshotDigest)
+            }
         )
         val identity = listOf(
             ENGINEERING_REALITY_SCHEMA_VERSION,
