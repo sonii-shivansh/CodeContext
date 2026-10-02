@@ -17,45 +17,42 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Execute final identity normalization
+      - name: Execute MCP and server identity migration
         shell: bash
         run: |
           set -euo pipefail
-          if test -f .vericore-migration-phase4-complete; then exit 0; fi
-          test -f .vericore-migration-phase3-complete
+          if test -f .vericore-migration-phase5-complete; then exit 0; fi
+          test -f .vericore-migration-phase4-complete
           python3 - <<'PY'
           from pathlib import Path
           root=Path.cwd()
-          roots=[root/'src',root/'docs',root/'scripts',root/'README.md',root/'CONTRIBUTING.md',root/'SECURITY.md',root/'TRADEMARKS.md',root/'CODE_OF_CONDUCT.md',root/'DCO.md',root/'build.gradle.kts',root/'settings.gradle.kts',root/'gradle.properties',root/'.gitignore',root/'.devcontainer']
-          skip={root/'CHANGELOG.md',root/'docs/VERICORE_MIGRATION_SPEC.md',root/'docs/VERICORE_MIGRATION_PLAN.md'}
-          def rep(s):
-              marker='__EXTERNAL_CODECONTEXT_WEBSITE__'
-              s=s.replace('CodeContext-Website',marker)
-              s=s.replace('sonii-shivansh/CodeContext','sonii-shivansh/Vericore')
-              s=s.replace('com.codecontext','com.vericore')
-              s=s.replace('CODECONTEXT_','VERICORE_')
-              s=s.replace('codecontext.config.home','vericore.config.home')
-              s=s.replace('CodeContextConfig','VericoreConfig').replace('CodeContextException','VericoreException').replace('CodeContextServer','VericoreServer')
-              s=s.replace('CodeContext','Vericore').replace('codecontext','vericore')
-              s=s.replace('.codecontext-architecture-contract.json','.vericore-architecture-contract.json').replace('.codecontext.json','.vericore.json').replace('.codecontext/','.vericore/')
-              s=s.replace('build/install/codecontext','build/install/vericore')
-              return s.replace(marker,'CodeContext-Website')
-          seen=set()
-          for x in roots:
-              ps=[x] if x.is_file() else ([p for p in x.rglob('*') if p.is_file()] if x.is_dir() else [])
-              for p in ps:
-                  if p in skip or p in seen or any(a in {'build','.gradle','.git','node_modules','target'} for a in p.parts): continue
-                  try:a=p.read_text(encoding='utf-8')
+          mcp=root/'src/main/kotlin/com/vericore/mcp/McpProtocol.kt'
+          s=mcp.read_text(encoding='utf-8')
+          s=s.replace('codecontext_', 'vericore_')
+          old='val name = params["name"]?.jsonPrimitive?.content ?: return errorResponse(id, -32602, "Missing tool name"); val args = params["arguments"]?.jsonObject ?: buildJsonObject {}; return try { resultResponse(id, when (name) {'
+          new='val rawName = params["name"]?.jsonPrimitive?.content ?: return errorResponse(id, -32602, "Missing tool name"); val name = if (rawName.startsWith("codecontext_")) { System.err.println("⚠️ Deprecated MCP tool name \'$rawName\' used; use \'vericore_\' equivalent."); rawName.replaceFirst("codecontext_", "vericore_") } else rawName; val args = params["arguments"]?.jsonObject ?: buildJsonObject {}; return try { resultResponse(id, when (name) {'
+          if old in s: s=s.replace(old,new)
+          mcp.write_text(s,encoding='utf-8')
+          server=root/'src/main/kotlin/com/vericore/server/VericoreServer.kt'
+          s=server.read_text(encoding='utf-8')
+          old='val configured = System.getenv("VERICORE_ALLOWED_PATHS")'
+          new='val configured = System.getenv("VERICORE_ALLOWED_PATHS") ?: System.getenv("CODECONTEXT_ALLOWED_PATHS")?.also { System.err.println("⚠️ Deprecated CODECONTEXT_ALLOWED_PATHS is in use; replace it with VERICORE_ALLOWED_PATHS.") }'
+          s=s.replace(old,new)
+          server.write_text(s,encoding='utf-8')
+          for p in [root/'README.md',root/'CONTRIBUTING.md',root/'SECURITY.md',root/'docs']:
+              ps=[p] if p.is_file() else ([x for x in p.rglob('*') if x.is_file()] if p.is_dir() else [])
+              for f in ps:
+                  if f.name in {'CHANGELOG.md','VERICORE_MIGRATION_SPEC.md','VERICORE_MIGRATION_PLAN.md'}: continue
+                  try:a=f.read_text(encoding='utf-8')
                   except (UnicodeDecodeError,OSError):continue
-                  seen.add(p);b=rep(a)
-                  if a!=b:p.write_text(b,encoding='utf-8')
+                  b=a.replace('__VERICORE_EXTERNAL_VERICORE_WEBSITE__','CodeContext-Website').replace('__VERICORE_EXTERNAL_CODECONTEXT_WEBSITE__','CodeContext-Website')
+                  if a!=b:f.write_text(b,encoding='utf-8')
           PY
-          sed -i 's/rootProject.name = "codecontext"/rootProject.name = "vericore"/' settings.gradle.kts || true
-          rm -f .vericore-phase3-trigger
-          rm -f .vericore-migration-phase3-complete
-          touch .vericore-migration-phase4-complete
+          rm -f .vericore-phase4-trigger
+          rm -f .vericore-migration-phase4-complete
+          touch .vericore-migration-phase5-complete
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -s -m 'refactor: finalize Vericore identity normalization'
+          git commit -s -m 'refactor: migrate MCP and server identity to Vericore'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
