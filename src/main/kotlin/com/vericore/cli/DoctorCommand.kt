@@ -10,7 +10,7 @@ import java.io.File
 
 class DoctorCommand : CliktCommand(
     name = "doctor",
-    help = "Check the local CodeContext installation and configuration"
+    help = "Check the local Vericore installation and configuration"
 ) {
     override fun run() {
         var failures = 0
@@ -29,7 +29,7 @@ class DoctorCommand : CliktCommand(
             echo("⚠ $label — $detail")
         }
 
-        echo("CodeContext doctor")
+        echo("Vericore doctor")
         echo("Version: ${Version.current}")
         echo("")
 
@@ -59,7 +59,7 @@ class DoctorCommand : CliktCommand(
         }
         check("AI provider", effective.ai.provider.isNotBlank(), effective.ai.provider.ifBlank { "not configured" })
         if (resolvedApiKey.isBlank()) {
-            warn("AI credentials", "not configured (AI commands require a provider key; run 'codecontext setup' to configure one)")
+            warn("AI credentials", "not configured (AI commands require a provider key; run 'vericore setup' to configure one)")
         } else {
             check("AI credentials", true, "configured via $keySource")
         }
@@ -78,14 +78,14 @@ class DoctorCommand : CliktCommand(
         echo("")
         when {
             failures > 0 -> {
-                echo("❌ CodeContext needs attention: $failures error(s), $warnings warning(s).")
-                echo("   Fix the errors above, then run 'codecontext doctor' again.")
+                echo("❌ Vericore needs attention: $failures error(s), $warnings warning(s).")
+                echo("   Fix the errors above, then run 'vericore doctor' again.")
             }
             warnings > 0 -> {
-                echo("⚠ CodeContext is ready for deterministic analysis; $warnings optional configuration item(s) need attention.")
-                echo("   Run 'codecontext setup' if you want to enable AI features.")
+                echo("⚠ Vericore is ready for deterministic analysis; $warnings optional configuration item(s) need attention.")
+                echo("   Run 'vericore setup' if you want to enable AI features.")
             }
-            else -> echo("✓ CodeContext is ready to use.")
+            else -> echo("✓ Vericore is ready to use.")
         }
     }
 }
