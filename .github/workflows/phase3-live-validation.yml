@@ -1,0 +1,52 @@
+name: Phase 3 Live Validation
+
+on:
+  push:
+    branches: [feat/vericore-migration]
+
+permissions:
+  contents: read
+
+jobs:
+  live-context:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "gradle"
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: Build distribution
+        run: ./gradlew --no-daemon clean installDist
+      - name: Run live context snapshot and diff
+        shell: bash
+        run: |
+          CLI=./build/install/codecontext/bin/codecontext
+          rm -rf output
+          "$CLI" context-snapshot . --json
+          test -s output/engineering-context.json
+          cp output/engineering-context.json output/engineering-context-baseline.json
+          "$CLI" context-diff output/engineering-context-baseline.json output/engineering-context.json --json
+          test -s output/engineering-context-diff.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          snapshot = json.loads(Path("output/engineering-context.json").read_text())
+          diff = json.loads(Path("output/engineering-context-diff.json").read_text())
+          assert snapshot["schemaVersion"] == "1.0"
+          assert snapshot["totalFiles"] > 0
+          assert snapshot["dirty"] is False
+          assert snapshot["snapshotDigest"]
+          assert diff["summary"]["added"] == 0
+          assert diff["summary"]["removed"] == 0
+          assert diff["summary"]["modified"] == 0
+          assert diff["changes"] == []
+          PY
