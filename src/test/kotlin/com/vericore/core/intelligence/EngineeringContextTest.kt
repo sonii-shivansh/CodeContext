@@ -44,13 +44,12 @@ class EngineeringContextTest : StringSpec({
     "snapshot ignores Vericore and legacy generated output changes but keeps real source changes detectable" {
         val root = java.nio.file.Files.createTempDirectory("vericore-context-output-").toFile()
         try {
-            root.resolve(".gitignore").writeText(".vericore.json\n.codecontext.json\n")
             root.resolve("src/App.kt").apply {
                 parentFile.mkdirs()
                 writeText("class App")
             }
             Git.init().setDirectory(root).call().use { git ->
-                git.add().addFilepattern(".gitignore").addFilepattern("src/App.kt").call()
+                git.add().addFilepattern("src/App.kt").call()
             }
 
             root.resolve("src/Changed.kt").writeText("class Changed")
@@ -69,7 +68,6 @@ class EngineeringContextTest : StringSpec({
                 writeText("class LegacyCache")
             }
             root.resolve(".codecontext-architecture-contract.json").writeText("legacy generated contract")
-            root.resolve(".vericore.json").writeText("{\"maxFilesAnalyze\":17}")
 
             val snapshot = EngineeringContextEngine.snapshot(
                 root,
