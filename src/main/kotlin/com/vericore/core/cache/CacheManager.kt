@@ -12,7 +12,11 @@ import kotlin.concurrent.write
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class CacheManager(private val cacheDir: File = File(".codecontext/cache")) {
+class CacheManager(private val cacheDir: File = File(DEFAULT_CACHE_DIR)) {
+    companion object {
+        const val DEFAULT_CACHE_DIR = ".vericore/cache"
+    }
+
     init { if (!cacheDir.exists()) cacheDir.mkdirs() }
     private val locks = ConcurrentHashMap<String, ReentrantReadWriteLock>()
     private fun getLock(key: String) = locks.computeIfAbsent(key) { ReentrantReadWriteLock() }
