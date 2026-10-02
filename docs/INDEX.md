@@ -1,79 +1,110 @@
-# CodeContext Documentation Hub
+# Documentation Hub
 
-> A navigable map of the engineering system. Start here when you need to understand the project rather than a single feature.
+> Find the shortest path to the information you need.
 
-## Architecture at a glance
+## Start here
 
-```mermaid
-flowchart LR
-    R[Repository] --> A[Analysis]
-    R --> C[Context]
-    A --> E[Engineering Reality]
-    C --> E
-    E --> I[Intelligence]
-    I --> Q[Evidence / Q&A]
-    I --> P[Planning]
-    I --> V[Verification]
-    P --> K[Agent Change Contract]
-    K --> V
-    Q --> M[MCP / REST / CLI]
-    P --> M
-    V --> M
-```
+| You are... | Read |
+|---|---|
+| New to CodeContext | [Getting Started](GETTING_STARTED.md) |
+| Learning the architecture | [Architecture](ARCHITECTURE.md) |
+| Building a feature | [Development](DEVELOPMENT.md) |
+| Building an AI-agent integration | [MCP](MCP.md) |
+| Preparing or verifying a code change | [Change Safety](CHANGE_SAFETY.md) |
+| Integrating the REST API | [API](API.md) |
+| Understanding repository state | [Engineering Reality](ENGINEERING_REALITY.md) |
+| Reviewing PR/change risk | [PR Intelligence](PR_INTELLIGENCE.md) |
+| Reviewing privacy/data flow | [Data & Privacy](DATA_PRIVACY.md) |
+| Checking shipped capabilities | [Implementation Status](ENTERPRISE_ROADMAP.md) |
 
-## Documentation map
-
-| Area | Document | Use it when |
-|---|---|---|
-| System design | [Architecture](ARCHITECTURE.md) | You need the component model or package boundaries |
-| Repository state | [Engineering Reality](ENGINEERING_REALITY.md) | You need state identity and agent grounding |
-| API | [API](API.md) | You are integrating with the local REST API or CLI |
-| AI agents | [MCP](MCP.md) | You are integrating an MCP-compatible agent |
-| Safe changes | [Change Safety](CHANGE_SAFETY.md) | You are preparing, implementing, or verifying a change |
-| PR intelligence | [PR Intelligence](PR_INTELLIGENCE.md) | You are reviewing change risk and blast radius |
-| Privacy | [Data & Privacy](DATA_PRIVACY.md) | You need to understand data boundaries |
-| Development | [Development](DEVELOPMENT.md) | You are contributing to the project |
-| Implementation status | [Current Status](ENTERPRISE_ROADMAP.md) | You need to know what is actually implemented |
-
-<details>
-<summary><strong>Recommended reading paths</strong></summary>
+## Recommended paths
 
 ### New developer
 
-`README → ARCHITECTURE → DEVELOPMENT → CHANGE_SAFETY`
+```text
+Getting Started
+      ↓
+Architecture
+      ↓
+Development
+      ↓
+Change Safety
+```
 
 ### AI-agent integration
 
-`ARCHITECTURE → ENGINEERING_REALITY → MCP → CHANGE_SAFETY → API`
+```text
+Architecture
+      ↓
+Engineering Reality
+      ↓
+MCP
+      ↓
+Change Safety
+```
 
-### Contributor adding intelligence
+### Contributor adding a deterministic capability
 
-`ARCHITECTURE → ENGINEERING_REALITY → PR_INTELLIGENCE → DEVELOPMENT`
+```text
+Architecture
+      ↓
+Development
+      ↓
+PR Intelligence
+      ↓
+API / MCP
+```
 
 ### Security review
 
-`DATA_PRIVACY → ARCHITECTURE → API → MCP → CHANGE_SAFETY`
+```text
+Data & Privacy
+      ↓
+Architecture
+      ↓
+API
+      ↓
+MCP
+      ↓
+Change Safety
+```
 
-</details>
+## Documentation conventions
 
-## Documentation rule
+Each document should answer, in this order where applicable:
 
-Documentation must distinguish three things:
+1. **Purpose** — why the document exists.
+2. **Audience / when to read** — who needs it.
+3. **Quick start** — the shortest useful path.
+4. **Concepts and contracts** — behavior that must remain true.
+5. **Examples** — copyable commands or payloads.
+6. **Failure modes** — what happens when inputs or state are invalid.
+7. **Related documents** — where to go next.
 
-1. **Implemented** — verified by repository code/tests/CI.
-2. **Design principle** — an architectural invariant or constraint.
-3. **Future direction** — an idea that is not shipped.
+Use:
 
-Do not describe future capabilities as implemented functionality.
+- Mermaid for system and sequence diagrams;
+- tables for stable contracts and comparisons;
+- fenced code blocks for copyable commands;
+- `<details>` only for genuinely optional deep dives;
+- explicit **Implemented**, **Design principle**, and **Future direction** labels when status could otherwise be ambiguous.
 
-## Interactive documentation conventions
+## Documentation rules
 
-Where GitHub supports it, CodeContext documentation uses:
+- Document the current repository, not an intended future architecture.
+- Keep examples executable or clearly label them as illustrative.
+- Avoid repeating the same contract in multiple documents; link to the authoritative document instead.
+- Update documentation in the same pull request as behavior or contract changes.
+- Never include credentials, private repository content, generated reports, or machine-specific paths.
+- Prefer short sections and progressive disclosure over one large reference document.
 
-- Mermaid diagrams for architecture and sequence flows;
-- `<details>` sections for optional deep dives;
-- tables for stable contracts;
-- explicit CLI examples;
-- links between related contracts.
+## Source of truth
 
-The goal is not decoration. Documentation should help a developer answer **what exists, why it exists, how to use it, and what is intentionally not implemented**.
+When documents disagree, use this order:
+
+1. implemented code and executable tests;
+2. public API/schema contracts;
+3. architecture and safety documentation;
+4. roadmap/future-direction documents.
+
+A roadmap must never be used as evidence that an unimplemented feature exists.
