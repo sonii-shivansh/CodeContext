@@ -1,0 +1,40 @@
+name: Execute Vericore Migration
+
+on:
+  push:
+    branches:
+      - refactor/vericore-migration
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run controlled migration
+        run: python3 scripts/migrate-to-vericore.py
+
+      - name: Remove one-time migration executor
+        run: rm -f scripts/migrate-to-vericore.py .github/workflows/execute-vericore-migration.yml
+
+      - name: Show remaining old identity references
+        run: |
+          set +e
+          git grep -n -E 'CodeContext|codecontext|CODECONTEXT|com\.codecontext|sonii-shivansh/CodeContext|code-context|code_context' -- ':!CHANGELOG.md' ':!docs/VERICORE_MIGRATION_SPEC.md' ':!docs/VERICORE_MIGRATION_PLAN.md' || true
+          exit 0
+
+      - name: Commit migration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -s -m 'refactor: migrate CodeContext identity to Vericore'
+          git push origin HEAD:refactor/vericore-migration
