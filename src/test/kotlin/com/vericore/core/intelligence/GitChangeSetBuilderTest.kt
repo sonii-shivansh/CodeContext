@@ -64,7 +64,7 @@ class GitChangeSetBuilderTest {
     }
 
     @Test
-    fun `working tree ignores CodeContext generated output`() {
+    fun `working tree ignores Vericore and legacy CodeContext generated output`() {
         val root = Files.createTempDirectory("codecontext-working-tree-").toFile()
         Git.init().setDirectory(root).call().use { git ->
             root.resolve("README.md").writeText("hello\n")
@@ -80,9 +80,13 @@ class GitChangeSetBuilderTest {
                 writeText("generated")
             }
             root.resolve("output/engineering-plan.json").writeText("generated")
-            root.resolve(".codecontext/cache/generated.json").apply {
+            root.resolve(".vericore/cache/generated.json").apply {
                 parentFile.mkdirs()
                 writeText("generated")
+            }
+            root.resolve(".codecontext/cache/generated.json").apply {
+                parentFile.mkdirs()
+                writeText("legacy generated")
             }
 
             val result = GitChangeSetBuilder.fromWorkingTree(root.path)
