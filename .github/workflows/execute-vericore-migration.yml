@@ -1,16 +1,17 @@
 name: Execute Vericore Migration
 
 on:
-  push:
+  pull_request:
     branches:
-      - refactor/vericore-migration
+      - main
+    types: [opened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   migrate:
-    if: github.actor != 'github-actions[bot]'
+    if: github.event.pull_request.head.ref == 'refactor/vericore-migration' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +23,7 @@ jobs:
         run: python3 scripts/migrate-to-vericore.py
 
       - name: Remove one-time migration executor
-        run: rm -f scripts/migrate-to-vericore.py .github/workflows/execute-vericore-migration.yml
+        run: rm -f scripts/migrate-to-vericore.py .github/workflows/execute-vericore-migration.yml .vericore-migration-trigger
 
       - name: Show remaining old identity references
         run: |
