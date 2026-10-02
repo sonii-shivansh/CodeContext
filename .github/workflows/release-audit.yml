@@ -46,14 +46,14 @@ jobs:
           "$CLI" verify --path . --plan output/engineering-plan.json --contract output/agent-change-contract.json >/tmp/tampered.log 2>&1; status=$?
           set -e
           test "$status" -ne 0
-          grep -q 'Verification failed' /tmp/tampered.log
+          grep -q 'Status: FAIL' /tmp/tampered.log
           cp /tmp/contract.json output/agent-change-contract.json
           printf '%s\n' 'unexpected audit mutation' > .audit-unexpected-change
           set +e
           "$CLI" verify --path . --plan output/engineering-plan.json --contract output/agent-change-contract.json >/tmp/unexpected.log 2>&1; status=$?
           set -e
           test "$status" -ne 0
-          grep -q 'Verification failed' /tmp/unexpected.log
+          grep -q 'Status: FAIL' /tmp/unexpected.log
           rm -f .audit-unexpected-change
           test -z "$(git status --porcelain)"
       - name: Upload audit evidence
