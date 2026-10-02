@@ -12,7 +12,7 @@ class MainCommandTest {
         val result = MainCommand().test("--version")
 
         assertEquals(0, result.statusCode)
-        assertEquals(Version.current, result.stdout.trim())
+        assertEquals("vericore version ${Version.current}", result.stdout.trim())
     }
 
     @Test
