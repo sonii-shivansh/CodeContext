@@ -1,39 +1,52 @@
-# MCP / AI-agent integration
+# MCP / AI-Agent Integration
 
-CodeContext exposes deterministic engineering intelligence to MCP-compatible AI agents through a local stdio server.
+> Connect a trusted local AI agent to CodeContext's deterministic repository intelligence and verification boundary.
 
-## Start the server
+## Purpose
 
-Build/install CodeContext, then run:
+CodeContext exposes a local stdio MCP server for agents that need repository evidence, architecture signals, planning, and change verification.
+
+**CodeContext is the evidence and verification layer, not the coding agent.** It does not autonomously modify repository source files.
+
+## Quick start
+
+Build/install CodeContext, then launch:
 
 ```bash
 codecontext mcp
 ```
 
-The process communicates using newline-delimited JSON-RPC messages over stdin/stdout. Do not pipe human-readable CLI output into the MCP process; stdout is reserved for protocol messages.
+The process uses newline-delimited JSON-RPC over stdin/stdout. stdout is reserved for protocol messages; do not pipe human-readable CLI output into the MCP process.
 
-## Current tool surface
+Client configuration uses the stable executable boundary:
 
-The current server exposes these tools:
+```text
+command: /absolute/path/to/codecontext
+args: ["mcp"]
+```
 
-| Tool | Purpose |
-|---|---|
-| `codecontext_analyze_repository` | Deterministic repository structure, graph, and hotspot evidence |
-| `codecontext_impact_analysis` | Dependency-aware impact for repository-relative changed paths |
-| `codecontext_architecture_analysis` | Current deterministic Architecture Intelligence |
-| `codecontext_pr_intelligence` | Working-tree or revision-pair PR/change intelligence |
-| `codecontext_get_engineering_reality` | Repository-state-bound engineering reality snapshot |
-| `codecontext_get_context_snapshot` | Versioned engineering-context snapshot |
-| `codecontext_get_context_diff` | Deterministic diff between two context snapshots |
-| `codecontext_get_architecture_drift` | Deterministic baseline/current architecture drift |
-| `codecontext_get_architecture_contract` | Deterministic architecture governance evaluation |
-| `codecontext_prepare_change` | Grounded evidence + deterministic engineering plan + change contract |
-| `codecontext_get_change_contract` | Generate a deterministic contract for a requested change summary |
-| `codecontext_get_evidence` | Bounded grounded repository evidence |
-| `codecontext_change_safety` | Current working-tree scope check against an EngineeringPlan |
-| `codecontext_verify_change` | Verify the working tree against the persisted Agent Change Contract and plan |
+## Tool catalog
 
-All repository arguments use the property name `repoPath`. Remote repository URLs are rejected.
+| Tool | What it does | Mutates source? |
+|---|---|---:|
+| `codecontext_analyze_repository` | Repository structure, dependency graph, hotspots, and deterministic analysis | No |
+| `codecontext_impact_analysis` | Dependency-aware impact for changed paths | No |
+| `codecontext_architecture_analysis` | Architecture Intelligence | No |
+| `codecontext_pr_intelligence` | Working-tree or revision-pair change intelligence | No |
+| `codecontext_get_engineering_reality` | Repository-state-bound Engineering Reality | No |
+| `codecontext_get_context_snapshot` | Versioned engineering-context snapshot | No |
+| `codecontext_get_context_diff` | Deterministic snapshot diff | No |
+| `codecontext_get_architecture_drift` | Baseline/current architecture drift | No |
+| `codecontext_get_architecture_contract` | Architecture governance evaluation | No |
+| `codecontext_prepare_change` | Evidence + engineering plan + persisted change contract | Writes artifacts under `output/` |
+| `codecontext_get_change_contract` | Retrieves the persisted `output/agent-change-contract.json` | No |
+| `codecontext_get_evidence` | Bounded grounded repository evidence | No |
+| `codecontext_change_safety` | Current working-tree scope signal | No |
+| `codecontext_verify_change` | Verifies the persisted Agent Change Contract and plan | No |
+
+All repository arguments use `repoPath`. Remote repository URLs are rejected.
+
+## Request examples
 
 ### Repository analysis
 
@@ -50,7 +63,7 @@ All repository arguments use the property name `repoPath`. Remote repository URL
 }
 ```
 
-The current server accepts at most 100 changed paths per call.
+The server accepts at most 100 changed paths per call.
 
 ### PR Intelligence
 
@@ -72,9 +85,7 @@ Revision pair:
 
 Both revisions must be supplied together.
 
-### Prepare and verify
-
-Prepare a change:
+### Prepare
 
 ```json
 {
@@ -83,13 +94,17 @@ Prepare a change:
 }
 ```
 
-The CLI prepare workflow persists `output/agent-change-contract.json`. The MCP verify tool loads that persisted contract when no explicit contract is supplied; verification therefore depends on the repository-scoped artifact produced by prepare.
+Preparation persists repository-scoped artifacts, including:
 
-The current MCP `codecontext_get_change_contract` operation is a **fresh contract-generation helper** for a requested change summary. It should not be treated as a replacement for the persisted contract used by verification.
+```text
+output/engineering-context.json
+output/engineering-plan.json
+output/agent-change-contract.json
+```
 
-## Agent workflow
+## Change-safety workflow
 
-The recommended workflow is:
+The safe agent loop is:
 
 ```text
 Engineering Reality
@@ -109,11 +124,17 @@ Verify ORIGINAL persisted contract
 Tests / human review
 ```
 
-The contract binds the prepared repository identity and Git `HEAD` to planned paths, expected components, verification commands, evidence IDs, architecture expectations, and a SHA-256 fingerprint.
+The contract binds repository identity and prepared Git `HEAD` to planned paths, expected components, verification commands, evidence IDs, architecture expectations, and a SHA-256 fingerprint.
 
-A verification failure is a safety signal. It does not prove that the implementation is otherwise correct; normal tests and engineering review remain required.
+### Contract retrieval vs. contract preparation
 
-CodeContext is deliberately the **evidence and verification layer**, not the coding agent. It does not autonomously modify repository source files.
+These operations have intentionally different responsibilities:
+
+- `codecontext_prepare_change` **creates/persists** the change contract.
+- `codecontext_get_change_contract` **retrieves** the persisted `output/agent-change-contract.json`.
+- `codecontext_verify_change` verifies the persisted contract and does not silently generate a replacement.
+
+This distinction prevents an agent from replacing the verification boundary after it has prepared a change.
 
 ## Security boundary
 
@@ -122,19 +143,21 @@ The MCP server is intended for trusted local use.
 - Repository paths must resolve to readable directories permitted by the configured path-safety boundary.
 - Remote repository URLs are rejected.
 - The MCP transport does not implement authentication or tenant isolation.
-- The server does not expose arbitrary filesystem reads; tools invoke CodeContext's repository analysis boundaries.
+- Tools do not provide arbitrary filesystem reads outside CodeContext's repository boundaries.
+- `prepare` writes repository-local artifacts; it does not modify source code.
 
 For a shared or remote deployment, put an authenticated service boundary in front of CodeContext rather than exposing the stdio process directly.
 
 ## Compatibility
 
-The current implementation uses the **2025-11-25 MCP legacy handshake era**, which is the latest revision using `initialize`. It implements `initialize`, `notifications/initialized`, `ping`, `tools/list`, and `tools/call` for the current tool surface. Modern `2026-07-28` MCP lifecycle support is intentionally deferred until the server can implement its stateless discovery/request model correctly rather than advertising unsupported behavior.
+The current implementation targets the **2025-11-25 MCP lifecycle** and implements `initialize`, `notifications/initialized`, `ping`, `tools/list`, and `tools/call` for the current tool surface.
 
-Client configuration differs between agent products. Configure the client to launch the installed CodeContext executable with the `mcp` argument:
+Modern MCP lifecycle behavior is intentionally deferred until the server can implement the required request/discovery model correctly rather than advertising unsupported behavior.
 
-```text
-command: /absolute/path/to/codecontext
-args: ["mcp"]
-```
+## Related documents
 
-Do not copy a client-specific configuration file into a repository unless that client format is actually required by your team; the executable and `mcp` argument are the stable CodeContext interface.
+- [Architecture](ARCHITECTURE.md) — system boundaries
+- [Engineering Reality](ENGINEERING_REALITY.md) — repository-state identity
+- [Change Safety](CHANGE_SAFETY.md) — persisted contract semantics
+- [API](API.md) — local REST integration
+- [Data & Privacy](DATA_PRIVACY.md) — data handling and AI boundaries
