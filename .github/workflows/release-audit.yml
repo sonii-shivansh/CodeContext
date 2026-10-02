@@ -1,0 +1,75 @@
+name: 0.7.0 Release Audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-audit:
+    name: Deterministic audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with: { java-version: '21', distribution: temurin, cache: gradle }
+      - name: Build and test
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+      - name: Run CLI audit
+        run: bash scripts/audit/cli-audit.sh
+      - name: Run MCP audit
+        run: bash scripts/audit/mcp-audit.sh
+      - name: Run REST audit
+        run: bash scripts/audit/rest-audit.sh
+      - name: Adversarial contract audit
+        run: |
+          CLI="./build/install/codecontext/bin/codecontext"
+          rm -rf output
+          "$CLI" prepare "release audit contract" --path . >/dev/null
+          cp output/agent-change-contract.json /tmp/contract.json
+          python3 - <<'PY'
+          import json
+          p='output/agent-change-contract.json'; d=json.load(open(p)); d['plannedPaths']=list(d.get('plannedPaths',[]))+['.audit-unexpected-change']; json.dump(d,open(p,'w'),indent=2)
+          PY
+          set +e
+          "$CLI" verify --path . --plan output/engineering-plan.json --contract output/agent-change-contract.json >/tmp/tampered.log 2>&1; status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q 'Status: FAIL' /tmp/tampered.log
+          cp /tmp/contract.json output/agent-change-contract.json
+          printf '%s\n' 'unexpected audit mutation' > .audit-unexpected-change
+          set +e
+          "$CLI" verify --path . --plan output/engineering-plan.json --contract output/agent-change-contract.json >/tmp/unexpected.log 2>&1; status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q 'Status: FAIL' /tmp/unexpected.log
+          rm -f .audit-unexpected-change
+          test -z "$(git status --porcelain)"
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-audit-evidence
+          path: output/
+          if-no-files-found: ignore
+
+  live-release-gate:
+    name: Existing live repository gate
+    needs: deterministic-audit
+    uses: ./.github/workflows/live-repository-gate.yml
+    with:
+      repository: spring-projects/spring-petclinic
+      ref: main
+      run_gemini: false
+    secrets: inherit

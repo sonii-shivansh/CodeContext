@@ -1,0 +1,14 @@
+{
+  "name": "CodeContext 0.7.0 Audit Lab",
+  "image": "mcr.microsoft.com/devcontainers/java:1-21-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "postCreateCommand": "chmod +x gradlew scripts/audit/*.sh 2>/dev/null || true",
+  "customizations": {
+    "vscode": {
+      "extensions": ["vscjava.vscode-gradle", "vscjava.vscode-java-pack"]
+    }
+  },
+  "remoteEnv": {"GRADLE_OPTS": "-Dorg.gradle.daemon=false"}
+}
