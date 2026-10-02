@@ -17,34 +17,33 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Execute Vericore identity cleanup phase
+      - name: Execute direct identity cleanup
         shell: bash
         run: |
           set -euo pipefail
-          if test -f .vericore-migration-phase2-complete; then
-            echo 'Phase 2 already committed; no-op.'
-            exit 0
-          fi
-          test -f .vericore-migration-complete
+          if test -f .vericore-migration-phase3-complete; then exit 0; fi
+          test -f .vericore-migration-phase2-complete
           python3 - <<'PY'
           from pathlib import Path
-          import re
           root=Path.cwd()
           roots=[root/'src',root/'docs',root/'scripts',root/'README.md',root/'CONTRIBUTING.md',root/'SECURITY.md',root/'TRADEMARKS.md',root/'CODE_OF_CONDUCT.md',root/'DCO.md',root/'build.gradle.kts',root/'settings.gradle.kts',root/'gradle.properties',root/'.gitignore',root/'.devcontainer']
           skip={root/'CHANGELOG.md',root/'docs/VERICORE_MIGRATION_SPEC.md',root/'docs/VERICORE_MIGRATION_PLAN.md'}
           def rep(s):
-              sentinel='__VERICORE_EXTERNAL_CODECONTEXT_WEBSITE__'
-              s=s.replace('CodeContext-Website',sentinel)
-              s=s.replace('com.codecontext','com.vericore').replace('sonii-shivansh/CodeContext','sonii-shivansh/Vericore')
-              s=re.sub(r'\\bCodeContextConfig\\b','VericoreConfig',s)
-              s=re.sub(r'\\bCodeContextException\\b','VericoreException',s)
-              s=re.sub(r'\\bCodeContextServer\\b','VericoreServer',s)
-              s=re.sub(r'\\bCodeContext\\b','Vericore',s)
-              s=s.replace('CODECONTEXT_','VERICORE_').replace('codecontext.config.home','vericore.config.home')
-              s=s.replace('.codecontext-architecture-contract.json','.vericore-architecture-contract.json').replace('.codecontext.json','.vericore.json').replace('.codecontext/','.vericore/')
+              marker='__EXTERNAL_CODECONTEXT_WEBSITE__'
+              s=s.replace('CodeContext-Website',marker)
+              s=s.replace('com.codecontext','com.vericore')
+              s=s.replace('sonii-shivansh/CodeContext','sonii-shivansh/Vericore')
+              s=s.replace('CodeContextConfig','VericoreConfig')
+              s=s.replace('CodeContextException','VericoreException')
+              s=s.replace('CodeContextServer','VericoreServer')
+              s=s.replace('CodeContext','Vericore')
+              s=s.replace('CODECONTEXT_','VERICORE_')
+              s=s.replace('codecontext.config.home','vericore.config.home')
+              s=s.replace('.codecontext-architecture-contract.json','.vericore-architecture-contract.json')
+              s=s.replace('.codecontext.json','.vericore.json')
+              s=s.replace('.codecontext/','.vericore/')
               s=s.replace('build/install/codecontext','build/install/vericore')
-              return s.replace(sentinel,'CodeContext-Website')
+              return s.replace(marker,'CodeContext-Website')
           seen=set()
           for x in roots:
               ps=[x] if x.is_file() else ([p for p in x.rglob('*') if p.is_file()] if x.is_dir() else [])
@@ -55,12 +54,12 @@ jobs:
                   seen.add(p);b=rep(a)
                   if a!=b:p.write_text(b,encoding='utf-8')
           PY
-          if test -f settings.gradle.kts; then sed -i 's/rootProject.name = "codecontext"/rootProject.name = "vericore"/' settings.gradle.kts; fi
-          rm -f .vericore-migration-trigger
-          rm -f .vericore-migration-complete
-          touch .vericore-migration-phase2-complete
+          sed -i 's/rootProject.name = "codecontext"/rootProject.name = "vericore"/' settings.gradle.kts || true
+          rm -f .vericore-phase2-trigger
+          rm -f .vericore-migration-phase2-complete
+          touch .vericore-migration-phase3-complete
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -s -m 'refactor: complete Vericore identity normalization'
+          git commit -s -m 'refactor: normalize remaining Vericore identifiers'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
