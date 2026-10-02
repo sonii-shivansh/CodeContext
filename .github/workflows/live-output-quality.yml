@@ -107,13 +107,12 @@ jobs:
           capture 14-prepare "$CLI" prepare "Improve the repository safely"
           capture 15-verify "$CLI" verify --output output/final-verify.json
 
-          # setup is intentionally exercised with an unsupported provider so it never
-          # asks for or stores a real credential in CI. Its non-zero exit is expected.
           echo "===== 16-setup-invalid ====="
           set +e
-          "$CLI" setup --provider unsupported 2>&1 | tee "$OUT/16-setup-invalid.txt"
-          SETUP_STATUS=${PIPESTATUS[0]}
+          "$CLI" setup --provider unsupported > "$OUT/16-setup-invalid.txt" 2>&1
+          SETUP_STATUS=$?
           set -e
+          cat "$OUT/16-setup-invalid.txt"
           test "$SETUP_STATUS" -ne 0
 
           python3 - <<'PY'
