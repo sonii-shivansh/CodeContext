@@ -18,57 +18,49 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Execute approved identity migration
+      - name: Execute Vericore identity cleanup phase
         shell: bash
         run: |
           set -euo pipefail
-          if test -f .vericore-migration-complete; then
-            echo 'Migration already committed; no-op.'
+          if test -f .vericore-migration-phase2-complete; then
+            echo 'Phase 2 already committed; no-op.'
             exit 0
           fi
+          test -f .vericore-migration-complete
           python3 - <<'PY'
           from pathlib import Path
-          import re, subprocess
+          import re
           root=Path.cwd()
-          roots=[root/'src',root/'docs',root/'scripts',root/'README.md',root/'CONTRIBUTING.md',root/'SECURITY.md',root/'TRADEMARKS.md',root/'CODE_OF_CONDUCT.md',root/'DCO.md',root/'build.gradle.kts',root/'settings.gradle.kts',root/'gradle.properties',root/'.gitignore',root/'.devcontainer',root/'.codecontext.json.template',root/'.codecontext-architecture-contract.json.template']
-          skip={root/'CHANGELOG.md'}
+          roots=[root/'src',root/'docs',root/'scripts',root/'README.md',root/'CONTRIBUTING.md',root/'SECURITY.md',root/'TRADEMARKS.md',root/'CODE_OF_CONDUCT.md',root/'DCO.md',root/'build.gradle.kts',root/'settings.gradle.kts',root/'gradle.properties',root/'.gitignore',root/'.devcontainer']
+          skip={root/'CHANGELOG.md',root/'docs/VERICORE_MIGRATION_SPEC.md',root/'docs/VERICORE_MIGRATION_PLAN.md'}
           def rep(s):
+              sentinel='__VERICORE_EXTERNAL_CODECONTEXT_WEBSITE__'
+              s=s.replace('CodeContext-Website',sentinel)
               s=s.replace('com.codecontext','com.vericore').replace('sonii-shivansh/CodeContext','sonii-shivansh/Vericore')
-              s=re.sub(r'\\bCodeContext\\b','Vericore',s); s=re.sub(r'\\bcodecontext\\b','vericore',s)
+              s=re.sub(r'\\bCodeContextConfig\\b','VericoreConfig',s)
+              s=re.sub(r'\\bCodeContextException\\b','VericoreException',s)
+              s=re.sub(r'\\bCodeContextServer\\b','VericoreServer',s)
+              s=re.sub(r'\\bCodeContext\\b','Vericore',s)
               s=s.replace('CODECONTEXT_','VERICORE_').replace('codecontext.config.home','vericore.config.home')
               s=s.replace('.codecontext-architecture-contract.json','.vericore-architecture-contract.json').replace('.codecontext.json','.vericore.json').replace('.codecontext/','.vericore/')
-              return s.replace('build/install/codecontext','build/install/vericore')
+              s=s.replace('build/install/codecontext','build/install/vericore')
+              return s.replace(sentinel,'CodeContext-Website')
           seen=set()
           for x in roots:
               ps=[x] if x.is_file() else ([p for p in x.rglob('*') if p.is_file()] if x.is_dir() else [])
               for p in ps:
                   if p in skip or p in seen or any(a in {'build','.gradle','.git','node_modules','target'} for a in p.parts): continue
-                  try: a=p.read_text(encoding='utf-8')
-                  except (UnicodeDecodeError,OSError): continue
-                  seen.add(p); b=rep(a)
-                  if a!=b: p.write_text(b,encoding='utf-8')
-          def mv(a,b):
-              if a.exists() and not b.exists(): subprocess.run(['git','mv',str(a),str(b)],check=True)
-          mv(root/'src/main/kotlin/com/codecontext/core/config/CodeContextConfig.kt',root/'src/main/kotlin/com/codecontext/core/config/VericoreConfig.kt')
-          mv(root/'src/main/kotlin/com/codecontext/core/exceptions/CodeContextException.kt',root/'src/main/kotlin/com/codecontext/core/exceptions/VericoreException.kt')
-          mv(root/'src/main/kotlin/com/codecontext/server/CodeContextServer.kt',root/'src/main/kotlin/com/codecontext/server/VericoreServer.kt')
-          mv(root/'src/main/kotlin/com/codecontext',root/'src/main/kotlin/com/vericore')
-          mv(root/'src/test/kotlin/com/codecontext',root/'src/test/kotlin/com/vericore')
-          mv(root/'.codecontext.json.template',root/'.vericore.json.template')
-          mv(root/'.codecontext-architecture-contract.json.template',root/'.vericore-architecture-contract.json.template')
-          for r in [root/'src/main/kotlin/com/vericore',root/'src/test/kotlin/com/vericore']:
-              if r.exists():
-                  for p in r.rglob('*.kt'):
-                      a=p.read_text(encoding='utf-8'); b=rep(a)
-                      if a!=b: p.write_text(b,encoding='utf-8')
-          spec='''# Vericore Migration Specification\n\n**Vericore — Understand. Change. Verify.**\n\n**Evidence-grounded engineering intelligence for your codebase.**\n\n## Rules\n- Vericore is the sole canonical identity.\n- No blind global replacement.\n- CodeContext compatibility is temporary, explicit, deprecated, documented, warned where appropriate, and removable.\n- Normal user-facing output uses Vericore only.\n- New MCP integrations use `vericore_*`; old names are aliases only when required.\n- Historical facts and external identifiers are preserved.\n\n## Impact matrix\n| Area | Class | Action |\n|---|---|---|\n| `com.codecontext.*` | CANONICAL | `com.vericore.*` |\n| Gradle | CANONICAL | `vericore` / `com.vericore` |\n| CLI | CANONICAL + COMPATIBILITY | `vericore`; deprecated bridge if required |\n| config/env/generated state | COMPATIBILITY | Vericore canonical; legacy aliases temporarily |\n| REST | CANONICAL | Vericore metadata; routes unchanged |\n| MCP | CANONICAL + COMPATIBILITY | Vericore names; required aliases only |\n| AI/agents | CANONICAL | Vericore prompts/metadata |\n| scripts/CI/release/Docker | CANONICAL | Update identity and paths |\n| tests | CANONICAL + COMPATIBILITY | Canonical tests plus legacy tests |\n| docs/examples/security | CANONICAL + COMPATIBILITY | Vericore docs + migration guidance |\n| website | EXTERNAL | Separate repository; do not silently modify |\n| GitHub URLs | CANONICAL | Update after verified repository rename |\n\n## Acceptance\nFull build/tests/installDist, CLI, REST, MCP initialize/list/call, release/package checks, repository-wide search/classification, actual command-output audit, and architecture/repository gates must pass.\n'''
-          plan='''# Vericore Migration Implementation Plan\n\n1. Inventory/classify all old identifiers before edits.\n2. Rename Kotlin packages/classes and Gradle coordinates.\n3. Make `vericore` canonical for CLI, normal output and metadata.\n4. Introduce canonical Vericore config/env/generated-state names; retain only required legacy bridges with deprecation warnings and removal strategy.\n5. Make `vericore_*` MCP names canonical; preserve only necessary aliases.\n6. Update REST identity metadata without changing routes.\n7. Update scripts, CI/CD, release packaging, Docker, examples and current docs; preserve history/external identifiers.\n8. Validate full build/tests/installDist, CLI, REST, MCP, release/package, static analysis, actual command-output, and architecture/repository gates.\n9. Classify every remaining old-name reference.\n10. Verify `sonii-shivansh/Vericore` repository rename or report the manual GitHub settings step.\n'''
-          (root/'docs/VERICORE_MIGRATION_SPEC.md').write_text(spec,encoding='utf-8')
-          (root/'docs/VERICORE_MIGRATION_PLAN.md').write_text(plan,encoding='utf-8')
-          (root/'.vericore-migration-complete').write_text('temporary migration marker; remove after final validation\n',encoding='utf-8')
+                  try:a=p.read_text(encoding='utf-8')
+                  except (UnicodeDecodeError,OSError):continue
+                  seen.add(p);b=rep(a)
+                  if a!=b:p.write_text(b,encoding='utf-8')
           PY
+          if test -f settings.gradle.kts; then sed -i 's/rootProject.name = "codecontext"/rootProject.name = "vericore"/' settings.gradle.kts; fi
+          rm -f .vericore-migration-trigger
+          rm -f .vericore-migration-complete
+          touch .vericore-migration-phase2-complete
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -s -m 'refactor: migrate CodeContext identity to Vericore'
+          git commit -s -m 'refactor: complete Vericore identity normalization'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
