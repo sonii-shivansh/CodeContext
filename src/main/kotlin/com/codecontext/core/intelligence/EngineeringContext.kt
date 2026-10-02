@@ -59,14 +59,21 @@ object EngineeringContextEngine {
     private val json = Json { encodeDefaults = true; prettyPrint = true }
 
     fun snapshot(root: File, scanner: RepositoryScanner): EngineeringContextSnapshot {
-        require(root.isDirectory) { "Repository path is not a directory: ${root.path}" }
-        val files = scanner.scan(root.path).sortedBy { it.absolutePath }
+        val repositoryRoot = root.canonicalFile
+        require(repositoryRoot.isDirectory) { "Repository path is not a directory: ${root.path}" }
+        val repositoryPath = repositoryRoot.toPath().normalize()
+        val files = scanner.scan(repositoryRoot.path).map { it.canonicalFile }
+            .sortedBy { it.path }
+            .filter { file ->
+                val filePath = file.toPath().normalize()
+                filePath.startsWith(repositoryPath) && !isGeneratedPath(repositoryPath.relativize(filePath).toString().replace(File.separatorChar, '/'))
+            }
         val contextFiles = files.map { file ->
-            val relative = root.toPath().relativize(file.toPath().normalize()).toString().replace(File.separatorChar, '/')
+            val relative = repositoryPath.relativize(file.toPath().normalize()).toString().replace(File.separatorChar, '/')
             ContextFile(relative, sha256(file.readBytes()), file.length())
         }
         val gitState = runCatching {
-            Git.open(root).use { git ->
+            Git.open(repositoryRoot).use { git ->
                 val commit = git.repository.resolve("HEAD")?.name
                 val status = git.status().call()
                 val changed = (status.added + status.changed + status.removed + status.modified + status.missing + status.untracked)
@@ -129,8 +136,11 @@ object EngineeringContextEngine {
     fun encode(snapshot: EngineeringContextSnapshot): String = json.encodeToString(EngineeringContextSnapshot.serializer(), snapshot)
     fun encode(diff: EngineeringContextDiff): String = json.encodeToString(EngineeringContextDiff.serializer(), diff)
 
-    private fun isGeneratedPath(path: String): Boolean =
-        path == ".codecontext" || path.startsWith(".codecontext/")
+    private fun isGeneratedPath(path: String): Boolean {
+        val normalized = path.replace(File.separatorChar, '/').trimStart('/')
+        return normalized == ".codecontext" || normalized.startsWith(".codecontext/") ||
+            normalized == "output" || normalized.startsWith("output/")
+    }
 
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
     private fun sha256(value: String): String = sha256(value.toByteArray(StandardCharsets.UTF_8))

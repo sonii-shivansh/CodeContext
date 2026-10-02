@@ -39,4 +39,36 @@ class EngineeringContextTest : StringSpec({
         diff.summary shouldBe ContextDiffSummary(0, 0, 0, 1)
         diff.changes shouldBe emptyList()
     }
+
+    "snapshot ignores CodeContext generated output changes" {
+        val root = java.nio.file.Files.createTempDirectory("codecontext-context-output-").toFile()
+        try {
+            root.resolve("src/App.kt").apply {
+                parentFile.mkdirs()
+                writeText("class App")
+            }
+            root.resolve("output/verify.json").apply {
+                parentFile.mkdirs()
+                writeText("generated")
+            }
+            root.resolve("output/generated.kt").writeText("class Generated")
+            root.resolve(".codecontext/cache.kt").apply {
+                parentFile.mkdirs()
+                writeText("class Cache")
+            }
+
+            val snapshot = EngineeringContextEngine.snapshot(
+                root,
+                com.codecontext.core.scanner.RepositoryScanner(
+                    com.codecontext.core.config.CodeContextConfig(excludePaths = emptyList())
+                )
+            )
+
+            snapshot.files.map { it.path } shouldBe listOf("src/App.kt")
+            snapshot.changedPaths shouldBe emptyList()
+            snapshot.languages shouldBe listOf("Kotlin")
+        } finally {
+            root.deleteRecursively()
+        }
+    }
 })
