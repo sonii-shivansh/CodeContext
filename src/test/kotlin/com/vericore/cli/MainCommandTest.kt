@@ -22,4 +22,12 @@ class MainCommandTest {
         assertEquals(0, result.statusCode)
         assertTrue(result.stdout.lines().first().startsWith("Usage: vericore"))
     }
+
+    @Test
+    fun `architecture contract help uses canonical generated artifact`() {
+        val result = MainCommand().test("architecture-contract --help")
+
+        assertEquals(0, result.statusCode)
+        assertTrue(result.stdout.contains(".vericore-architecture-contract.json"))
+    }
 }
