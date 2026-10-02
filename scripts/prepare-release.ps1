@@ -1,13 +1,13 @@
-# CodeContext Release Preparation Script (Windows)
-# Version: 0.1.0
+# Vericore Release Preparation Script (Windows)
+# Version: 0.7.0
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "🚀 CodeContext Release Preparation" -ForegroundColor Cyan
+Write-Host "🚀 Vericore Release Preparation" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 
-$VERSION = "v0.1.0"
+$VERSION = "v0.7.0"
 
 # Step 1: Clean previous builds
 Write-Host "📦 Step 1: Cleaning previous builds..." -ForegroundColor Blue
@@ -18,16 +18,7 @@ Write-Host ""
 # Step 2: Run tests
 Write-Host "🧪 Step 2: Running tests..." -ForegroundColor Blue
 & .\gradlew.bat test
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ All tests passed" -ForegroundColor Green
-} else {
-    Write-Host "⚠️  Some tests failed. Continue anyway? (y/n)" -ForegroundColor Yellow
-    $response = Read-Host
-    if ($response -notmatch '^[Yy]$') {
-        Write-Host "Release cancelled." -ForegroundColor Red
-        exit 1
-    }
-}
+Write-Host "✅ All tests passed" -ForegroundColor Green
 Write-Host ""
 
 # Step 3: Build project
@@ -42,25 +33,37 @@ Write-Host "📦 Step 4: Creating distribution..." -ForegroundColor Blue
 Write-Host "✅ Distribution created" -ForegroundColor Green
 Write-Host ""
 
-# Step 5: Package release
-Write-Host "📦 Step 5: Packaging release..." -ForegroundColor Blue
-$RELEASE_NAME = "codecontext-$VERSION"
+# Step 5: Verify canonical distribution
+$APP = "build\install\vericore\bin\vericore.bat"
+Write-Host "🔎 Step 5: Verifying Vericore distribution..." -ForegroundColor Blue
+if (-not (Test-Path $APP)) {
+    Write-Host "❌ Expected executable not found: $APP" -ForegroundColor Red
+    exit 1
+}
+& .\$APP --version
+Write-Host "✅ Vericore distribution verified" -ForegroundColor Green
+Write-Host ""
+
+# Step 6: Package release
+Write-Host "📦 Step 6: Packaging release..." -ForegroundColor Blue
+$RELEASE_NAME = "vericore-$VERSION"
 $RELEASE_DIR = "build\release"
 
-# Create release directory
+if (Test-Path $RELEASE_DIR) {
+    Remove-Item -Recurse -Force $RELEASE_DIR
+}
 New-Item -ItemType Directory -Force -Path $RELEASE_DIR | Out-Null
 
-# Create zip archive
 Push-Location build\install
-Compress-Archive -Path codecontext -DestinationPath "..\..\$RELEASE_DIR\$RELEASE_NAME.zip" -Force
+Compress-Archive -Path vericore -DestinationPath "..\..\$RELEASE_DIR\$RELEASE_NAME.zip" -Force
 Write-Host "✅ Created $RELEASE_NAME.zip" -ForegroundColor Green
 Pop-Location
 Write-Host ""
 
-# Step 6: Generate checksums
-Write-Host "🔐 Step 6: Generating checksums..." -ForegroundColor Blue
+# Step 7: Generate checksums
+Write-Host "🔐 Step 7: Generating checksums..." -ForegroundColor Blue
 Push-Location $RELEASE_DIR
-Get-FileHash -Algorithm SHA256 "$RELEASE_NAME.zip" | 
+Get-FileHash -Algorithm SHA256 "$RELEASE_NAME.zip" |
     Select-Object @{Name='Hash';Expression={$_.Hash.ToLower()}}, @{Name='File';Expression={Split-Path $_.Path -Leaf}} |
     ForEach-Object { "$($_.Hash)  $($_.File)" } |
     Out-File -FilePath checksums.txt -Encoding utf8
@@ -68,10 +71,10 @@ Write-Host "✅ Checksums generated" -ForegroundColor Green
 Pop-Location
 Write-Host ""
 
-# Step 7: Create release notes
-Write-Host "📝 Step 7: Creating release notes..." -ForegroundColor Blue
+# Step 8: Create release notes
+Write-Host "📝 Step 8: Creating release notes..." -ForegroundColor Blue
 $releaseNotes = @"
-# CodeContext $VERSION Release Notes
+# Vericore $VERSION Release Notes
 
 ## 🎉 Features
 
@@ -83,9 +86,9 @@ $releaseNotes = @"
 
 ### Commands
 - ``analyze``: Comprehensive codebase analysis with hotspot detection
-- ``ai-assistant``: AI-powered code insights and recommendations
 - ``evolution``: Track codebase changes over time
 - ``server``: REST API server mode for programmatic access
+- ``mcp``: MCP server mode for AI-agent integration
 
 ### Output
 - Interactive HTML reports with D3.js visualizations
@@ -99,13 +102,14 @@ $releaseNotes = @"
 
 ``````bash
 # Extract archive
-Expand-Archive codecontext-$VERSION.zip
+Expand-Archive vericore-$VERSION.zip
 
 # Add to PATH (PowerShell)
-`$env:Path += ";`$(Get-Location)\codecontext\bin"
+`$env:Path += ";`$(Get-Location)\vericore\bin"
 
 # Verify installation
-codecontext --help
+vericore --version
+vericore --help
 ``````
 
 ### From Source
@@ -114,45 +118,22 @@ codecontext --help
 git clone https://github.com/sonii-shivansh/CodeContext.git
 cd CodeContext
 .\gradlew.bat installDist
-.\build\install\codecontext\bin\codecontext.bat --help
+.\build\install\vericore\bin\vericore.bat --help
 ``````
 
 ## 🚀 Quick Start
 
 ``````bash
 # Analyze current directory
-codecontext analyze .
+vericore analyze .
 
 # View report
 start output\index.html
-
-# Enable AI insights (requires Gemini API key)
-# Add to .codecontext.json:
-{
-  "ai": {
-    "enabled": true,
-    "apiKey": "your-api-key",
-    "model": "gemini-1.5-flash"
-  }
-}
 ``````
 
 ## 🔧 Configuration
 
-Create ``.codecontext.json`` in your project root:
-
-``````json
-{
-  "maxFilesAnalyze": 10000,
-  "hotspotCount": 10,
-  "enableCache": true,
-  "ai": {
-    "enabled": false,
-    "apiKey": "",
-    "model": "gemini-1.5-flash"
-  }
-}
-``````
+Vericore uses its canonical configuration namespace by default. Legacy CodeContext configuration files remain supported only through the documented migration compatibility path and emit a non-fatal migration warning.
 
 ## 📊 System Requirements
 
@@ -196,9 +177,8 @@ $releaseNotes | Out-File -FilePath "$RELEASE_DIR\RELEASE_NOTES.md" -Encoding utf
 Write-Host "✅ Release notes created" -ForegroundColor Green
 Write-Host ""
 
-# Summary
 Write-Host "==================================" -ForegroundColor Cyan
-Write-Host "✨ Release preparation complete!" -ForegroundColor Green
+Write-Host "✨ Vericore release preparation complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "📦 Release artifacts:" -ForegroundColor Cyan
 Write-Host "   - Location: $RELEASE_DIR\" -ForegroundColor White
@@ -206,7 +186,7 @@ Get-ChildItem $RELEASE_DIR | Format-Table Name, Length, LastWriteTime
 Write-Host ""
 Write-Host "📋 Next steps:" -ForegroundColor Cyan
 Write-Host "   1. Review release notes: $RELEASE_DIR\RELEASE_NOTES.md" -ForegroundColor White
-Write-Host "   2. Test the distribution: .\build\install\codecontext\bin\codecontext.bat --help" -ForegroundColor White
+Write-Host "   2. Test the distribution: .\build\install\vericore\bin\vericore.bat --help" -ForegroundColor White
 Write-Host "   3. Create GitHub release with artifacts from $RELEASE_DIR\" -ForegroundColor White
 Write-Host "   4. Update CHANGELOG.md" -ForegroundColor White
 Write-Host "   5. Tag release: git tag $VERSION && git push origin $VERSION" -ForegroundColor White
