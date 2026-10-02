@@ -134,11 +134,12 @@ object EngineeringContextEngine {
     }
 
     fun encode(snapshot: EngineeringContextSnapshot): String = json.encodeToString(EngineeringContextSnapshot.serializer(), snapshot)
-    fun encode(diff: EngineeringContextDiff): String = json.encodeToString(EngineeringContextDiff.serializer(), diff)
+    fun encode(diff: EngineeringContextDiff): String = json.encodeToString(diff)
 
     private fun isGeneratedPath(path: String): Boolean {
         val normalized = path.replace(File.separatorChar, '/').trimStart('/')
         return normalized == ".codecontext" || normalized.startsWith(".codecontext/") ||
+            normalized == ".codecontext-architecture-contract.json" ||
             normalized == "output" || normalized.startsWith("output/")
     }
 
