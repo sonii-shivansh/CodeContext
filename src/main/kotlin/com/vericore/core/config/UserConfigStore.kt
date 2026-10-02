@@ -20,7 +20,6 @@ data class UserConfig(
     val ai: StoredAIConfig = StoredAIConfig()
 )
 
-/** Stores credentials outside the repository so secrets never need to live in .vericore.json. */
 object UserConfigStore {
     private const val CONFIG_HOME_ENV = "VERICORE_CONFIG_HOME"
     private const val LEGACY_CONFIG_HOME_ENV = "CODECONTEXT_CONFIG_HOME"
@@ -28,20 +27,18 @@ object UserConfigStore {
     private const val LEGACY_CONFIG_HOME_PROPERTY = "codecontext.config.home"
 
     private val logger = KotlinLogging.logger {}
-    private val json = Json {
-        prettyPrint = true
-        encodeDefaults = true
-    }
+    private val json = Json { prettyPrint = true; encodeDefaults = true }
 
     fun configFile(): File = File(configDirectory(), "config.json")
 
     fun load(): UserConfig? {
         val canonical = configFile()
         if (canonical.isFile) return read(canonical)
-
         val legacy = legacyConfigFile()
         if (legacy.isFile) {
-            logger.warn { "Using legacy CodeContext user configuration ${legacy.path}; migrate to ${canonical.path}" }
+            val message = "Deprecated CodeContext user configuration detected at ${legacy.path}; migrate to ${canonical.path}."
+            logger.warn { message }
+            System.err.println("⚠️ $message")
             return read(legacy)
         }
         return null
@@ -60,10 +57,8 @@ object UserConfigStore {
     private fun configDirectory(): File {
         val explicitProperty = System.getProperty(CONFIG_HOME_PROPERTY)?.trim().orEmpty()
         if (explicitProperty.isNotEmpty()) return File(explicitProperty)
-
         val explicitEnvironment = System.getenv(CONFIG_HOME_ENV)?.trim().orEmpty()
         if (explicitEnvironment.isNotEmpty()) return File(explicitEnvironment)
-
         val os = System.getProperty("os.name", "").lowercase()
         return when {
             os.contains("win") -> File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "Vericore")
@@ -80,10 +75,8 @@ object UserConfigStore {
     private fun legacyConfigDirectory(): File {
         val explicitProperty = System.getProperty(LEGACY_CONFIG_HOME_PROPERTY)?.trim().orEmpty()
         if (explicitProperty.isNotEmpty()) return File(explicitProperty)
-
         val explicitEnvironment = System.getenv(LEGACY_CONFIG_HOME_ENV)?.trim().orEmpty()
         if (explicitEnvironment.isNotEmpty()) return File(explicitEnvironment)
-
         val os = System.getProperty("os.name", "").lowercase()
         return when {
             os.contains("win") -> File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "CodeContext")
@@ -95,15 +88,11 @@ object UserConfigStore {
         }
     }
 
-    private fun read(file: File): UserConfig? =
-        runCatching { json.decodeFromString<UserConfig>(file.readText()) }.getOrNull()
+    private fun read(file: File): UserConfig? = runCatching { json.decodeFromString<UserConfig>(file.readText()) }.getOrNull()
 
     private fun restrictPermissions(file: File) {
         runCatching {
-            Files.setPosixFilePermissions(
-                file.toPath(),
-                setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
-            )
+            Files.setPosixFilePermissions(file.toPath(), setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE))
         }
     }
 }
