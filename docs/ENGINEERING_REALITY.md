@@ -1,6 +1,6 @@
 # Engineering Reality
 
-> **Status:** Implemented as the deterministic foundation for future agent grounding.
+> **Status:** Implemented as the deterministic foundation for repository-state grounding and downstream agent workflows.
 
 Engineering Reality is CodeContext's composition layer for answering:
 
@@ -16,17 +16,17 @@ It does not replace analysis, architecture, Git, or AI. It binds deterministic a
 - [Artifact contract](#artifact-contract)
 - [CLI](#cli)
 - [AI-agent use](#ai-agent-use)
-- [Roadmap](#roadmap)
+- [Current boundary](#current-boundary)
 
 ## Why it exists
 
-A repository has several valid views of reality: source/dependency analysis, file state, Git state, architecture findings, historical evidence, and eventually engineering decisions. Passing these independently to an AI agent creates an easy failure mode: the agent can accidentally combine artifacts produced from different repository states.
+A repository has several valid views of reality: source/dependency analysis, file state, Git state, architecture findings, historical evidence, and engineering decisions. Passing these independently to an AI agent creates an easy failure mode: the agent can accidentally combine artifacts produced from different repository states.
 
 Engineering Reality introduces an explicit identity boundary.
 
 ## State binding
 
-The analysis snapshot now records two pieces of provenance when available:
+The analysis snapshot records two pieces of provenance when available:
 
 - the Git `HEAD` observed during analysis;
 - a digest of the source-file state observed during analysis.
@@ -62,7 +62,7 @@ flowchart LR
     C --> D
     D --> E[Engineering Reality]
     E --> F[CLI / REST / MCP]
-    F --> G[AI Agents]
+    F --> G[Grounded Evidence / Agents]
 ```
 
 <details>
@@ -128,21 +128,18 @@ sequenceDiagram
     CC->>Repo: Read deterministic state
     CC->>CC: Validate state binding
     CC-->>Agent: Evidence + realityDigest
-    Agent->>CC: Propose change
-    CC-->>Agent: Impact / architecture / verification evidence
+    Agent->>CC: Prepare proposed change
+    CC-->>Agent: Plan + persisted Agent Change Contract
+    Agent->>Repo: Modify working tree
+    Agent->>CC: Verify
+    CC->>Repo: Validate contract + current state
+    CC-->>Agent: Verification evidence
 ```
 
 > **AI may reason over CodeContext evidence, but it does not define repository truth.**
 
-## Roadmap
+## Current boundary
 
-The current artifact is intentionally small. Future versions can compose additional deterministic identities:
+Engineering Reality currently composes deterministic analysis and repository-context artifacts. It does not yet include the complete semantic evidence graph, cross-repository system identity, or autonomous repository mutation.
 
-1. architecture intelligence;
-2. historical/temporal intelligence;
-3. engineering decisions and provenance;
-4. test/build evidence;
-5. cross-repository system relationships;
-6. organization-level ownership and contracts.
-
-Each layer should be added only when its evidence contract is explicit and independently verifiable.
+The separate Agent Change Contract builds on this state identity for the prepare → change → verify workflow. It is a verification boundary, not an authorization system or an autonomous coding mechanism.

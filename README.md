@@ -4,13 +4,15 @@
 
 [🌐 Explore the CodeContext website](https://sonii-shivansh.github.io/CodeContext-Website/) · [📚 Documentation](https://github.com/sonii-shivansh/CodeContext/tree/main/docs) · [🚀 Releases](https://github.com/sonii-shivansh/CodeContext/releases)
 
-CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a prepare→change→verify safety loop.
+CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a deterministic prepare → change → verify safety loop.
 
 > **North-star direction:** CodeContext is evolving toward an explicit **engineering reality layer** that lets developers and AI agents reason about a repository state without silently mixing evidence from different states.
 
 ## Current status
 
-The `main` branch is validated against the **v0.6.0** release line. The repository implements:
+The `main` branch currently contains the post-v0.6.0 engineering-intelligence work. The build version remains `0.6.0`; these changes have not yet been published as a new release.
+
+Implemented on `main`:
 
 - Java and Kotlin source analysis
 - dependency graph construction
@@ -20,14 +22,15 @@ The `main` branch is validated against the **v0.6.0** release line. The reposito
 - learning-path generation
 - deterministic change-impact analysis
 - deterministic PR Intelligence
-- Architecture Intelligence and deterministic architecture contracts
+- Architecture Intelligence, architecture drift, and deterministic architecture contracts
 - versioned analysis/evidence artifacts
 - deterministic engineering-context snapshots and diffs
-- deterministic **Engineering Reality** identity across analysis + repository state
+- deterministic Engineering Reality identity across analysis + repository state
 - grounded repository Q&A retrieval
 - deterministic, evidence-backed engineering planning
 - evidence-first `prepare` workflow
-- deterministic `verify` workflow for planned change scope, impact, PR, and architecture signals
+- repository-bound **Agent Change Contract** artifacts with SHA-256 fingerprints
+- deterministic `verify` workflow that validates the persisted contract, repository identity, prepared Git `HEAD`, plan binding, and change scope
 - optional AI assistance over bounded repository-derived context
 - local Ktor REST API
 - local MCP stdio server for AI-agent integration
@@ -59,7 +62,7 @@ codecontext analyze .
 codecontext reality . --json
 ```
 
-The default report is written to `output/index.html`. The machine-readable artifacts are written under the analyzed repository's `output/` directory.
+The default report is written to `output/index.html`. Machine-readable artifacts are written under the analyzed repository's `output/` directory.
 
 For source development:
 
@@ -71,21 +74,9 @@ cd CodeContext
 ./build/install/codecontext/bin/codecontext --version
 ```
 
-## AI setup — no manual config file required
+## AI setup
 
-AI is optional. When `ask` needs AI and no credential is configured, CodeContext can guide you through setup directly in the terminal:
-
-```text
-codecontext ask "What are the main architectural hotspots in this repository?"
-
-CodeContext AI setup required.
-Gemini is the default AI provider.
-Add your Gemini API key now? [Y/n]:
-Gemini API key: ********
-✓ Gemini API key validated and saved securely.
-```
-
-The key is stored in the user's CodeContext configuration directory, not in the repository's `.codecontext.json`. The exact location is platform-specific. You can also use `GEMINI_API_KEY` or `GOOGLE_API_KEY` as environment variables for CI and non-interactive environments.
+AI is optional. When `ask` needs AI and no credential is configured, CodeContext can guide you through setup directly in the terminal. You can also use `GEMINI_API_KEY` or `GOOGLE_API_KEY` as environment variables for CI and non-interactive environments.
 
 Use:
 
@@ -94,9 +85,7 @@ codecontext setup
 codecontext doctor
 ```
 
-`setup` interactively validates and stores a Gemini credential. `doctor` checks the Java runtime, repository, configuration source, and Gemini connectivity without printing the secret.
-
-If you prefer project-specific configuration, `.codecontext.json` remains supported as an advanced override. Never commit API keys.
+Never commit API keys.
 
 ## CLI commands
 
@@ -113,25 +102,22 @@ codecontext pr-intelligence /path/to/repository --base main --head feature/my-ch
 
 # Architecture intelligence and governance
 codecontext architecture /path/to/repository --json
+codecontext architecture-drift /path/to/repository --baseline /path/to/architecture-baseline.json --json
 codecontext architecture-contract /path/to/repository --contract /path/to/.codecontext-architecture-contract.json --json
 
-# Engineering context
+# Engineering context and repository state
 codecontext context-snapshot /path/to/repository --json
-codecontext context-diff output/before.json output/after.json --json
-
-# Bind analysis + repository state into one deterministic identity
+codecontext context-diff /path/to/before.json /path/to/after.json --json
 codecontext reality /path/to/repository --json
 
 # Grounded repository Q&A
 codecontext repo-qa "why is PaymentService risky?" --path /path/to/repository
 
-# Evidence-backed change preparation
+# Evidence-backed change preparation and verification
 codecontext prepare "add payment validation" --path /path/to/repository
+codecontext verify --path /path/to/repository --plan output/engineering-plan.json --contract output/agent-change-contract.json
 
-# Verify the implementation against the generated plan
-codecontext verify --path /path/to/repository --plan output/engineering-plan.json
-
-# Optional AI assistance — interactive setup happens automatically if needed
+# Optional AI assistance
 codecontext ask "What are the main architectural hotspots in this repository?"
 
 # Git evolution
@@ -144,7 +130,17 @@ codecontext server --host 127.0.0.1 --port 8080
 codecontext mcp
 ```
 
-The recommended developer loop is:
+`prepare` writes three repository-scoped artifacts by default:
+
+```text
+output/engineering-context.json
+output/engineering-plan.json
+output/agent-change-contract.json
+```
+
+The contract is the persisted verification boundary. Do not replace it with a newly generated contract after preparation.
+
+Recommended developer loop:
 
 ```text
 codecontext analyze .
@@ -160,21 +156,21 @@ codecontext verify
 run tests / review findings
 ```
 
-Use `codecontext <command> --help` for the exact options in the installed version.
-
-See [docs/CHANGE_SAFETY.md](docs/CHANGE_SAFETY.md) for the workflow contract and [docs/ENGINEERING_REALITY.md](docs/ENGINEERING_REALITY.md) for the reality identity contract.
+See [docs/CHANGE_SAFETY.md](docs/CHANGE_SAFETY.md) and [docs/ENGINEERING_REALITY.md](docs/ENGINEERING_REALITY.md).
 
 ## MCP / AI-agent integration
 
-CodeContext can expose deterministic engineering intelligence to MCP-compatible AI agents through a local stdio server:
+CodeContext exposes deterministic repository intelligence through a local MCP stdio server:
 
 ```bash
 codecontext mcp
 ```
 
-The MCP server currently exposes deterministic repository analysis, impact, architecture, and PR-intelligence tools. All repository paths go through the same local path-safety boundary used by the REST API. The MCP server does not expose remote repository URLs and does not provide authentication or tenant isolation; use it as a trusted local integration.
+The current MCP surface includes repository analysis, impact analysis, architecture analysis, PR Intelligence, Engineering Reality, context snapshots/diffs, architecture drift/contracts, grounded evidence, preparation, change-safety evaluation, and change verification.
 
-See [docs/MCP.md](docs/MCP.md) for agent configuration guidance and protocol details.
+The MCP server is a trusted local integration. Repository paths are validated through the local path-safety boundary; remote repository URLs are rejected. The MCP server does not provide authentication or tenant isolation.
+
+See [docs/MCP.md](docs/MCP.md) for the current tool contract.
 
 ## Architecture
 
@@ -188,45 +184,27 @@ flowchart TD
     E --> F[Deterministic Intelligence]
     F --> G[Grounded Evidence]
     G --> H[Q&A / Planner / Verification]
-    G --> I[Optional AI]
-    H --> J[CLI / REST / MCP / CI]
-    I --> J
+    H --> I[Agent Change Contract]
+    I --> J[CLI / REST / MCP / CI]
+    G --> K[Optional AI]
+    K --> J
 ```
-
-<details>
-<summary><strong>Why the reality layer exists</strong></summary>
-
-An AI agent should not have to guess whether two artifacts were generated from the same repository state. `engineering-reality.json` binds deterministic analysis and repository-context identities together through explicit schema versions and digests.
-
-See [Engineering Reality](docs/ENGINEERING_REALITY.md).
-
-</details>
 
 ## Configuration
 
-The recommended path is to use `codecontext setup` or environment variables. A repository-local configuration file is still supported for advanced settings:
+The recommended path is `codecontext setup` or environment variables. A repository-local `.codecontext.json` remains supported for advanced settings. Never commit API keys.
 
-```bash
-cp .codecontext.json.template .codecontext.json
-```
+For architecture governance, copy `.codecontext-architecture-contract.json.template` and customize its limits.
 
-For architecture governance, copy the contract template and customize its limits:
-
-```bash
-cp .codecontext-architecture-contract.json.template .codecontext-architecture-contract.json
-```
-
-Important settings include source exclusions, file-count limits, Git history limits, caching, parallel parsing, reporting limits, AI configuration, architecture rules, and rate limiting. Never commit API keys.
-
-The server also supports `CODECONTEXT_ALLOWED_PATHS`. Keep allowed roots as narrow as practical.
+The server supports `CODECONTEXT_ALLOWED_PATHS`; keep allowed roots as narrow as practical.
 
 ## Data & privacy
 
-CodeContext is local-first. With AI disabled, repository analysis and deterministic intelligence do not send repository content to a CodeContext telemetry or storage service. AI is opt-in and sends bounded repository-derived context directly to the configured external provider when an AI operation is invoked.
+CodeContext is local-first. With AI disabled, repository analysis and deterministic intelligence do not send repository content to a CodeContext telemetry or storage service. AI is opt-in and sends bounded repository-derived context directly to the configured provider when invoked.
 
-Generated HTML reports are self-contained and do not require a third-party CDN at report-open time.
+Generated HTML reports are self-contained.
 
-See [Data & Privacy](docs/DATA_PRIVACY.md) for the current implementation-level disclosure, including the approximate content limits used by AI operations.
+See [docs/DATA_PRIVACY.md](docs/DATA_PRIVACY.md).
 
 ## REST API
 
@@ -234,7 +212,7 @@ The local API provides health, analysis, reports, change-impact, PR Intelligence
 
 See [docs/API.md](docs/API.md).
 
-The server does not currently provide authentication, tenant isolation, or deployment-level authorization. Those are responsibilities of any deployment boundary beyond trusted local use.
+The server does not currently provide authentication, tenant isolation, or deployment-level authorization. Those are responsibilities of a deployment boundary beyond trusted local use.
 
 ## Development and CI
 
@@ -243,7 +221,7 @@ The server does not currently provide authentication, tenant isolation, or deplo
 ./gradlew --no-daemon build installDist
 ```
 
-GitHub Actions is the project's authoritative clean-environment verification path. CI validates compilation, tests, CLI flows, generated artifacts, intelligence flows, architecture contracts, server health, API input boundaries, cross-platform distribution smoke tests, and onboarding flows. Release packaging also validates that platform distributions can launch with an invalid system `JAVA_HOME` because the bundled runtime is used.
+GitHub Actions is the project's authoritative clean-environment verification path. It validates compilation, tests, CLI flows, generated artifacts, intelligence flows, architecture governance, prepare/verify contracts, server health, API boundaries, cross-platform distribution smoke tests, and live-repository E2E behavior.
 
 See:
 

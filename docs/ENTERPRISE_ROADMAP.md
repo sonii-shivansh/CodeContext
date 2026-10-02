@@ -31,6 +31,8 @@ Implemented:
 - machine-readable intelligence artifacts
 - evidence-first `prepare → change → verify` workflow
 - deterministic change-safety scope verification
+- repository-bound Agent Change Contract with SHA-256 fingerprint
+- persisted-contract validation for repository identity, prepared Git `HEAD`, plan binding, and tamper detection
 
 ## Architecture intelligence
 
@@ -116,10 +118,29 @@ Implemented:
 - evidence IDs
 - verification criteria
 - uncertainty handling
+- contract fingerprint binding
 - bounded input/output
 - `plan` CLI command
 
 The current planner is read-only and does not modify repositories.
+
+## Agent Change Contract
+
+Implemented:
+
+- versioned repository-bound `AgentChangeContract`
+- canonical repository identity
+- prepared Git `HEAD` binding when Git metadata is available
+- planned-path and expected-component scope
+- verification-command and evidence binding
+- architecture expectation binding
+- deterministic SHA-256 fingerprint
+- persisted `output/agent-change-contract.json` artifact from `prepare`
+- CLI verification against the persisted contract
+- tamper, plan-mismatch, repository-mismatch, and stale-HEAD detection
+- live release-gate mutation tests for contract tampering and unexpected source changes
+
+Current boundary: the core workflow retains a compatibility overload that can derive a contract from a supplied plan, and the MCP `codecontext_get_change_contract` helper currently generates a fresh contract rather than retrieving a persisted artifact. These paths are explicitly treated as compatibility/preview behavior and are candidates for further hardening.
 
 ## Engineering provenance
 
@@ -157,6 +178,19 @@ Implemented:
 
 AI is disabled unless configured.
 
+## MCP integration
+
+Implemented:
+
+- local stdio JSON-RPC MCP server
+- repository analysis, impact, architecture, PR Intelligence
+- Engineering Reality and context snapshot/diff tools
+- architecture drift and contract tools
+- grounded evidence, prepare, change-safety, and verify tools
+- local path-safety boundary and rejection of remote repository URLs
+
+Current MCP boundary: the server is a trusted local integration without authentication or tenant isolation. The change-contract generation helper is not a replacement for the persisted contract used by verification.
+
 ## Local REST API
 
 Implemented:
@@ -188,17 +222,19 @@ Implemented CI verification includes:
 - architecture-drift CLI verification
 - architecture-contract CLI verification
 - engineering-context snapshot/diff verification
+- prepare/verify contract validation
 - REST API end-to-end verification
 - Linux x64 validation
 - Windows x64 validation
 - macOS x64 validation
 - macOS ARM64 validation
+- live-repository release-gate mutation and repository-immutability checks
 
 The clean-environment workflows are the authoritative execution environment for release verification.
 
 ## Release line
 
-The current `main` branch is validated against the **v0.6.0** release line. Engineering-intelligence work extends the release line without changing the existing version contract unless a release-specific change is intentionally made.
+The current `main` branch contains post-v0.6.0 engineering-intelligence work while the Gradle/application version remains **0.6.0**. These changes have not yet been published as a new release.
 
 ## Current limitations
 
@@ -215,6 +251,7 @@ The repository currently has important boundaries:
 - Engineering Reality currently composes analysis and repository-context artifacts but does not yet include the full semantic evidence graph;
 - context snapshots currently fingerprint repository-scanned source files and do not yet capture the full semantic evidence graph;
 - temporal archaeology provides deterministic source-history metrics but does not yet reconstruct full semantic dependency graphs for arbitrary historical commits;
-- architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not yet implemented.
+- architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not yet implemented;
+- the current Agent Change Contract is a deterministic verification boundary, not an authorization system or autonomous coding mechanism.
 
 This file should be updated when implementation changes materially. It should not describe unimplemented features as if they already exist.

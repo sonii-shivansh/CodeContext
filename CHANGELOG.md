@@ -4,7 +4,23 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ## [Unreleased]
 
-_No unreleased changes are documented yet._
+### Added
+
+- Engineering Reality and deterministic engineering-context snapshot/diff capabilities on `main`.
+- Architecture drift and deterministic architecture-contract governance.
+- Repository-bound Agent Change Contracts for the prepare → change → verify workflow.
+- Persisted contract validation for repository identity, prepared Git `HEAD`, plan binding, tamper detection, and unexpected working-tree scope.
+- Expanded MCP engineering-context, architecture-governance, evidence, preparation, safety, and verification tools.
+- Live-repository release-gate coverage for contract tampering, unexpected source changes, repository restoration, MCP, REST, and optional Gemini integration.
+
+### Documentation
+
+- Updated the README, architecture, API, MCP, change-safety, and implementation-status documentation to describe the current post-v0.6.0 state without presenting future work as released functionality.
+
+### Current release status
+
+- The application/build version remains `0.6.0`.
+- The post-v0.6.0 engineering-intelligence work on `main` has not yet been published as a new release.
 
 ## [0.6.0]
 

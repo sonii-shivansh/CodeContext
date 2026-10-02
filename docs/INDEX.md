@@ -14,6 +14,8 @@ flowchart LR
     I --> Q[Evidence / Q&A]
     I --> P[Planning]
     I --> V[Verification]
+    P --> K[Agent Change Contract]
+    K --> V
     Q --> M[MCP / REST / CLI]
     P --> M
     V --> M
@@ -25,7 +27,7 @@ flowchart LR
 |---|---|---|
 | System design | [Architecture](ARCHITECTURE.md) | You need the component model or package boundaries |
 | Repository state | [Engineering Reality](ENGINEERING_REALITY.md) | You need state identity and agent grounding |
-| API | [API](API.md) | You are integrating with the local REST API |
+| API | [API](API.md) | You are integrating with the local REST API or CLI |
 | AI agents | [MCP](MCP.md) | You are integrating an MCP-compatible agent |
 | Safe changes | [Change Safety](CHANGE_SAFETY.md) | You are preparing, implementing, or verifying a change |
 | PR intelligence | [PR Intelligence](PR_INTELLIGENCE.md) | You are reviewing change risk and blast radius |
@@ -42,7 +44,7 @@ flowchart LR
 
 ### AI-agent integration
 
-`ARCHITECTURE → ENGINEERING_REALITY → MCP → API → CHANGE_SAFETY`
+`ARCHITECTURE → ENGINEERING_REALITY → MCP → CHANGE_SAFETY → API`
 
 ### Contributor adding intelligence
 
@@ -50,7 +52,7 @@ flowchart LR
 
 ### Security review
 
-`DATA_PRIVACY → ARCHITECTURE → API → MCP → SECURITY.md`
+`DATA_PRIVACY → ARCHITECTURE → API → MCP → CHANGE_SAFETY`
 
 </details>
 

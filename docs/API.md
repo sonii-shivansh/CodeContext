@@ -11,80 +11,83 @@ CodeContext exposes a CLI and a local REST API. The REST API is implemented by `
 
 Keep the default bind address on loopback for local use. Deployments beyond loopback must provide authentication, trusted-origin controls, TLS, quotas, report authorization, and tenant isolation at the deployment boundary.
 
-## CLI
+## CLI surface
+
+The current application registers these command families:
 
 ```text
-codecontext analyze <path>
-codecontext impact <path> <changed-files...>
-codecontext architecture <path>
-codecontext architecture-drift <path> --baseline <architecture-json> [--json]
-codecontext pr-intelligence <path>
-codecontext repo-qa <question> [--path <path>] [--max-results <n>] [--evidence-output <file>]
-codecontext plan <change-summary> [--evidence <file>] [--output <file>]
-codecontext ai-assistant <path>
-codecontext evolution <path>
-codecontext server [--host <address>] [--port <number>]
+analyze
+impact
+architecture
+architecture-drift
+architecture-contract
+context-snapshot
+context-diff
+reality
+pr-intelligence
+repo-qa
+plan
+prepare
+verify
+ask
+evolution
+server
+mcp
+setup
+doctor
 ```
 
-Run `codecontext <command> --help` for the exact installed options.
+Run `codecontext <command> --help` for exact installed options.
 
-## Architecture drift
-
-`architecture-drift` compares a previously generated `ArchitectureIntelligenceResult` with the current deterministic architecture analysis. It reports added/removed findings, new/removed cycles, and changed layer counts.
+### Engineering Reality and context
 
 ```bash
-codecontext architecture . --json
-codecontext architecture-drift . --baseline output/architecture-baseline.json --json
+codecontext context-snapshot /path/to/repository --json
+codecontext context-diff output/before.json output/after.json --json
+codecontext reality /path/to/repository --json
 ```
 
-The baseline must be a valid versioned architecture artifact. Drift comparison is deterministic and does not invoke an AI provider.
+Reality binds deterministic analysis and repository-context state. A stale analysis is rejected instead of being silently combined with a newer repository state.
 
-## Deterministic intelligence
-
-The analysis layer produces machine-readable artifacts consumed by CI and downstream intelligence features. Deterministic artifacts are authoritative for repository facts.
-
-Important principles:
-
-- repository-relative paths are preferred in public evidence;
-- cross-subsystem output schemas are versioned where applicable;
-- findings describe evidence and analysis rules rather than runtime certainty;
-- unknown and insufficient-evidence states remain explicit.
-
-## Repository Q&A
-
-`repo-qa` retrieves grounded evidence for a developer question without requiring an external AI provider.
+### Architecture drift and governance
 
 ```bash
-codecontext repo-qa "why is PaymentService risky?" --path /workspace/example --max-results 8
+codecontext architecture /path/to/repository --json
+codecontext architecture-drift /path/to/repository --baseline output/architecture-baseline.json --json
+codecontext architecture-contract /path/to/repository --json
 ```
 
-The stdout result contains the classified intent and ranked evidence. Retrieval is bounded.
+`architecture-drift` compares a previously generated `ArchitectureIntelligenceResult` with the current deterministic architecture analysis. `architecture-contract` evaluates current architecture findings against the configured deterministic governance contract.
 
-When the result will feed the engineering planner, export the reusable deterministic evidence artifact separately:
+### Evidence, planning, and safe changes
 
 ```bash
-codecontext repo-qa "which files are the main architectural hotspots?" \
+codecontext repo-qa "why is PaymentService risky?" \
   --path /workspace/example \
   --evidence-output output/grounded-evidence.json
 
 codecontext plan "add payment validation" \
   --evidence output/grounded-evidence.json \
   --output output/engineering-plan.json
+
+codecontext prepare "add payment validation" --path /workspace/example
+
+codecontext verify \
+  --path /workspace/example \
+  --plan output/engineering-plan.json \
+  --contract output/agent-change-contract.json \
+  --output output/verification.json
 ```
 
-`--evidence-output` writes the versioned `GroundedEvidence` contract. This keeps human-oriented ranked Q&A output separate from the machine-oriented planner input.
+`prepare` persists three repository-scoped artifacts by default:
 
-## Engineering planning
+- `output/engineering-context.json`
+- `output/engineering-plan.json`
+- `output/agent-change-contract.json`
 
-`plan` converts a `GroundedEvidence` artifact into a deterministic engineering plan.
+The Agent Change Contract is bound to the canonical repository identity and prepared Git `HEAD` when available. Its fingerprint covers the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, and architecture expectations.
 
-```bash
-codecontext plan "add payment validation" \
-  --evidence output/grounded-evidence.json \
-  --output output/engineering-plan.json
-```
-
-The current plan contract includes affected components, risk, implementation steps, evidence IDs, verification criteria, and uncertainties. The planner is read-only and provider-independent.
+`verify` loads the persisted contract and rejects missing, tampered, mismatched, cross-repository, or stale contracts rather than silently generating a replacement.
 
 ## REST endpoints
 
@@ -129,7 +132,7 @@ AI must be explicitly enabled. Provider data-handling requirements must be consi
 
 Analyzes multiple local repositories with bounded concurrency. At most 20 repositories may be submitted per request, and each repository is subject to `maxFilesAnalyze`.
 
-## Change and PR intelligence
+### Change and PR intelligence
 
 Local change-impact and PR Intelligence flows are exposed through the application and CLI. See [PR_INTELLIGENCE.md](PR_INTELLIGENCE.md) for the deterministic result model and rules.
 

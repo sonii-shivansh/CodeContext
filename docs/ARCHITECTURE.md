@@ -5,6 +5,7 @@
 - [System model](#system-model)
 - [Layer responsibilities](#layer-responsibilities)
 - [Engineering Reality](#engineering-reality)
+- [Prepare / Verify safety boundary](#prepare--verify-safety-boundary)
 - [Source layout](#source-layout)
 - [Trust boundaries](#trust-boundaries)
 - [Determinism](#determinism)
@@ -31,10 +32,12 @@ flowchart TD
     E --> Q[Repository Q&A]
     E --> PL[Engineering Planner]
     E --> V[Prepare / Verify]
+    V --> CT[Agent Change Contract]
     E --> AI[Optional AI]
     Q --> X[CLI / REST / MCP / CI]
     PL --> X
     V --> X
+    CT --> X
     AI --> X
 ```
 
@@ -82,7 +85,7 @@ See [Engineering Reality](ENGINEERING_REALITY.md).
 
 ### Engineering planner
 
-`EngineeringPlanner` consumes grounded evidence and produces a structured, versioned engineering plan containing affected components, risk, implementation steps, evidence IDs, verification criteria, and uncertainty. The planner is read-only.
+`EngineeringPlanner` consumes grounded evidence and produces a structured, versioned engineering plan containing affected components, risk, implementation steps, evidence IDs, verification criteria, uncertainty, and a contract fingerprint. The planner is read-only.
 
 ## Engineering Reality
 
@@ -101,6 +104,32 @@ flowchart LR
 > **AI reasoning is downstream of deterministic repository evidence.**
 
 The reality artifact currently contains no model-generated claims and no autonomous actions.
+
+## Prepare / Verify safety boundary
+
+The prepare/verify workflow is a deterministic application layer over the intelligence contracts:
+
+```text
+prepare
+  ↓
+engineering context + evidence + plan
+  ↓
+repository-bound AgentChangeContract
+  ↓
+agent/developer changes working tree
+  ↓
+verify against persisted contract
+  ↓
+scope + repository identity + prepared HEAD + plan binding
+  ↓
+impact + PR + architecture signals
+```
+
+`AgentChangeContract` records the canonical repository path, prepared Git `HEAD`, planned paths, expected components, verification commands, evidence IDs, architecture expectations, and a SHA-256 fingerprint. `PrepareCommand` persists the contract as `output/agent-change-contract.json`.
+
+The CLI verification path loads that persisted contract and rejects missing, tampered, mismatched, cross-repository, or stale contracts. The workflow does not modify source code. See [Change Safety](CHANGE_SAFETY.md).
+
+**Current implementation note:** the core API still exposes a compatibility overload that can derive a contract from a supplied plan, and the MCP `codecontext_get_change_contract` helper currently prepares a fresh contract for a requested change summary. These are compatibility/preview paths, not the persisted-contract verification path. A future hardening change should remove ambiguity by making persisted-contract verification the only verification entry point and making MCP contract retrieval explicitly artifact-based.
 
 ## Source layout
 
@@ -124,7 +153,7 @@ com.codecontext/
 │   ├── reality/          # cross-artifact engineering-state identity
 │   ├── scanner/          # repository discovery + Git signals
 │   ├── temporal/         # history/evolution analysis
-│   └── workflow/         # prepare/verify safety loop
+│   └── workflow/         # prepare/verify and change-safety contracts
 ├── enterprise/           # bounded organization-oriented capabilities
 ├── mcp/                  # local MCP protocol adapter
 ├── output/               # report-generation implementation
@@ -164,5 +193,6 @@ Deterministic artifacts should:
 - compose cross-artifact identities under `core/reality`;
 - add evidence types without changing existing evidence semantics;
 - add retrieval/planning rules with deterministic ordering;
-- add CLI/REST adapters around application services;
+- add workflow contracts under `core/workflow`;
+- add CLI/REST/MCP adapters around application services;
 - extend AI providers behind the existing provider boundary.
