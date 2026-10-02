@@ -36,19 +36,27 @@ class DoctorCommand : CliktCommand(
         val projectConfig = File(".codecontext.json")
         val userConfig = UserConfigStore.load()
         val effective = ConfigLoader.loadEffective()
+        val environmentKey = System.getenv("GEMINI_API_KEY")?.trim().orEmpty()
+        val googleEnvironmentKey = System.getenv("GOOGLE_API_KEY")?.trim().orEmpty()
+        val resolvedApiKey = when {
+            environmentKey.isNotBlank() -> environmentKey
+            googleEnvironmentKey.isNotBlank() -> googleEnvironmentKey
+            effective.ai.apiKey.isNotBlank() -> effective.ai.apiKey
+            else -> ""
+        }
         val keySource = when {
-            System.getenv("GEMINI_API_KEY")?.trim()?.isNotBlank() == true -> "GEMINI_API_KEY environment variable"
-            System.getenv("GOOGLE_API_KEY")?.trim()?.isNotBlank() == true -> "GOOGLE_API_KEY environment variable"
+            environmentKey.isNotBlank() -> "GEMINI_API_KEY environment variable"
+            googleEnvironmentKey.isNotBlank() -> "GOOGLE_API_KEY environment variable"
             projectConfig.isFile && effective.ai.apiKey.isNotBlank() -> "project .codecontext.json"
             userConfig?.ai?.apiKey?.isNotBlank() == true -> "user configuration"
             else -> "not configured"
         }
         check("AI provider", effective.ai.provider.isNotBlank(), effective.ai.provider)
-        check("AI credentials", effective.ai.apiKey.isNotBlank(), keySource)
+        check("AI credentials", resolvedApiKey.isNotBlank(), keySource)
 
-        if (effective.ai.provider.equals("gemini", ignoreCase = true) && effective.ai.apiKey.isNotBlank()) {
+        if (effective.ai.provider.equals("gemini", ignoreCase = true) && resolvedApiKey.isNotBlank()) {
             echo("   Validating Gemini credentials...")
-            when (val result = AISetup.validateGemini(effective.ai.apiKey, effective.ai.model)) {
+            when (val result = AISetup.validateGemini(resolvedApiKey, effective.ai.model)) {
                 AISetupResult.Success -> echo("✓ Gemini API — reachable and credentials accepted")
                 is AISetupResult.Failure -> {
                     failures++
