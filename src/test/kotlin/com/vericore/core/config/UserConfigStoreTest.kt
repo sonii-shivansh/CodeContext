@@ -13,14 +13,14 @@ class UserConfigStoreTest {
     @BeforeTest
     fun setUp() {
         ConfigTestLock.lock.lock()
-        tempDir = createTempDirectory("codecontext-config-test")
-        System.setProperty("codecontext.config.home", tempDir.toString())
+        tempDir = createTempDirectory("vericore-config-test")
+        System.setProperty("vericore.config.home", tempDir.toString())
     }
 
     @AfterTest
     fun tearDown() {
         try {
-            System.clearProperty("codecontext.config.home")
+            System.clearProperty("vericore.config.home")
             tempDir.toFile().deleteRecursively()
         } finally {
             ConfigTestLock.lock.unlock()
