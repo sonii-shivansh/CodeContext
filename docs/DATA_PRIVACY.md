@@ -33,7 +33,7 @@ The exact provider request also contains the prompt instructions and structured 
 
 Provider API keys are configured locally. CodeContext does not send keys to any CodeContext-owned telemetry service. Provider requests authenticate directly with the selected external AI provider.
 
-Never commit `.codecontext.json` containing a real API key.
+Never commit `.vericore.json` containing a real API key.
 
 ## What stays local by default
 
@@ -69,6 +69,6 @@ The authoritative implementation is the source code and configuration in this re
 - `ReportGenerator.kt` defines the self-contained report output and graph visualization.
 - `AICodeAnalyzer.kt` defines the AI provider requests and content-size boundaries.
 - `GroundedAIService.kt` and `GroundedEvidence.kt` define the bounded evidence sent for grounded Q&A.
-- `.codecontext.json.template` shows the default AI configuration.
+- `.vericore.json.template` shows the default AI configuration.
 
 If these implementation details change, this document must be updated in the same change.

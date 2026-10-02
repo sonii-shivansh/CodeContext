@@ -1,12 +1,12 @@
 # API Reference
 
-CodeContext exposes a CLI and a local REST API. The REST API is implemented by `com.codecontext.server.CodeContextServer` and is intended for trusted local or internal use.
+CodeContext exposes a CLI and a local REST API. The REST API is implemented by `com.vericore.server.CodeContextServer` and is intended for trusted local or internal use.
 
 ## Build and start
 
 ```bash
 ./gradlew installDist
-./build/install/codecontext/bin/codecontext server --host 127.0.0.1 --port 8080
+./build/install/vericore/bin/codecontext server --host 127.0.0.1 --port 8080
 ```
 
 Keep the default bind address on loopback for local use. Deployments beyond loopback must provide authentication, trusted-origin controls, TLS, quotas, report authorization, and tenant isolation at the deployment boundary.
@@ -140,7 +140,7 @@ Local change-impact and PR Intelligence flows are exposed through the applicatio
 
 The server resolves paths with `Path.toRealPath()` and accepts only readable directories equal to or descendants of a configured allowed root.
 
-Allowed roots are configured with `CODECONTEXT_ALLOWED_PATHS`, separated by the platform path separator. Configure the smallest practical set of roots.
+Allowed roots are configured with `VERICORE_ALLOWED_PATHS`, separated by the platform path separator. Configure the smallest practical set of roots.
 
 ## Rate limiting
 

@@ -25,7 +25,7 @@ Released platform archives bundle a Java runtime, so a separate JDK is not requi
 ## 1. Build from source
 
 ```bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
+git clone https://github.com/sonii-shivansh/Vericore.git
 cd CodeContext
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon installDist
@@ -34,14 +34,14 @@ cd CodeContext
 The installed CLI is available at:
 
 ```text
-build/install/codecontext/bin/codecontext
+build/install/vericore/bin/codecontext
 ```
 
 Check the installation:
 
 ```bash
-./build/install/codecontext/bin/codecontext --version
-./build/install/codecontext/bin/codecontext --help
+./build/install/vericore/bin/codecontext --version
+./build/install/vericore/bin/codecontext --help
 ```
 
 ## 2. Analyze a repository

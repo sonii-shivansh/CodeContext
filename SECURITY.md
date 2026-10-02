@@ -58,8 +58,8 @@ A model's confidence must never substitute for an authorization or verification 
 ## Deployment guidance
 
 - Bind the server to `127.0.0.1` for local use.
-- Configure `CODECONTEXT_ALLOWED_PATHS` to the smallest required set of directories.
-- Keep `.codecontext.json` and API keys out of source control.
+- Configure `VERICORE_ALLOWED_PATHS` to the smallest required set of directories.
+- Keep `.vericore.json` and API keys out of source control.
 - Place the server behind authentication, TLS, request quotas, and a trusted-origin policy when deployed remotely.
 - Review reports before sharing them because they may contain file names, paths, Git authors, commit messages, and source-derived descriptions.
 - Keep dependencies and the JDK patched.
