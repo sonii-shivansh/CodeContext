@@ -25,13 +25,15 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
             }
 
         val processed = AtomicInteger(0)
+        val warnings = AtomicInteger(0)
         val total = files.size
 
-        files.chunked(chunkSize).flatMap { chunk ->
+        val parsedFiles = files.chunked(chunkSize).flatMap { chunk ->
             chunk.map { file ->
                 async(Dispatchers.IO) {
                     try {
                         cacheManager?.getCachedParse(file)?.let { cached ->
+                            cached.parseWarning?.let { warnings.incrementAndGet() }
                             val count = processed.incrementAndGet()
                             if (count % 100 == 0 || count == total) {
                                 System.err.println("   Progress: $count/$total files")
@@ -41,6 +43,7 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
 
                         val parser = ParserFactory.getParser(file)
                         val parsed = parser.parse(file)
+                        if (parsed.parseWarning != null) warnings.incrementAndGet()
 
                         cacheManager?.saveParse(file, parsed)
 
@@ -51,11 +54,18 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
 
                         parsed
                     } catch (e: Exception) {
+                        warnings.incrementAndGet()
                         System.err.println("⚠️  Failed to parse ${file.name}: ${e.message}")
                         null
                     }
                 }
             }.awaitAll()
         }.filterNotNull()
+
+        if (warnings.get() > 0) {
+            System.err.println("⚠️  Parser diagnostics: ${warnings.get()} file(s) reported parsing warnings.")
+        }
+
+        parsedFiles
     }
 }

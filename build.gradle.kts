@@ -20,7 +20,7 @@ dependencies {
     implementation("com.github.ajalt.clikt:clikt:4.2.2")
 
     // ===== Code Parsing (CRITICAL!) =====
-    implementation("com.github.javaparser:javaparser-symbol-solver-core:3.25.8")
+    implementation("com.github.javaparser:javaparser-symbol-solver-core:3.28.2")
     implementation("com.squareup:kotlinpoet:1.16.0")
 
     // ===== Git Analysis (CRITICAL!) =====
