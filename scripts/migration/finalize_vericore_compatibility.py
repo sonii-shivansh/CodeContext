@@ -77,7 +77,27 @@ def main() -> None:
     build = ROOT / "build.gradle.kts"
     patch(build,
         'tasks.jar {\n    manifest {\n        attributes["Main-Class"] = "com.vericore.MainKt"\n    }\n}\n',
-        'tasks.jar {\n    manifest {\n        attributes["Main-Class"] = "com.vericore.MainKt"\n    }\n}\n\ntasks.named("installDist") {\n    doLast {\n        val binDir = layout.buildDirectory.dir("install/vericore/bin").get().asFile\n        val unixAlias = binDir.resolve("codecontext")\n        val dollar = "${'$'}"\n        unixAlias.writeText(\n            "#!/usr/bin/env sh\\n" +\n                "echo \\\"⚠️ Deprecated command 'codecontext'. Use 'vericore' instead.\\\" >&2\\n" +\n                "exec \\\"${dollar}(dirname \\\"${dollar}0\\\")/vericore\\\" \\\"${dollar}@\\\"\\n"\n        )\n        unixAlias.setExecutable(true)\n        binDir.resolve("codecontext.bat").writeText("@echo off\\necho [deprecated] codecontext is deprecated; use vericore instead. 1>&2\\n\\\"%~dp0vericore.bat\\\" %*\\n")\n    }\n}\n')
+        """tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "com.vericore.MainKt"
+    }
+}
+
+tasks.named("installDist") {
+    doLast {
+        val binDir = layout.buildDirectory.dir("install/vericore/bin").get().asFile
+        val unixAlias = binDir.resolve("codecontext")
+        val dollar = "$"
+        unixAlias.writeText(
+            "#!/usr/bin/env sh\\n" +
+                "echo \\\"⚠️ Deprecated command 'codecontext'. Use 'vericore' instead.\\\" >&2\\n" +
+                "exec \\\"${dollar}(dirname \\\"${dollar}0\\\")/vericore\\\" \\\"${dollar}@\\\"\\n"
+        )
+        unixAlias.setExecutable(true)
+        binDir.resolve("codecontext.bat").writeText("@echo off\\necho [deprecated] codecontext is deprecated; use vericore instead. 1>&2\\n\\\"%~dp0vericore.bat\\\" %*\\n")
+    }
+}
+""")
 
     gitignore = ROOT / ".gitignore"
     text = gitignore.read_text(encoding="utf-8")
