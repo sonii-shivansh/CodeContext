@@ -172,11 +172,25 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          set +e
           "$CLI" ask "Give a concise evidence-grounded overview of this repository's architecture and identify two files I should inspect first." 2>&1 | tee output/live-gemini-ask.txt
+          status=${PIPESTATUS[0]}
+          set -e
+
           test -s output/live-gemini-ask.txt
-          ! grep -q "AI features disabled" output/live-gemini-ask.txt
-          grep -q '💡' output/live-gemini-ask.txt
-          grep -q '🎯 Confidence:' output/live-gemini-ask.txt
+
+          if [ "$status" -eq 0 ]; then
+            ! grep -q "AI features disabled" output/live-gemini-ask.txt
+            grep -q '💡' output/live-gemini-ask.txt
+            grep -q '🎯 Confidence:' output/live-gemini-ask.txt
+            printf 'status=passed\n' > output/live-gemini-status.txt
+          elif grep -qiE 'HTTP 429|quota exceeded|rate limit' output/live-gemini-ask.txt; then
+            printf 'status=skipped\nreason=Gemini provider quota or rate limit exhausted\n' > output/live-gemini-status.txt
+            echo "::warning::Live Gemini Q&A skipped because the configured Gemini provider reported quota/rate-limit exhaustion. Deterministic E2E checks remain authoritative."
+          else
+            echo "Live Gemini Q&A failed for a reason other than quota/rate limiting."
+            exit "$status"
+          fi
 
       - name: Start REST server
         working-directory: ${{ runner.temp }}/real-project
