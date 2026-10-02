@@ -27,11 +27,12 @@ data class GitMetadata(
 @Serializable
 data class ParsedFile(
         @Serializable(with = FileAsStringSerializer::class)
-        val file: File, // Use a custom serializer for File if needed, or string path
+        val file: File,
         val packageName: String,
         val imports: List<String>,
         var gitMetadata: GitMetadata = GitMetadata(),
-        val description: String = ""
+        val description: String = "",
+        val parseWarning: String? = null
 )
 
 interface LanguageParser {
