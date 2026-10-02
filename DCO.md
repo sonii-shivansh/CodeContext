@@ -1,8 +1,8 @@
 # Developer Certificate of Origin
 
-CodeContext welcomes community contributions under the project's open-source license.
+Vericore welcomes community contributions under the project's open-source license.
 
-To keep the contribution history clear, CodeContext uses the Developer Certificate of Origin (DCO) for contributions.
+To keep the contribution history clear, Vericore uses the Developer Certificate of Origin (DCO) for contributions.
 
 By adding a `Signed-off-by:` trailer to a commit, you certify that you have the right to submit the contribution under the project's licensing terms. The sign-off is a provenance and authorship safeguard; it does not transfer ownership of your contribution.
 

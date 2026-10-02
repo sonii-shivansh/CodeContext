@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Extend CodeContext from deterministic change safety into a reproducible engineering-intelligence loop with architecture drift detection, engineering-context snapshots/diffs, and provenance records.
+**Goal:** Extend Vericore from deterministic change safety into a reproducible engineering-intelligence loop with architecture drift detection, engineering-context snapshots/diffs, and provenance records.
 
 **Architecture:** Reuse the existing deterministic parser, dependency graph, Architecture Intelligence, evidence, and prepare/verify layers. Add small pure engines for drift/context/provenance so higher-level CLI and MCP surfaces can consume stable machine-readable contracts without making AI authoritative.
 
@@ -30,8 +30,8 @@
 ### Task 1: Architecture Drift Engine
 
 **Files:**
-- Create: `src/main/kotlin/com/codecontext/core/intelligence/ArchitectureDrift.kt`
-- Create: `src/test/kotlin/com/codecontext/core/intelligence/ArchitectureDriftTest.kt`
+- Create: `src/main/kotlin/com/vericore/core/intelligence/ArchitectureDrift.kt`
+- Create: `src/test/kotlin/com/vericore/core/intelligence/ArchitectureDriftTest.kt`
 
 **Interfaces:**
 - Consumes: `ArchitectureIntelligenceResult`.
@@ -45,8 +45,8 @@
 ### Task 2: Architecture Drift CLI
 
 **Files:**
-- Create: `src/main/kotlin/com/codecontext/cli/ArchitectureDriftCommand.kt`
-- Modify: `src/main/kotlin/com/codecontext/Main.kt`
+- Create: `src/main/kotlin/com/vericore/cli/ArchitectureDriftCommand.kt`
+- Modify: `src/main/kotlin/com/vericore/Main.kt`
 - Modify: `docs/API.md`
 - Modify: `docs/ARCHITECTURE.md`
 
@@ -63,10 +63,10 @@
 ### Task 3: Engineering Context Snapshot + Diff
 
 **Files:**
-- Create: `src/main/kotlin/com/codecontext/core/intelligence/EngineeringContext.kt`
-- Create: `src/test/kotlin/com/codecontext/core/intelligence/EngineeringContextTest.kt`
-- Create: `src/main/kotlin/com/codecontext/cli/ContextDiffCommand.kt`
-- Modify: `src/main/kotlin/com/codecontext/Main.kt`
+- Create: `src/main/kotlin/com/vericore/core/intelligence/EngineeringContext.kt`
+- Create: `src/test/kotlin/com/vericore/core/intelligence/EngineeringContextTest.kt`
+- Create: `src/main/kotlin/com/vericore/cli/ContextDiffCommand.kt`
+- Modify: `src/main/kotlin/com/vericore/Main.kt`
 
 **Interfaces:**
 - Consumes: deterministic analysis/architecture/risk metadata plus repository Git state.
@@ -81,10 +81,10 @@
 ### Task 4: Decision Provenance Contract
 
 **Files:**
-- Create: `src/main/kotlin/com/codecontext/core/intelligence/DecisionProvenance.kt`
-- Create: `src/test/kotlin/com/codecontext/core/intelligence/DecisionProvenanceTest.kt`
-- Modify: `src/main/kotlin/com/codecontext/core/workflow/EngineeringPreparation.kt`
-- Modify: `src/main/kotlin/com/codecontext/core/workflow/EngineeringVerification.kt`
+- Create: `src/main/kotlin/com/vericore/core/intelligence/DecisionProvenance.kt`
+- Create: `src/test/kotlin/com/vericore/core/intelligence/DecisionProvenanceTest.kt`
+- Modify: `src/main/kotlin/com/vericore/core/workflow/EngineeringPreparation.kt`
+- Modify: `src/main/kotlin/com/vericore/core/workflow/EngineeringVerification.kt`
 - Modify: `docs/CHANGE_SAFETY.md`
 
 **Interfaces:**
