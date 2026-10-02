@@ -14,15 +14,18 @@ import kotlinx.serialization.json.Json
 class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidence-backed change plan before coding") {
     private val changeSummary by argument("change-summary", help = "Short description of the proposed change")
     private val path by option("--path", help = "Repository path").default(".")
-    private val output by option("--output", help = "Preparation artifact path").default("output/engineering-context.json")
-    private val planOutput by option("--plan-output", help = "Engineering plan artifact path").default("output/engineering-plan.json")
+    private val output by option("--output", help = "Preparation artifact path")
+    private val planOutput by option("--plan-output", help = "Engineering plan artifact path")
 
     override fun run() {
-        val result = runBlocking { EngineeringPreparation.prepare(path, changeSummary) }
+        val root = File(path).canonicalFile
+        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary) }
         val json = Json { prettyPrint = true; encodeDefaults = true }
-        val artifact = File(output).apply { parentFile?.mkdirs() }
+        val artifactPath = output ?: root.resolve("output/engineering-context.json").path
+        val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
         artifact.writeText(json.encodeToString(result))
-        val planFile = File(planOutput).apply { parentFile?.mkdirs() }
+        val planPath = planOutput ?: root.resolve("output/engineering-plan.json").path
+        val planFile = File(planPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
         planFile.writeText(json.encodeToString(result.plan))
         echo("Engineering context: ${artifact.path}")
         echo("Engineering plan: ${planFile.path}")

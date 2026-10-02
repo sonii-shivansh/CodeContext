@@ -51,4 +51,19 @@ class ConfigLoaderTest {
         val config = ConfigLoader.loadEffective(project.toString())
         assertEquals("project-key", config.ai.apiKey)
     }
+
+    @Test
+    fun `repository config is resolved from the target repository instead of process cwd`() {
+        val repository = Files.createTempDirectory("codecontext-target-repo").toFile()
+        try {
+            repository.resolve(".codecontext.json").writeText(
+                """{"maxFilesAnalyze":17,"hotspotCount":3}"""
+            )
+            val config = ConfigLoader.loadForRepository(repository.path)
+            assertEquals(17, config.maxFilesAnalyze)
+            assertEquals(3, config.hotspotCount)
+        } finally {
+            repository.deleteRecursively()
+        }
+    }
 }

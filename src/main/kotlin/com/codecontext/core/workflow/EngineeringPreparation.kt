@@ -32,7 +32,7 @@ object EngineeringPreparation {
     suspend fun prepare(repoPath: String, changeSummary: String): EngineeringPreparationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
         val parsed = CodeParallelParser(CacheManager()).parseFiles(files)

@@ -60,7 +60,7 @@ fun Application.module() {
                 require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
                 require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) { "Remote repositories are not supported by this local endpoint" }
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
-                val config = ConfigLoader.load()
+                val config = ConfigLoader.loadForRepository(path)
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
                 val reportId = UUID.randomUUID().toString()
@@ -101,7 +101,7 @@ fun Application.module() {
                 val request = call.receive<ArchitectureRequest>()
                 require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
-                val config = ConfigLoader.load()
+                val config = ConfigLoader.loadForRepository(path)
                 val (graph, _, _) = AnalysisLogic.analyze(path, config)
                 val result: ArchitectureIntelligenceResult = ArchitectureIntelligenceEngine.analyze(graph.graph, File(path), config.architecture)
                 call.respond(result)
@@ -122,7 +122,7 @@ fun Application.module() {
                 validateRevisionPair(request.baseRevision, request.headRevision)
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
                 val changeSet = if (request.baseRevision != null) GitChangeSetBuilder.fromRevisions(path, request.baseRevision, request.headRevision!!) else GitChangeSetBuilder.fromWorkingTree(path)
-                val result: PRIntelligenceResult = PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.load())
+                val result: PRIntelligenceResult = PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.loadForRepository(path))
                 call.respond(result)
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))

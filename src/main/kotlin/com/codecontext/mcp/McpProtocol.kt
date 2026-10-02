@@ -91,7 +91,7 @@ object McpProtocol {
 
     private fun analyzeRepository(args: JsonObject): JsonObject {
         val path = safeRepoPath(args)
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(path)
         val result = runBlocking { AnalysisLogic.analyze(path, config) }
         val graph = result.first
         val parsedFiles = result.second
@@ -117,7 +117,7 @@ object McpProtocol {
         val changedPaths = args["changedPaths"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
         require(changedPaths.isNotEmpty()) { "changedPaths must contain at least one repository-relative path" }
         require(changedPaths.size <= 100) { "changedPaths may contain at most 100 paths" }
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(path)
         val (graph, parsedFiles, _) = runBlocking { AnalysisLogic.analyze(path, config) }
         val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
         val pathLookup = enrichedFiles.associateBy { it.file.absolutePath.replace('\\', '/') }
@@ -134,7 +134,7 @@ object McpProtocol {
 
     private fun architectureAnalysis(args: JsonObject): JsonObject {
         val path = safeRepoPath(args)
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(path)
         val (graph, _, _) = runBlocking { AnalysisLogic.analyze(path, config) }
         val result = ArchitectureIntelligenceEngine.analyze(graph.graph, java.io.File(path), config.architecture)
         return textResult(json.encodeToString(com.codecontext.core.intelligence.ArchitectureIntelligenceResult.serializer(), result))
@@ -151,7 +151,7 @@ object McpProtocol {
         } else {
             GitChangeSetBuilder.fromRevisions(path, base, head!!)
         }
-        val result = runBlocking { PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.load()) }
+        val result = runBlocking { PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.loadForRepository(path)) }
         return textResult(json.encodeToString(com.codecontext.core.intelligence.PRIntelligenceResult.serializer(), result))
     }
 
