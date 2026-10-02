@@ -2,7 +2,7 @@
 
 **Deterministic engineering intelligence for Java and Kotlin repositories.**
 
-[🌐 Website](https://sonii-shivansh.github.io/CodeContext-Website/) · [📚 Documentation](docs/INDEX.md) · [🚀 Releases](https://github.com/sonii-shivansh/Vericore/releases)
+[🌐 Website](https://sonii-shivansh.github.io/__VERICORE_EXTERNAL_VERICORE_WEBSITE__/) · [📚 Documentation](docs/INDEX.md) · [🚀 Releases](https://github.com/sonii-shivansh/Vericore/releases)
 
 CodeContext is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a deterministic prepare → change → verify safety loop.
 
