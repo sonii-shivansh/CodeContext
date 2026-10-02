@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version without v prefix, for example 0.6.0"
+        description: "Release version without v prefix, for example 0.7.0"
         required: true
         type: string
   push:
@@ -51,6 +51,14 @@ jobs:
         run: |
           declared="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
           test "$declared" = "${{ steps.version.outputs.version }}"
+
+      - name: Verify application version contract
+        shell: bash
+        run: |
+          declared="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
+          application_version="$(grep -o 'const val current: String = "[^"]*"' src/main/kotlin/com/codecontext/core/Version.kt | sed -E 's/.*"([^"]+)"/\1/')"
+          test "$declared" = "$application_version"
+          test "$application_version" = "${{ steps.version.outputs.version }}"
 
       - name: Run release test suite
         run: ./gradlew --no-daemon clean test

@@ -54,13 +54,21 @@ jobs:
       - name: Build application and distribution
         run: ./gradlew --no-daemon build installDist
 
+      - name: Resolve declared application version
+        id: version
+        shell: bash
+        run: |
+          version="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Verify CLI
         shell: bash
         run: |
           ./build/install/codecontext/bin/codecontext --help
           version="$(./build/install/codecontext/bin/codecontext --version)"
           echo "$version"
-          echo "$version" | grep -F '0.6.0'
+          echo "$version" | grep -F '${{ steps.version.outputs.version }}'
 
       - name: Verify self-analysis workspace
         shell: bash
@@ -272,7 +280,7 @@ jobs:
           grep -F "CodeContext API is running" response.txt
           health="$(curl --fail --silent http://127.0.0.1:18080/health)"
           echo "$health" | grep -F '"status":"healthy"'
-          echo "$health" | grep -F '"version":"0.6.0"'
+          echo "$health" | grep -F '"version":"${{ steps.version.outputs.version }}"'
           curl --fail --silent http://127.0.0.1:18080/health/live | grep -F '"status":"live"'
           curl --fail --silent http://127.0.0.1:18080/health/ready | grep -F '"status":"ready"'
 
