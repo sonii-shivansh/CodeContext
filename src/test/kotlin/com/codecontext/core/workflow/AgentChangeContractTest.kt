@@ -36,4 +36,26 @@ class AgentChangeContractTest {
         assertEquals(listOf("./gradlew test"), contract.verificationCommands)
         assertEquals(64, contract.fingerprint.length)
     }
+
+    @Test
+    fun `fingerprint covers expected change types`() {
+        val base = AgentChangeContract.fromPlan(plan("src/App.kt"))
+        val changed = base.copy(expectedChangeTypes = mapOf("src/App.kt" to listOf("MODIFIED")))
+        assertNotEquals(AgentChangeContract.fingerprintFor(base), AgentChangeContract.fingerprintFor(changed))
+    }
+
+    @Test
+    fun `fingerprint covers schema version`() {
+        val base = AgentChangeContract.fromPlan(plan("src/App.kt"))
+        val changed = base.copy(schemaVersion = "3.0")
+        assertNotEquals(AgentChangeContract.fingerprintFor(base), AgentChangeContract.fingerprintFor(changed))
+    }
+
+    @Test
+    fun `fingerprint is independent of change type map insertion order`() {
+        val base = AgentChangeContract.fromPlan(plan("src/App.kt"))
+        val first = base.copy(expectedChangeTypes = linkedMapOf("src/App.kt" to listOf("MODIFIED"), "src/Other.kt" to listOf("ADDED")))
+        val second = base.copy(expectedChangeTypes = linkedMapOf("src/Other.kt" to listOf("ADDED"), "src/App.kt" to listOf("MODIFIED")))
+        assertEquals(AgentChangeContract.fingerprintFor(first), AgentChangeContract.fingerprintFor(second))
+    }
 }
