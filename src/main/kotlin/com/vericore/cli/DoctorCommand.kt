@@ -39,21 +39,30 @@ class DoctorCommand : CliktCommand(
         val root = File(".").absoluteFile
         check("Repository", File(root, ".git").exists(), root.absolutePath)
 
-        val projectConfig = File(".codecontext.json")
+        val canonicalProjectConfig = File(ConfigLoader.DEFAULT_CONFIG_FILE)
+        val legacyProjectConfig = File(ConfigLoader.LEGACY_CONFIG_FILE)
         val userConfig = UserConfigStore.load()
         val effective = ConfigLoader.loadEffective()
-        val environmentKey = System.getenv("GEMINI_API_KEY")?.trim().orEmpty()
-        val googleEnvironmentKey = System.getenv("GOOGLE_API_KEY")?.trim().orEmpty()
+
+        val canonicalGeminiEnvironmentKey = System.getenv("VERICORE_GEMINI_API_KEY")?.trim().orEmpty()
+        val canonicalGoogleEnvironmentKey = System.getenv("VERICORE_GOOGLE_API_KEY")?.trim().orEmpty()
+        val legacyGeminiEnvironmentKey = System.getenv("GEMINI_API_KEY")?.trim().orEmpty()
+        val legacyGoogleEnvironmentKey = System.getenv("GOOGLE_API_KEY")?.trim().orEmpty()
         val resolvedApiKey = when {
-            environmentKey.isNotBlank() -> environmentKey
-            googleEnvironmentKey.isNotBlank() -> googleEnvironmentKey
+            canonicalGeminiEnvironmentKey.isNotBlank() -> canonicalGeminiEnvironmentKey
+            canonicalGoogleEnvironmentKey.isNotBlank() -> canonicalGoogleEnvironmentKey
+            legacyGeminiEnvironmentKey.isNotBlank() -> legacyGeminiEnvironmentKey
+            legacyGoogleEnvironmentKey.isNotBlank() -> legacyGoogleEnvironmentKey
             effective.ai.apiKey.isNotBlank() -> effective.ai.apiKey
             else -> ""
         }
         val keySource = when {
-            environmentKey.isNotBlank() -> "GEMINI_API_KEY environment variable"
-            googleEnvironmentKey.isNotBlank() -> "GOOGLE_API_KEY environment variable"
-            projectConfig.isFile && effective.ai.apiKey.isNotBlank() -> "project .codecontext.json"
+            canonicalGeminiEnvironmentKey.isNotBlank() -> "VERICORE_GEMINI_API_KEY environment variable"
+            canonicalGoogleEnvironmentKey.isNotBlank() -> "VERICORE_GOOGLE_API_KEY environment variable"
+            legacyGeminiEnvironmentKey.isNotBlank() -> "GEMINI_API_KEY environment variable (deprecated; use VERICORE_GEMINI_API_KEY)"
+            legacyGoogleEnvironmentKey.isNotBlank() -> "GOOGLE_API_KEY environment variable (deprecated; use VERICORE_GOOGLE_API_KEY)"
+            canonicalProjectConfig.isFile && effective.ai.apiKey.isNotBlank() -> "project ${canonicalProjectConfig.name}"
+            legacyProjectConfig.isFile && effective.ai.apiKey.isNotBlank() -> "project ${legacyProjectConfig.name} (deprecated; use ${canonicalProjectConfig.name})"
             userConfig?.ai?.apiKey?.isNotBlank() == true -> "user configuration"
             else -> "not configured"
         }
@@ -62,6 +71,9 @@ class DoctorCommand : CliktCommand(
             warn("AI credentials", "not configured (AI commands require a provider key; run 'vericore setup' to configure one)")
         } else {
             check("AI credentials", true, "configured via $keySource")
+            if (legacyGeminiEnvironmentKey.isNotBlank() || legacyGoogleEnvironmentKey.isNotBlank()) {
+                warn("Legacy AI configuration", "Deprecated CodeContext environment variable detected; migrate to the VERICORE_* equivalent.")
+            }
         }
 
         if (effective.ai.provider.equals("gemini", ignoreCase = true) && resolvedApiKey.isNotBlank()) {
