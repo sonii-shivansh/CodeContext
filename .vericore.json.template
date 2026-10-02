@@ -1,0 +1,62 @@
+{
+  "excludePaths": [
+    ".git",
+    ".idea",
+    ".gradle",
+    "build",
+    "target",
+    "node_modules",
+    ".vscode",
+    "out",
+    "dist",
+    ".next"
+  ],
+  "maxFilesAnalyze": 5000,
+  "gitCommitLimit": 1000,
+  "enableCache": true,
+  "enableParallel": true,
+  "hotspotCount": 15,
+  "learningPathLength": 20,
+  "ai": {
+    "enabled": false,
+    "provider": "gemini",
+    "apiKey": "",
+    "model": "gemini-3.8-flash"
+  },
+  "rateLimit": {
+    "enabled": true,
+    "requestsPerMinute": 60,
+    "requestsPerHour": 1000
+  },
+  "architecture": {
+    "enabled": true,
+    "layers": [
+      {
+        "name": "api",
+        "pathPatterns": ["/controller/", "/controllers/", "/api/"],
+        "allowedDependencies": ["application", "service", "domain"]
+      },
+      {
+        "name": "application",
+        "pathPatterns": ["/service/", "/services/", "/usecase/", "/usecases/"],
+        "allowedDependencies": ["domain", "infrastructure", "repository"]
+      },
+      {
+        "name": "domain",
+        "pathPatterns": ["/domain/", "/model/", "/models/"],
+        "allowedDependencies": ["domain"]
+      },
+      {
+        "name": "repository",
+        "pathPatterns": ["/repository/", "/repositories/", "/dao/"],
+        "allowedDependencies": ["domain", "infrastructure"]
+      },
+      {
+        "name": "infrastructure",
+        "pathPatterns": ["/infrastructure/", "/client/", "/clients/", "/config/"],
+        "allowedDependencies": ["domain", "infrastructure"]
+      }
+    ],
+    "forbiddenDependencies": []
+  }
+}
