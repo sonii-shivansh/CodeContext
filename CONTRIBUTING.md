@@ -8,7 +8,7 @@ CodeContext is intentionally open to community contributions. The source is rele
 
 1. Search existing issues and pull requests.
 2. For significant behavior or API changes, open an issue or discussion first.
-3. Never include credentials, private source code, generated reports, `.codecontext/`, or build output in a contribution.
+3. Never include credentials, private source code, generated reports, `.vericore/`, or build output in a contribution.
 4. For security vulnerabilities, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
 
 ## Development setup
@@ -20,7 +20,7 @@ Requirements:
 - Kotlin-capable editor
 
 ```bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
+git clone https://github.com/sonii-shivansh/Vericore.git
 cd CodeContext
 ./gradlew --no-daemon clean test
 ```

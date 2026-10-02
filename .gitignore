@@ -35,7 +35,7 @@ Desktop.ini
 /output/
 *.log
 temp/
-.codecontext/cache/
+.vericore/cache/
 test_output*.txt
 build-error.log
 build_log.txt
@@ -49,4 +49,4 @@ build_log.txt
 # Sensitive Data
 local.properties
 secrets.properties
-.codecontext.json
+.vericore.json

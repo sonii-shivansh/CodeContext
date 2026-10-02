@@ -8,7 +8,7 @@ From the repository root:
 
 ```bash
 ./gradlew installDist
-./build/install/codecontext/bin/codecontext analyze .
+./build/install/vericore/bin/codecontext analyze .
 ```
 
 Open the generated report at `output/index.html`.

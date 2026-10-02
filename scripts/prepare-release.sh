@@ -128,10 +128,10 @@ codecontext --help
 ### From Source
 
 \`\`\`bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
+git clone https://github.com/sonii-shivansh/Vericore.git
 cd CodeContext
 ./gradlew installDist
-./build/install/codecontext/bin/codecontext --help
+./build/install/vericore/bin/codecontext --help
 \`\`\`
 
 ## 🚀 Quick Start
@@ -144,7 +144,7 @@ codecontext analyze .
 open output/index.html
 
 # Enable AI insights (requires Gemini API key)
-# Add to .codecontext.json:
+# Add to .vericore.json:
 {
   "ai": {
     "enabled": true,
@@ -156,7 +156,7 @@ open output/index.html
 
 ## 🔧 Configuration
 
-Create \`.codecontext.json\` in your project root:
+Create \`.vericore.json\` in your project root:
 
 \`\`\`json
 {
@@ -185,9 +185,9 @@ Create \`.codecontext.json\` in your project root:
 
 ## 📚 Documentation
 
-- [README](https://github.com/sonii-shivansh/CodeContext/blob/main/README.md)
-- [API Documentation](https://github.com/sonii-shivansh/CodeContext/blob/main/docs/API.md)
-- [Contributing Guide](https://github.com/sonii-shivansh/CodeContext/blob/main/CONTRIBUTING.md)
+- [README](https://github.com/sonii-shivansh/Vericore/blob/main/README.md)
+- [API Documentation](https://github.com/sonii-shivansh/Vericore/blob/main/docs/API.md)
+- [Contributing Guide](https://github.com/sonii-shivansh/Vericore/blob/main/CONTRIBUTING.md)
 
 ## 🙏 Acknowledgments
 
@@ -200,9 +200,9 @@ Built with:
 
 ## 📧 Support
 
-- Issues: https://github.com/sonii-shivansh/CodeContext/issues
+- Issues: https://github.com/sonii-shivansh/Vericore/issues
 - Email: shivanshsoni568@gmail.com
-- Discussions: https://github.com/sonii-shivansh/CodeContext/discussions
+- Discussions: https://github.com/sonii-shivansh/Vericore/discussions
 
 ## 📄 License
 
@@ -222,7 +222,7 @@ ls -lh "${RELEASE_DIR}/"
 echo ""
 echo "📋 Next steps:"
 echo "   1. Review release notes: ${RELEASE_DIR}/RELEASE_NOTES.md"
-echo "   2. Test the distribution: ./build/install/codecontext/bin/codecontext --help"
+echo "   2. Test the distribution: ./build/install/vericore/bin/codecontext --help"
 echo "   3. Create GitHub release with artifacts from ${RELEASE_DIR}/"
 echo "   4. Update CHANGELOG.md"
 echo "   5. Tag release: git tag ${VERSION} && git push origin ${VERSION}"
