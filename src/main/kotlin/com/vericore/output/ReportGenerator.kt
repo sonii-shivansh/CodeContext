@@ -62,7 +62,7 @@ class ReportGenerator {
 
         val htmlContent = createHTML().html {
             head {
-                title("CodeContext Analysis Report")
+                title("Vericore Analysis Report")
                 meta { charset = "utf-8" }
                 meta(name = "viewport", content = "width=device-width, initial-scale=1")
                 style {
@@ -89,7 +89,7 @@ class ReportGenerator {
             }
             body {
                 div("container") {
-                    h1 { +"CodeContext Analysis Report" }
+                    h1 { +"Vericore Analysis Report" }
                     div {
                         h2 { +"👥 Team Contribution Map" }
                         table("team-table") {

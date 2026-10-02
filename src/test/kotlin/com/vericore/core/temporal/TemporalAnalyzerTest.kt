@@ -14,7 +14,7 @@ class TemporalAnalyzerTest : StringSpec({
 
         Git.init().setDirectory(root).call().use { git ->
             git.repository.config.apply {
-                setString("user", null, "name", "CodeContext Test")
+                setString("user", null, "name", "Vericore Test")
                 setString("user", null, "email", "codecontext@example.invalid")
                 save()
             }

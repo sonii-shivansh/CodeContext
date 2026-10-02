@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Extend CodeContext from deterministic change safety into a reproducible engineering-intelligence loop with architecture drift detection, engineering-context snapshots/diffs, and provenance records.
+**Goal:** Extend Vericore from deterministic change safety into a reproducible engineering-intelligence loop with architecture drift detection, engineering-context snapshots/diffs, and provenance records.
 
 **Architecture:** Reuse the existing deterministic parser, dependency graph, Architecture Intelligence, evidence, and prepare/verify layers. Add small pure engines for drift/context/provenance so higher-level CLI and MCP surfaces can consume stable machine-readable contracts without making AI authoritative.
 

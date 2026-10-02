@@ -40,7 +40,7 @@ class EngineeringContextTest : StringSpec({
         diff.changes shouldBe emptyList()
     }
 
-    "snapshot ignores CodeContext generated output changes" {
+    "snapshot ignores Vericore generated output changes" {
         val root = java.nio.file.Files.createTempDirectory("codecontext-context-output-").toFile()
         try {
             root.resolve("src/App.kt").apply {
@@ -61,7 +61,7 @@ class EngineeringContextTest : StringSpec({
             val snapshot = EngineeringContextEngine.snapshot(
                 root,
                 com.vericore.core.scanner.RepositoryScanner(
-                    com.vericore.core.config.CodeContextConfig(excludePaths = emptyList())
+                    com.vericore.core.config.VericoreConfig(excludePaths = emptyList())
                 )
             )
 

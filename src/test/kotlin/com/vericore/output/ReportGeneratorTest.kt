@@ -25,7 +25,7 @@ class ReportGeneratorTest : StringSpec({
 
             ("unpkg.com" in html) shouldBe false
             ("https://" in html) shouldBe false
-            html.contains("CodeContext Analysis Report") shouldBe true
+            html.contains("Vericore Analysis Report") shouldBe true
         } finally {
             tempDir.deleteRecursively()
         }

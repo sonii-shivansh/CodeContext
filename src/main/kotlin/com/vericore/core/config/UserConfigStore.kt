@@ -56,8 +56,8 @@ object UserConfigStore {
 
         val os = System.getProperty("os.name", "").lowercase()
         return when {
-            os.contains("win") -> File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "CodeContext")
-            os.contains("mac") -> File(System.getProperty("user.home"), "Library/Application Support/CodeContext")
+            os.contains("win") -> File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "Vericore")
+            os.contains("mac") -> File(System.getProperty("user.home"), "Library/Application Support/Vericore")
             else -> {
                 val xdg = System.getenv("XDG_CONFIG_HOME")?.trim().orEmpty()
                 File(if (xdg.isNotEmpty()) xdg else File(System.getProperty("user.home"), ".config").absolutePath, "codecontext")

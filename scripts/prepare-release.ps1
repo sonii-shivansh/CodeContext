@@ -1,9 +1,9 @@
-# CodeContext Release Preparation Script (Windows)
+# Vericore Release Preparation Script (Windows)
 # Version: 0.1.0
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "🚀 CodeContext Release Preparation" -ForegroundColor Cyan
+Write-Host "🚀 Vericore Release Preparation" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -71,7 +71,7 @@ Write-Host ""
 # Step 7: Create release notes
 Write-Host "📝 Step 7: Creating release notes..." -ForegroundColor Blue
 $releaseNotes = @"
-# CodeContext $VERSION Release Notes
+# Vericore $VERSION Release Notes
 
 ## 🎉 Features
 
@@ -112,7 +112,7 @@ codecontext --help
 
 ``````bash
 git clone https://github.com/sonii-shivansh/Vericore.git
-cd CodeContext
+cd Vericore
 .\gradlew.bat installDist
 .\build\install\codecontext\bin\codecontext.bat --help
 ``````

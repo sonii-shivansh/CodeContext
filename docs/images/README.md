@@ -1,4 +1,4 @@
-# CodeContext demo assets
+# Vericore demo assets
 
 This directory contains screenshots and other non-runtime assets used by the project documentation.
 

@@ -5,7 +5,7 @@ import com.vericore.core.Version
 import com.vericore.core.ai.AICodeAnalyzer
 import com.vericore.core.ai.CodebaseContext
 import com.vericore.core.cache.CacheManager
-import com.vericore.core.config.CodeContextConfig
+import com.vericore.core.config.VericoreConfig
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.ArchitectureIntelligenceEngine
@@ -49,7 +49,7 @@ fun Application.module() {
 
     routing {
         staticFiles("/reports", File("output"))
-        get("/") { call.respondText("CodeContext API is running. 🚀") }
+        get("/") { call.respondText("Vericore API is running. 🚀") }
         get("/health") { call.respond(mapOf("status" to "healthy", "version" to Version.current)) }
         get("/health/live") { call.respond(mapOf("status" to "live")) }
         get("/health/ready") { call.respond(mapOf("status" to "ready")) }
@@ -171,7 +171,7 @@ fun validateRevisionPair(baseRevision: String?, headRevision: String?) {
 }
 
 object AnalysisLogic {
-    suspend fun analyze(repoPath: String, config: CodeContextConfig = ConfigLoader.load()): Triple<RobustDependencyGraph, List<com.vericore.core.parser.ParsedFile>, CacheManager> {
+    suspend fun analyze(repoPath: String, config: VericoreConfig = ConfigLoader.load()): Triple<RobustDependencyGraph, List<com.vericore.core.parser.ParsedFile>, CacheManager> {
         val files = RepositoryScanner(config).scan(repoPath)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
         val cacheManager = CacheManager()

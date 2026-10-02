@@ -1,16 +1,16 @@
 # MCP / AI-Agent Integration
 
-> Connect a trusted local AI agent to CodeContext's deterministic repository intelligence and verification boundary.
+> Connect a trusted local AI agent to Vericore's deterministic repository intelligence and verification boundary.
 
 ## Purpose
 
-CodeContext exposes a local stdio MCP server for agents that need repository evidence, architecture signals, planning, and change verification.
+Vericore exposes a local stdio MCP server for agents that need repository evidence, architecture signals, planning, and change verification.
 
-**CodeContext is the evidence and verification layer, not the coding agent.** It does not autonomously modify repository source files.
+**Vericore is the evidence and verification layer, not the coding agent.** It does not autonomously modify repository source files.
 
 ## Quick start
 
-Build/install CodeContext, then launch:
+Build/install Vericore, then launch:
 
 ```bash
 codecontext mcp
@@ -143,10 +143,10 @@ The MCP server is intended for trusted local use.
 - Repository paths must resolve to readable directories permitted by the configured path-safety boundary.
 - Remote repository URLs are rejected.
 - The MCP transport does not implement authentication or tenant isolation.
-- Tools do not provide arbitrary filesystem reads outside CodeContext's repository boundaries.
+- Tools do not provide arbitrary filesystem reads outside Vericore's repository boundaries.
 - `prepare` writes repository-local artifacts; it does not modify source code.
 
-For a shared or remote deployment, put an authenticated service boundary in front of CodeContext rather than exposing the stdio process directly.
+For a shared or remote deployment, put an authenticated service boundary in front of Vericore rather than exposing the stdio process directly.
 
 ## Compatibility
 

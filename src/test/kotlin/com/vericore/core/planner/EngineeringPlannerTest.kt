@@ -48,7 +48,7 @@ class EngineeringPlannerTest {
     }
 
     @Test
-    fun `generated CodeContext paths are excluded from affected components`() {
+    fun `generated Vericore paths are excluded from affected components`() {
         val evidence = GroundedEvidence(
             citations = listOf(
                 EvidenceCitation("source", "source", "src/Service.kt", "source file"),

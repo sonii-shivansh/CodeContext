@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
 @Serializable
-data class CodeContextConfig(
+data class VericoreConfig(
     val excludePaths: List<String> = listOf(
         ".git", ".idea", ".gradle", "build", "target", "node_modules", ".vscode", "out", "dist", ".next"
     ),
@@ -49,28 +49,28 @@ object ConfigLoader {
 
     private val logger = KotlinLogging.logger {}
 
-    fun load(configPath: String = ".vericore.json"): CodeContextConfig {
+    fun load(configPath: String = ".vericore.json"): VericoreConfig {
         val file = File(configPath)
         return if (file.exists()) {
             try {
-                Json { ignoreUnknownKeys = true }.decodeFromString<CodeContextConfig>(file.readText())
+                Json { ignoreUnknownKeys = true }.decodeFromString<VericoreConfig>(file.readText())
             } catch (e: Exception) {
                 logger.warn(e) { "Failed to parse config at $configPath, using defaults" }
                 System.err.println("⚠️ Failed to parse config, using defaults: ${e.message}")
-                CodeContextConfig()
+                VericoreConfig()
             }
         } else {
             logger.debug { "Config file not found at $configPath, using defaults" }
-            CodeContextConfig()
+            VericoreConfig()
         }
     }
 
     /** Load project configuration relative to the repository being analyzed, not the CLI process cwd. */
-    fun loadForRepository(repoPath: String): CodeContextConfig =
+    fun loadForRepository(repoPath: String): VericoreConfig =
         load(File(repoPath).canonicalFile.resolve(".vericore.json").path)
 
     /** Resolves environment -> project credential -> user credential -> defaults. */
-    fun loadEffective(configPath: String = ".vericore.json"): CodeContextConfig {
+    fun loadEffective(configPath: String = ".vericore.json"): VericoreConfig {
         val project = load(configPath)
         val user = UserConfigStore.load()?.ai
         val environmentKey = System.getenv(GEMINI_API_KEY)?.trim()
@@ -98,7 +98,7 @@ object ConfigLoader {
 
     fun createDefault(path: String = ".vericore.json") {
         try {
-            val config = CodeContextConfig()
+            val config = VericoreConfig()
             val json = Json {
                 prettyPrint = true
                 encodeDefaults = true

@@ -2,7 +2,7 @@
 
 > **Status:** Implemented as the deterministic foundation for repository-state grounding and downstream agent workflows.
 
-Engineering Reality is CodeContext's composition layer for answering:
+Engineering Reality is Vericore's composition layer for answering:
 
 > **Which repository facts belong to the same engineering state?**
 
@@ -48,7 +48,7 @@ flowchart TD
 <details>
 <summary><strong>Why both commit and source-state digest?</strong></summary>
 
-A Git commit identifies the committed tree, but a developer can have uncommitted source changes. The source-state digest covers the files CodeContext can analyze, so a dirty working tree cannot silently reuse an older analysis from the same `HEAD`.
+A Git commit identifies the committed tree, but a developer can have uncommitted source changes. The source-state digest covers the files Vericore can analyze, so a dirty working tree cannot silently reuse an older analysis from the same `HEAD`.
 
 </details>
 
@@ -122,7 +122,7 @@ The command is read-only: it does not modify source code, Git state, commits, or
 ```mermaid
 sequenceDiagram
     participant Agent
-    participant CC as CodeContext
+    participant CC as Vericore
     participant Repo as Repository
     Agent->>CC: Request repository understanding
     CC->>Repo: Read deterministic state
@@ -136,7 +136,7 @@ sequenceDiagram
     CC-->>Agent: Verification evidence
 ```
 
-> **AI may reason over CodeContext evidence, but it does not define repository truth.**
+> **AI may reason over Vericore evidence, but it does not define repository truth.**
 
 ## Current boundary
 

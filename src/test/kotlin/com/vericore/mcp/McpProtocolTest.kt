@@ -15,7 +15,7 @@ class McpProtocolTest {
         assertEquals("2.0", response["jsonrpc"]?.toString()?.trim('"'))
         assertEquals("1", response["id"]?.toString())
         val result = response["result"].toString()
-        assertTrue(result.contains("tools")); assertTrue(result.contains("CodeContext"))
+        assertTrue(result.contains("tools")); assertTrue(result.contains("Vericore"))
     }
 
     @Test

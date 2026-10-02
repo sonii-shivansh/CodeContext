@@ -15,7 +15,7 @@ object AISetupPrompter {
             }
         }
 
-        echo("\nCodeContext AI setup required.")
+        echo("\nVericore AI setup required.")
         echo("Gemini is the default AI provider.")
         echo("Add your Gemini API key now? [Y/n]: ", trailingNewline = false)
         val answer = readLine()?.trim().orEmpty().lowercase()

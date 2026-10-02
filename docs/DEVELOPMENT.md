@@ -1,10 +1,10 @@
 # Development Guide
 
-> Build, test, and extend CodeContext without crossing its deterministic, local-first boundaries.
+> Build, test, and extend Vericore without crossing its deterministic, local-first boundaries.
 
 ## Before you start
 
-Read [Getting Started](GETTING_STARTED.md) if you have not built CodeContext before.
+Read [Getting Started](GETTING_STARTED.md) if you have not built Vericore before.
 
 ### Prerequisites
 
@@ -85,7 +85,7 @@ Create a local configuration file from the template when needed:
 cp .vericore.json.template .vericore.json
 ```
 
-`CodeContextConfig` controls exclusions, file limits, Git history, caching, parsing, reporting, AI, and rate limiting. Never commit credentials.
+`VericoreConfig` controls exclusions, file limits, Git history, caching, parsing, reporting, AI, and rate limiting. Never commit credentials.
 
 For server path validation, configure the narrowest practical value for `VERICORE_ALLOWED_PATHS`.
 

@@ -55,7 +55,7 @@ class ImmutableAgentChangeContractTest {
         ProcessBuilder("git", "init").directory(root).inheritIO().start().waitFor()
         File(root, "README.md").writeText("test")
         ProcessBuilder("git", "add", ".").directory(root).inheritIO().start().waitFor()
-        ProcessBuilder("git", "-c", "user.name=CodeContext", "-c", "user.email=ci@example.com", "commit", "-m", "test").directory(root).inheritIO().start().waitFor()
+        ProcessBuilder("git", "-c", "user.name=Vericore", "-c", "user.email=ci@example.com", "commit", "-m", "test").directory(root).inheritIO().start().waitFor()
         val head = RepositoryState.head(root.path)
         assertTrue(head?.matches(Regex("[0-9a-f]{40}")) == true)
         root.deleteRecursively()

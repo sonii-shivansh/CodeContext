@@ -65,7 +65,7 @@ class AIAssistantCommand :
                 }
                 echo("\n🎯 Confidence: ${(response.confidence * 100).toInt()}%")
             } catch (e: Exception) {
-                if (e is com.vericore.core.exceptions.CodeContextException) throw e
+                if (e is com.vericore.core.exceptions.VericoreException) throw e
                 throw AIProviderException(formatProviderFailure(e.message), e)
             }
         }

@@ -1,6 +1,6 @@
 # API Reference
 
-CodeContext exposes a CLI and a local REST API. The REST API is implemented by `com.vericore.server.CodeContextServer` and is intended for trusted local or internal use.
+Vericore exposes a CLI and a local REST API. The REST API is implemented by `com.vericore.server.VericoreServer` and is intended for trusted local or internal use.
 
 ## Build and start
 

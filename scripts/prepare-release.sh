@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CodeContext Release Preparation Script
+# Vericore Release Preparation Script
 # Version: 0.1.0
 
 set -e  # Exit on error
 
-echo "🚀 CodeContext Release Preparation"
+echo "🚀 Vericore Release Preparation"
 echo "=================================="
 echo ""
 
@@ -86,7 +86,7 @@ echo ""
 # Step 7: Create release notes
 echo -e "${BLUE}📝 Step 7: Creating release notes...${NC}"
 cat > "${RELEASE_DIR}/RELEASE_NOTES.md" << EOF
-# CodeContext ${VERSION} Release Notes
+# Vericore ${VERSION} Release Notes
 
 ## 🎉 Features
 
@@ -129,7 +129,7 @@ codecontext --help
 
 \`\`\`bash
 git clone https://github.com/sonii-shivansh/Vericore.git
-cd CodeContext
+cd Vericore
 ./gradlew installDist
 ./build/install/vericore/bin/codecontext --help
 \`\`\`

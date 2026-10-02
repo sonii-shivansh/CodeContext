@@ -111,7 +111,7 @@ The goal is to fail closed when the prepared verification boundary is no longer 
 An MCP-compatible agent can use the same boundary:
 
 ```text
-CodeContext evidence
+Vericore evidence
         ↓
 prepare
         ↓
@@ -130,7 +130,7 @@ The MCP verification path uses the persisted `output/agent-change-contract.json`
 
 ## Security boundary
 
-The workflow is local-first. Repository paths use CodeContext's path-safety boundary. The workflow does not upload repository contents to CodeContext infrastructure.
+The workflow is local-first. Repository paths use Vericore's path-safety boundary. The workflow does not upload repository contents to Vericore infrastructure.
 
 AI is optional. The deterministic prepare/verify workflow does not require an external model.
 

@@ -30,7 +30,7 @@ class ImprovedAnalyzeCommand :
     private val noSnapshot by option("--no-snapshot", help = "Do not write the machine-readable analysis snapshot").flag()
 
     override fun run() {
-        echo("🚀 Starting CodeContext analysis for: $path")
+        echo("🚀 Starting Vericore analysis for: $path")
         val rootDir = File(path).canonicalFile
         if (!rootDir.exists()) {
             echo("❌ Error: Path does not exist: $path")

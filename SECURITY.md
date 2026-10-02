@@ -24,7 +24,7 @@ The project aims to acknowledge reports within 48 hours and provide an initial a
 
 ## Security model
 
-CodeContext is designed primarily for local analysis:
+Vericore is designed primarily for local analysis:
 
 - analyzed source files are parsed and never executed;
 - Git operations are read-only from the application's perspective;
@@ -40,7 +40,7 @@ The REST server does **not** provide authentication, tenant isolation, report au
 
 ## Agentic security boundary
 
-Autonomous code modification is not a current default capability. Before any agent can modify a repository, CodeContext should enforce:
+Autonomous code modification is not a current default capability. Before any agent can modify a repository, Vericore should enforce:
 
 - isolated workspaces;
 - explicit repository and directory allowlists;

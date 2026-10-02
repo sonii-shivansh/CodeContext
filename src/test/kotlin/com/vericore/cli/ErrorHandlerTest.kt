@@ -1,6 +1,6 @@
 package com.vericore.cli
 
-import com.vericore.core.exceptions.CodeContextException
+import com.vericore.core.exceptions.VericoreException
 import com.vericore.core.exceptions.ConfigurationException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -24,7 +24,7 @@ class ErrorHandlerTest {
     }
 
     @Test
-    fun `handle should print friendly message for CodeContextException`() {
+    fun `handle should print friendly message for VericoreException`() {
         val exception = ConfigurationException("Config error")
         ErrorHandler.handle(exception)
         

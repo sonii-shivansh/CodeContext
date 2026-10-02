@@ -64,7 +64,7 @@ class GitChangeSetBuilderTest {
     }
 
     @Test
-    fun `working tree ignores CodeContext generated output`() {
+    fun `working tree ignores Vericore generated output`() {
         val root = Files.createTempDirectory("codecontext-working-tree-").toFile()
         Git.init().setDirectory(root).call().use { git ->
             root.resolve("README.md").writeText("hello\n")

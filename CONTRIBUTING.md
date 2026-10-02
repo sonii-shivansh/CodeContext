@@ -1,8 +1,8 @@
-# Contributing to CodeContext
+# Contributing to Vericore
 
-Thank you for contributing to CodeContext. Contributions should improve analysis accuracy, developer experience, reliability, or security without weakening the project's local-first safety model.
+Thank you for contributing to Vericore. Contributions should improve analysis accuracy, developer experience, reliability, or security without weakening the project's local-first safety model.
 
-CodeContext is intentionally open to community contributions. The source is released under the MIT License, and community contributors retain ownership of their contributions while licensing them under the project's terms. See [DCO.md](DCO.md) for the contribution provenance policy.
+Vericore is intentionally open to community contributions. The source is released under the MIT License, and community contributors retain ownership of their contributions while licensing them under the project's terms. See [DCO.md](DCO.md) for the contribution provenance policy.
 
 ## Before you start
 
@@ -21,7 +21,7 @@ Requirements:
 
 ```bash
 git clone https://github.com/sonii-shivansh/Vericore.git
-cd CodeContext
+cd Vericore
 ./gradlew --no-daemon clean test
 ```
 
@@ -95,4 +95,4 @@ Security-sensitive changes should include tests for traversal, sibling-prefix pa
 
 ## Reporting bugs and requesting features
 
-Use the GitHub issue templates where available. Include the CodeContext version, JDK version, operating system, command, sanitized logs, and a minimal reproduction. Do not publish sensitive source code or security vulnerabilities in a public issue.
+Use the GitHub issue templates where available. Include the Vericore version, JDK version, operating system, command, sanitized logs, and a minimal reproduction. Do not publish sensitive source code or security vulnerabilities in a public issue.
