@@ -28,7 +28,7 @@ class RealityCommand : CliktCommand(
         val outputDir = root.resolve("output").apply { mkdirs() }
         val analysisFile = outputDir.resolve("analysis-snapshot.json")
         require(analysisFile.isFile) {
-            "Analysis snapshot not found at ${analysisFile.path}. Run 'codecontext analyze ${root.path}' first."
+            "Analysis snapshot not found at ${analysisFile.path}. Run 'vericore analyze ${root.path}' first."
         }
 
         val json = Json { ignoreUnknownKeys = false }
