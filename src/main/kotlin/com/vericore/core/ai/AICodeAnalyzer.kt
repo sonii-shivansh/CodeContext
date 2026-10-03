@@ -12,6 +12,8 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
+private const val DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+
 @Serializable
 data class AIInsight(
         val file: String,
@@ -51,9 +53,13 @@ data class CodeSuggestion(
 
 class AICodeAnalyzer(
         private val apiKey: String,
-        private val model: String = "gemini-2.5-flash",
+        private val model: String = DEFAULT_GEMINI_MODEL,
         private val provider: String = "gemini"
 ) {
+        companion object {
+                const val DEFAULT_MODEL = DEFAULT_GEMINI_MODEL
+        }
+
         private val client =
                 HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(20))
@@ -64,6 +70,9 @@ class AICodeAnalyzer(
         private val isEnabled: Boolean =
                 apiKey.isNotBlank() && apiKey != "heuristic" && !apiKey.startsWith("demo")
 
+        internal val configuredModel: String
+                get() = model
+
         fun isConfigured(): Boolean = isEnabled
 
         /** Analyze a single file and generate comprehensive insights */
@@ -71,7 +80,7 @@ class AICodeAnalyzer(
                 withContext(Dispatchers.IO) {
                         if (!isEnabled) {
                                 throw IllegalStateException(
-                                        "AI analysis is not configured. Please set a valid API key in .codecontext.json"
+                                        "AI analysis is not configured. Please set a valid API key in .vericore.json"
                                 )
                         }
 
@@ -351,26 +360,39 @@ class AICodeAnalyzer(
                 }
         }
 
+        /** Build the Gemini generateContent request body without making a network call. */
+        internal fun buildGeminiRequestBody(prompt: String): String =
+                buildJsonObject {
+                        put(
+                                "contents",
+                                buildJsonArray {
+                                        add(
+                                                buildJsonObject {
+                                                        put(
+                                                                "parts",
+                                                                buildJsonArray {
+                                                                        add(
+                                                                                buildJsonObject {
+                                                                                        put("text", sanitizePromptContent(prompt))
+                                                                                }
+                                                                        )
+                                                                }
+                                                        )
+                                                }
+                                        )
+                                }
+                        )
+                        put(
+                                "generationConfig",
+                                buildJsonObject {
+                                        put("maxOutputTokens", 2048)
+                                }
+                        )
+                }.toString()
+
         /** Call Google Gemini API */
         private suspend fun callGemini(prompt: String): String {
-                val requestBody =
-                        json.encodeToString(
-                                mapOf(
-                                        "contents" to listOf(
-                                                mapOf(
-                                                        "parts" to listOf(
-                                                                mapOf("text" to sanitizePromptContent(prompt))
-                                                        )
-                                                )
-                                        ),
-                                        "generationConfig" to mapOf(
-                                                "temperature" to 0.7,
-                                                "topK" to 40,
-                                                "topP" to 0.95,
-                                                "maxOutputTokens" to 2048
-                                        )
-                                )
-                        )
+                val requestBody = buildGeminiRequestBody(prompt)
 
                 val request =
                         HttpRequest.newBuilder()

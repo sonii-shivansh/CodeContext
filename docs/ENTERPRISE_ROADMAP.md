@@ -130,6 +130,7 @@ The planner is read-only.
 
 - optional AI provider abstraction
 - configured Gemini/Anthropic provider support in the existing assistant flow
+- canonical Gemini 3.8 request configuration without legacy sampling controls
 - bounded grounded evidence as model context
 - explicit separation between deterministic repository facts and model reasoning
 
@@ -189,7 +190,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-`main` is the **0.7.0 Vericore release-candidate line**. Earlier public releases were published under the former project name; `0.7.0` is the first release line whose canonical product identity is Vericore.
+`v0.7.0` is the **current published Vericore release**. Earlier public releases were published under the former project name; `0.7.0` is the first release line whose canonical product identity is Vericore. Development after the published release continues from `main`.
 
 ## Current limitations
 
