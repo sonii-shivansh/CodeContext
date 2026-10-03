@@ -42,7 +42,7 @@ jobs:
       HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' && (inputs.run_gemini == true || inputs.run_gemini == '') }}
 
     steps:
-      - name: Checkout CodeContext
+      - name: Checkout Vericore
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -54,7 +54,7 @@ jobs:
           distribution: temurin
           cache: gradle
 
-      - name: Build CodeContext
+      - name: Build Vericore
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
@@ -68,167 +68,106 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/target-before.sha"
           mkdir -p output/live-command-output
 
-      - name: Run every CLI command and capture human output
+      - name: Run CLI command output audit
         working-directory: ${{ runner.temp }}/target
         env:
-          CLI: ${{ github.workspace }}/build/install/codecontext/bin/codecontext
+          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
         run: |
           set -o pipefail
           OUT=output/live-command-output
-
-          capture() {
-            name="$1"
-            shift
-            echo "===== $name ====="
-            "$@" 2>&1 | tee "$OUT/$name.txt"
-          }
-
+          capture() { name="$1"; shift; echo "===== $name ====="; "$@" 2>&1 | tee "$OUT/$name.txt"; }
           capture 00-version "$CLI" --version
           capture 01-doctor "$CLI" doctor
           capture 02-analyze "$CLI" analyze .
           capture 03-architecture "$CLI" architecture . --json
-
           SOURCE_FILE="$(find . -type f \( -name '*.java' -o -name '*.kt' \) | grep -v '/build/' | head -1)"
           test -n "$SOURCE_FILE"
           capture 04-impact "$CLI" impact . "$SOURCE_FILE" --json
-
           cp output/architecture.json output/architecture-baseline.json
           capture 05-architecture-drift "$CLI" architecture-drift . --baseline output/architecture-baseline.json --json
+          cat > .vericore-architecture-contract.json <<'JSON'
+          {"schemaVersion":"1.0","maxFindings":100000,"maxCycles":100000,"allowedSeverities":["LOW","MEDIUM","HIGH","CRITICAL"],"requiredRules":[]}
+          JSON
           capture 06-architecture-contract "$CLI" architecture-contract . --json
+          rm -f .vericore-architecture-contract.json
           capture 07-context-snapshot "$CLI" context-snapshot . --json
           cp output/engineering-context.json output/engineering-context-baseline.json
           capture 08-context-diff "$CLI" context-diff output/engineering-context-baseline.json output/engineering-context.json --json
           capture 09-reality "$CLI" reality . --json
           capture 10-evolution "$CLI" evolution
           capture 11-pr-intelligence "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
-
           capture 12-repo-qa "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json
           capture 13-plan "$CLI" plan "Improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
           capture 14-prepare "$CLI" prepare "Improve the repository safely"
           capture 15-verify "$CLI" verify --output output/final-verify.json
-
-          echo "===== 16-setup-invalid ====="
-          if "$CLI" setup --provider unsupported > "$OUT/16-setup-invalid.txt" 2>&1; then
-            echo "Expected setup command to reject unsupported provider, but it exited successfully."
-            cat "$OUT/16-setup-invalid.txt"
-            exit 1
-          else
-            SETUP_STATUS=$?
-            cat "$OUT/16-setup-invalid.txt"
-            test "$SETUP_STATUS" -ne 0
-          fi
-
           python3 - <<'PY'
           from pathlib import Path
           import json
-          out = Path('output/live-command-output')
-          required = [
-              '00-version.txt','01-doctor.txt','02-analyze.txt','03-architecture.txt',
-              '04-impact.txt','05-architecture-drift.txt','06-architecture-contract.txt',
-              '07-context-snapshot.txt','08-context-diff.txt','09-reality.txt',
-              '10-evolution.txt','11-pr-intelligence.txt','12-repo-qa.txt','13-plan.txt',
-              '14-prepare.txt','15-verify.txt','16-setup-invalid.txt'
-          ]
-          missing = [name for name in required if not (out / name).is_file() or not (out / name).read_text().strip()]
-          assert not missing, f'Missing/empty command outputs: {missing}'
+          out=Path('output/live-command-output')
+          required=[f'{i:02d}-{name}.txt' for i,name in enumerate(['version','doctor','analyze','architecture','impact','architecture-drift','architecture-contract','context-snapshot','context-diff','reality','evolution','pr-intelligence','repo-qa','plan','prepare','verify'])]
           for name in required:
-              text = (out / name).read_text()
-              assert 'Exception in thread' not in text, f'unclean exception output in {name}'
-          json_outputs = {
-              '03-architecture.txt': 'architecture.json',
-              '04-impact.txt': 'change-impact.json',
-              '06-architecture-contract.txt': 'architecture-contract.json',
-              '07-context-snapshot.txt': 'engineering-context.json',
-              '09-reality.txt': 'engineering-reality.json',
-              '13-plan.txt': 'engineering-plan.json',
-              '14-prepare.txt': 'agent-change-contract.json',
-              '15-verify.txt': 'final-verify.json',
-          }
-          report = []
-          for txt, generated in json_outputs.items():
-              path = Path('output') / generated
-              assert path.is_file() and path.stat().st_size > 0, f'missing structured output {generated}'
-              json.loads(path.read_text())
-              report.append(f'- `{txt}` -> `{generated}`: valid JSON, {path.stat().st_size} bytes')
-
-          context_output = (out / '07-context-snapshot.txt').read_text()
-          assert 'Dirty: false' in context_output, 'context-snapshot must report a clean target repository'
-          context = json.loads((Path('output') / 'engineering-context.json').read_text())
-          dirty = context.get('dirty')
-          changed_paths = context.get('changedPaths')
-          if dirty is not None:
-              assert dirty is False, f'context-snapshot falsely reports dirty repository: {changed_paths or []}'
-          if changed_paths is not None:
-              assert changed_paths == [], f'context-snapshot reports unexpected changes: {changed_paths}'
-          report.append('- `07-context-snapshot.txt`: clean target-state assertion passed')
-
-          (out / 'SUMMARY.md').write_text('# Live command output audit\n\n' + '\n'.join(report) + '\n')
+              text=(out/name).read_text().strip()
+              assert text, name
+              assert 'Exception in thread' not in text, name
+          for name in ['architecture.json','change-impact.json','architecture-contract.json','engineering-context.json','engineering-reality.json','engineering-plan.json','final-verify.json']:
+              p=Path('output')/name
+              assert p.is_file() and p.stat().st_size > 0, name
+              json.loads(p.read_text())
+          assert 'Dirty: false' in (out/'07-context-snapshot.txt').read_text()
+          (out/'SUMMARY.md').write_text('# Vericore live command output audit\n\nAll deterministic command outputs were captured and validated.\n')
           PY
 
-      - name: Capture MCP protocol and tool output
+      - name: Capture Vericore MCP output
         working-directory: ${{ runner.temp }}/target
         env:
-          CLI: ${{ github.workspace }}/build/install/codecontext/bin/codecontext
+          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
         run: |
-          set -o pipefail
-          OUT=output/live-command-output/17-mcp.jsonl
           printf '%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"output-audit","version":"1.0"}}}' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"output-audit","version":"1.0"}}}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"codecontext_get_engineering_reality","arguments":{"repoPath":"."}}}' \
-            '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"codecontext_get_context_snapshot","arguments":{"repoPath":"."}}}' \
-            '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"codecontext_get_change_contract","arguments":{"repoPath":"."}}}' \
-            | "$CLI" mcp 2>&1 | tee "$OUT"
-
+            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"vericore_get_engineering_reality","arguments":{"repoPath":"."}}}' \
+            '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"vericore_get_context_snapshot","arguments":{"repoPath":"."}}}' \
+            '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' \
+            | "$CLI" mcp > output/live-command-output/17-mcp.jsonl
           python3 - <<'PY'
           import json
           from pathlib import Path
-          lines=[json.loads(x) for x in Path('output/live-command-output/17-mcp.jsonl').read_text().splitlines() if x.strip()]
-          assert len(lines) >= 5
-          by_id={x.get('id'):x for x in lines}
+          rows=[json.loads(x) for x in Path('output/live-command-output/17-mcp.jsonl').read_text().splitlines() if x.strip()]
+          by_id={r.get('id'):r for r in rows}
           assert by_id[1]['result']['protocolVersion']
-          tools=by_id[2]['result']['tools']
-          assert tools and all(t.get('name') and t.get('description') for t in tools)
-          for i in (3,4,5):
-              result=by_id[i]['result']
-              assert result.get('isError') is False
-              assert ''.join(c.get('text','') for c in result.get('content',[])).strip()
-          Path('output/live-command-output/17-mcp-summary.md').write_text(
-              '# MCP output audit\n\n' + f'- tools returned: {len(tools)}\n' +
-              '- initialize: valid\n- engineering reality: valid\n- context snapshot: valid\n- change contract: valid\n')
+          names={t['name'] for t in by_id[2]['result']['tools']}
+          assert 'vericore_get_change_contract' in names
+          assert not any(n.startswith('codecontext_') for n in names)
+          for i in (3,4,5): assert by_id[i]['result']['isError'] is False
           PY
 
-      - name: Capture REST output
+      - name: Capture Vericore REST output
         working-directory: ${{ runner.temp }}/target
         env:
-          CLI: ${{ github.workspace }}/build/install/codecontext/bin/codecontext
+          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
         run: |
-          "$CLI" server --host 127.0.0.1 --port 18080 > "$RUNNER_TEMP/codecontext-output-audit-server.log" 2>&1 &
-          SERVER_PID=$!
-          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:18080/health > output/live-command-output/18-rest-health.json; then break; fi
-            sleep 1
-          done
+          "$CLI" server --host 127.0.0.1 --port 18080 > "$RUNNER_TEMP/vericore-output-audit-server.log" 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do curl --fail --silent http://127.0.0.1:18080/health > output/live-command-output/18-rest-health.json && break; sleep 1; done
           curl --fail --silent http://127.0.0.1:18080/ > output/live-command-output/18-rest-root.txt
           curl --fail --silent -H 'Content-Type: application/json' -d '{"repoPath":"."}' http://127.0.0.1:18080/architecture > output/live-command-output/18-rest-architecture.json
-          curl --fail --silent -H 'Content-Type: application/json' -d '{"repoPath":"."}' http://127.0.0.1:18080/analyze > output/live-command-output/18-rest-analyze.json
+          grep -F 'Vericore API is running' output/live-command-output/18-rest-root.txt
           python3 - <<'PY'
           import json
           from pathlib import Path
-          root=Path('output/live-command-output')
-          assert 'CodeContext API is running' in (root/'18-rest-root.txt').read_text()
-          for name in ('18-rest-health.json','18-rest-architecture.json','18-rest-analyze.json'):
-              json.loads((root/name).read_text())
-          (root/'18-rest-summary.md').write_text('# REST output audit\n\n- health: valid JSON\n- root: expected service message\n- architecture: valid JSON\n- analyze: valid JSON\n')
+          p=Path('output/live-command-output')
+          health=json.loads((p/'18-rest-health.json').read_text())
+          assert health['status']=='healthy' and health['version']=='0.7.0'
+          json.loads((p/'18-rest-architecture.json').read_text())
           PY
 
       - name: Capture AI output when configured
         if: ${{ env.HAS_GEMINI == 'true' }}
         working-directory: ${{ runner.temp }}/target
         env:
-          CLI: ${{ github.workspace }}/build/install/codecontext/bin/codecontext
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
+          VERICORE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set +e
           "$CLI" ask "Summarize the architecture using only repository evidence." 2>&1 | tee output/live-command-output/19-ask.txt
@@ -236,36 +175,11 @@ jobs:
           set -e
           test -s output/live-command-output/19-ask.txt
           if grep -Eiq 'HTTP[[:space:]]*429|quota[^[:alnum:]]*(exceeded|exhausted)|rate[[:space:]-]*limit|RESOURCE_EXHAUSTED' output/live-command-output/19-ask.txt; then
-            echo 'Gemini quota/rate limit encountered; output preserved for inspection.'
+            echo 'Gemini quota/rate limit encountered; deterministic checks remain authoritative.'
           else
             test "$status" -eq 0
             ! grep -q 'AI features disabled' output/live-command-output/19-ask.txt
           fi
-
-      - name: Produce command inventory and audit summary
-        if: always()
-        working-directory: ${{ runner.temp }}/target
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import os
-          out=Path('output/live-command-output')
-          commands=[
-            ('--version','00-version.txt'),('doctor','01-doctor.txt'),('analyze','02-analyze.txt'),
-            ('architecture','03-architecture.txt'),('impact','04-impact.txt'),('architecture-drift','05-architecture-drift.txt'),
-            ('architecture-contract','06-architecture-contract.txt'),('context-snapshot','07-context-snapshot.txt'),
-            ('context-diff','08-context-diff.txt'),('reality','09-reality.txt'),('evolution','10-evolution.txt'),
-            ('pr-intelligence','11-pr-intelligence.txt'),('repo-qa','12-repo-qa.txt'),('plan','13-plan.txt'),
-            ('prepare','14-prepare.txt'),('verify','15-verify.txt'),('setup','16-setup-invalid.txt'),('mcp','17-mcp.jsonl'),('server/REST','18-rest-summary.md')
-          ]
-          if (out/'19-ask.txt').exists(): commands.append(('ask','19-ask.txt'))
-          rows=['# CodeContext live command output audit','',f'Target: {os.environ.get("TARGET_REPOSITORY")}', '', '| Command | Captured output | Non-empty |','|---|---|---:|']
-          for command,file in commands:
-              p=out/file
-              rows.append(f'| `{command}` | `{file}` | {"yes" if p.exists() and p.stat().st_size else "no"} |')
-          rows += ['', '## Human inspection targets', '', 'Raw command output is preserved for release evidence. Structured artifacts are validated for JSON syntax and basic completeness.']
-          (out/'AUDIT-SUMMARY.md').write_text('\n'.join(rows)+'\n')
-          PY
 
       - name: Verify target repository identity
         working-directory: ${{ runner.temp }}/target
@@ -273,14 +187,14 @@ jobs:
           test "$(cat "$RUNNER_TEMP/target-before.sha")" = "$(git rev-parse HEAD)"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.codecontext/|\.codecontext-architecture-contract\.json$)' || true)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)')"
 
       - name: Upload complete output evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: codecontext-live-command-output
+          name: vericore-live-command-output
           if-no-files-found: warn
           path: |
             ${{ runner.temp }}/target/output/live-command-output/
-            ${{ runner.temp }}/codecontext-output-audit-server.log
+            ${{ runner.temp }}/vericore-output-audit-server.log

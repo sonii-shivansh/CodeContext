@@ -55,16 +55,16 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          ./build/install/codecontext/bin/codecontext --version | grep -F '${{ steps.version.outputs.version }}'
-          ./build/install/codecontext/bin/codecontext --help >/dev/null
+          ./build/install/vericore/bin/vericore --version | grep -F '${{ steps.version.outputs.version }}'
+          ./build/install/vericore/bin/vericore --help >/dev/null
 
       - name: Verify Unix release archive
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          archive="codecontext-${{ steps.version.outputs.version }}-${{ matrix.name }}.tar.gz"
-          tar -czf "$archive" -C build/install codecontext
-          tar -tzf "$archive" | grep -F 'codecontext/bin/codecontext'
+          archive="vericore-${{ steps.version.outputs.version }}-${{ matrix.name }}.tar.gz"
+          tar -czf "$archive" -C build/install vericore
+          tar -tzf "$archive" | grep -F 'vericore/bin/vericore'
 
       - name: Build distribution on Windows
         if: runner.os == 'Windows'
@@ -75,14 +75,14 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
+          $version = (& .\build\install\vericore\bin\vericore.bat --version).Trim()
           if ($version -notmatch [regex]::Escape('${{ steps.version.outputs.version }}')) { throw "Unexpected CLI version: $version" }
-          & .\build\install\codecontext\bin\codecontext.bat --help | Out-Null
+          & .\build\install\vericore\bin\vericore.bat --help | Out-Null
 
       - name: Verify Windows release archive
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $archive = "codecontext-${{ steps.version.outputs.version }}-Windows-x64.zip"
-          Compress-Archive -Path .\build\install\codecontext -DestinationPath $archive
+          $archive = "vericore-${{ steps.version.outputs.version }}-Windows-x64.zip"
+          Compress-Archive -Path .\build\install\vericore -DestinationPath $archive
           if (-not (Test-Path $archive)) { throw "Archive was not created" }

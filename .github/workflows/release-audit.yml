@@ -34,7 +34,7 @@ jobs:
         run: bash scripts/audit/rest-audit.sh
       - name: Adversarial contract audit
         run: |
-          CLI="./build/install/codecontext/bin/codecontext"
+          CLI="./build/install/vericore/bin/vericore"
           rm -rf output
           "$CLI" prepare "release audit contract" --path . >/dev/null
           cp output/agent-change-contract.json /tmp/contract.json

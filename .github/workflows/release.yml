@@ -56,7 +56,7 @@ jobs:
         shell: bash
         run: |
           declared="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
-          application_version="$(grep -o 'const val current: String = "[^"]*"' src/main/kotlin/com/codecontext/core/Version.kt | sed -E 's/.*"([^"]+)"/\1/')"
+          application_version="$(grep -o 'const val current: String = "[^"]*"' src/main/kotlin/com/vericore/core/Version.kt | sed -E 's/.*"([^"]+)"/\1/')"
           test "$declared" = "$application_version"
           test "$application_version" = "${{ steps.version.outputs.version }}"
 
@@ -96,50 +96,50 @@ jobs:
         run: |
           chmod +x ./gradlew ./scripts/prepare-runtime.sh
           ./gradlew --no-daemon installDist
-          ./scripts/prepare-runtime.sh build/install/codecontext
+          ./scripts/prepare-runtime.sh build/install/vericore
 
       - name: Verify bundled CLI on Unix without relying on system Java
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          JAVA_HOME='/does-not-exist' ./build/install/codecontext/bin/codecontext --version | grep -F '${{ needs.resolve-version.outputs.version }}'
-          test -x ./build/install/codecontext/jre/bin/java
+          JAVA_HOME='/does-not-exist' ./build/install/vericore/bin/vericore --version | grep -F '${{ needs.resolve-version.outputs.version }}'
+          test -x ./build/install/vericore/jre/bin/java
 
       - name: Build distribution on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           .\gradlew.bat --no-daemon installDist
-          .\scripts\prepare-runtime.ps1 -DistDir .\build\install\codecontext
+          .\scripts\prepare-runtime.ps1 -DistDir .\build\install\vericore
 
       - name: Verify bundled CLI on Windows without relying on system Java
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $env:JAVA_HOME = 'C:\does-not-exist'
-          $version = (& .\build\install\codecontext\bin\codecontext.bat --version).Trim()
+          $version = (& .\build\install\vericore\bin\vericore.bat --version).Trim()
           if ($version -notmatch [regex]::Escape('${{ needs.resolve-version.outputs.version }}')) { throw "Unexpected version: $version" }
-          if (-not (Test-Path .\build\install\codecontext\jre\bin\java.exe)) { throw 'Bundled Java runtime was not packaged.' }
+          if (-not (Test-Path .\build\install\vericore\jre\bin\java.exe)) { throw 'Bundled Java runtime was not packaged.' }
 
       - name: Package Unix artifact
         if: runner.os != 'Windows'
         shell: bash
         run: |
           VERSION='${{ needs.resolve-version.outputs.version }}'
-          tar -czf "codecontext-${VERSION}-${{ matrix.name }}.tar.gz" -C build/install codecontext
+          tar -czf "vericore-${VERSION}-${{ matrix.name }}.tar.gz" -C build/install vericore
 
       - name: Package Windows artifact
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $version = '${{ needs.resolve-version.outputs.version }}'
-          Compress-Archive -Path .\build\install\codecontext -DestinationPath "codecontext-$version-${{ matrix.name }}.zip"
+          Compress-Archive -Path .\build\install\vericore -DestinationPath "vericore-$version-${{ matrix.name }}.zip"
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
         with:
-          name: codecontext-${{ matrix.name }}
-          path: codecontext-*-${{ matrix.name }}.*
+          name: vericore-${{ matrix.name }}
+          path: vericore-*-${{ matrix.name }}.*
           if-no-files-found: error
 
   publish:
@@ -150,22 +150,22 @@ jobs:
       - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: codecontext-*
+          pattern: vericore-*
           path: release-assets
           merge-multiple: true
 
       - name: Generate checksums
         working-directory: release-assets
         run: |
-          sha256sum codecontext-* > SHA256SUMS
+          sha256sum vericore-* > SHA256SUMS
           cat SHA256SUMS
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.resolve-version.outputs.version }}
-          name: CodeContext v${{ needs.resolve-version.outputs.version }}
+          name: Vericore v${{ needs.resolve-version.outputs.version }}
           generate_release_notes: true
           files: |
-            release-assets/codecontext-*
+            release-assets/vericore-*
             release-assets/SHA256SUMS

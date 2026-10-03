@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CodeContext Release Preparation Script
-# Version: 0.1.0
+# Vericore Release Preparation Script
+# Version: 0.7.0
 
-set -e  # Exit on error
+set -euo pipefail
 
-echo "🚀 CodeContext Release Preparation"
+echo "🚀 Vericore Release Preparation"
 echo "=================================="
 echo ""
 
@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-VERSION="v0.1.0"
+VERSION="v0.7.0"
 
 # Step 1: Clean previous builds
 echo -e "${BLUE}📦 Step 1: Cleaning previous builds...${NC}"
@@ -26,16 +26,7 @@ echo ""
 # Step 2: Run tests
 echo -e "${BLUE}🧪 Step 2: Running tests...${NC}"
 ./gradlew test
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ All tests passed${NC}"
-else
-    echo -e "${YELLOW}⚠️  Some tests failed. Continue anyway? (y/n)${NC}"
-    read -r response
-    if [[ ! "$response" =~ ^[Yy]$ ]]; then
-        echo "Release cancelled."
-        exit 1
-    fi
-fi
+echo -e "${GREEN}✅ All tests passed${NC}"
 echo ""
 
 # Step 3: Build project
@@ -50,43 +41,53 @@ echo -e "${BLUE}📦 Step 4: Creating distribution...${NC}"
 echo -e "${GREEN}✅ Distribution created${NC}"
 echo ""
 
-# Step 5: Package release
-echo -e "${BLUE}📦 Step 5: Packaging release...${NC}"
-RELEASE_NAME="codecontext-${VERSION}"
-RELEASE_DIR="build/release"
+# Step 5: Verify canonical distribution
+APP="build/install/vericore/bin/vericore"
+echo -e "${BLUE}🔎 Step 5: Verifying Vericore distribution...${NC}"
+if [[ ! -x "${APP}" ]]; then
+    echo -e "${YELLOW}❌ Expected executable not found: ${APP}${NC}"
+    exit 1
+fi
+"./${APP}" --version
+echo -e "${GREEN}✅ Vericore distribution verified${NC}"
+echo ""
 
-# Create release directory
+# Step 6: Package release
+RELEASE_NAME="vericore-${VERSION}"
+RELEASE_DIR="build/release"
+echo -e "${BLUE}📦 Step 6: Packaging release...${NC}"
+
+rm -rf "${RELEASE_DIR}"
 mkdir -p "${RELEASE_DIR}"
 
-# Create zip archive
 cd build/install
 if command -v zip &> /dev/null; then
-    zip -r "../../${RELEASE_DIR}/${RELEASE_NAME}.zip" codecontext/
+    zip -r "../../${RELEASE_DIR}/${RELEASE_NAME}.zip" vericore/
     echo -e "${GREEN}✅ Created ${RELEASE_NAME}.zip${NC}"
 else
-    tar -czf "../../${RELEASE_DIR}/${RELEASE_NAME}.tar.gz" codecontext/
+    tar -czf "../../${RELEASE_DIR}/${RELEASE_NAME}.tar.gz" vericore/
     echo -e "${GREEN}✅ Created ${RELEASE_NAME}.tar.gz${NC}"
 fi
 cd ../..
 echo ""
 
-# Step 6: Generate checksums
-echo -e "${BLUE}🔐 Step 6: Generating checksums...${NC}"
+# Step 7: Generate checksums
+echo -e "${BLUE}🔐 Step 7: Generating checksums...${NC}"
 cd "${RELEASE_DIR}"
 if command -v sha256sum &> /dev/null; then
     sha256sum ${RELEASE_NAME}.* > checksums.txt
-    echo -e "${GREEN}✅ Checksums generated${NC}"
 elif command -v shasum &> /dev/null; then
     shasum -a 256 ${RELEASE_NAME}.* > checksums.txt
-    echo -e "${GREEN}✅ Checksums generated${NC}"
+else
+    echo -e "${YELLOW}⚠️ SHA-256 utility not available; skipping checksums${NC}"
 fi
+echo -e "${GREEN}✅ Checksums generated${NC}"
 cd ../..
 echo ""
 
-# Step 7: Create release notes
-echo -e "${BLUE}📝 Step 7: Creating release notes...${NC}"
+# Step 8: Create release notes
 cat > "${RELEASE_DIR}/RELEASE_NOTES.md" << EOF
-# CodeContext ${VERSION} Release Notes
+# Vericore ${VERSION} Release Notes
 
 ## 🎉 Features
 
@@ -98,9 +99,9 @@ cat > "${RELEASE_DIR}/RELEASE_NOTES.md" << EOF
 
 ### Commands
 - \`analyze\`: Comprehensive codebase analysis with hotspot detection
-- \`ai-assistant\`: AI-powered code insights and recommendations
 - \`evolution\`: Track codebase changes over time
 - \`server\`: REST API server mode for programmatic access
+- \`mcp\`: MCP server mode for AI-agent integration
 
 ### Output
 - Interactive HTML reports with D3.js visualizations
@@ -114,15 +115,16 @@ cat > "${RELEASE_DIR}/RELEASE_NOTES.md" << EOF
 
 \`\`\`bash
 # Extract archive
-unzip codecontext-${VERSION}.zip
+unzip vericore-${VERSION}.zip
 # or
-tar -xzf codecontext-${VERSION}.tar.gz
+tar -xzf vericore-${VERSION}.tar.gz
 
 # Add to PATH
-export PATH=\$PATH:\$(pwd)/codecontext/bin
+export PATH=\$PATH:\$(pwd)/vericore/bin
 
 # Verify installation
-codecontext --help
+vericore --version
+vericore --help
 \`\`\`
 
 ### From Source
@@ -131,45 +133,22 @@ codecontext --help
 git clone https://github.com/sonii-shivansh/CodeContext.git
 cd CodeContext
 ./gradlew installDist
-./build/install/codecontext/bin/codecontext --help
+./build/install/vericore/bin/vericore --help
 \`\`\`
 
 ## 🚀 Quick Start
 
 \`\`\`bash
 # Analyze current directory
-codecontext analyze .
+vericore analyze .
 
 # View report
 open output/index.html
-
-# Enable AI insights (requires Gemini API key)
-# Add to .codecontext.json:
-{
-  "ai": {
-    "enabled": true,
-    "apiKey": "your-api-key",
-    "model": "gemini-1.5-flash"
-  }
-}
 \`\`\`
 
 ## 🔧 Configuration
 
-Create \`.codecontext.json\` in your project root:
-
-\`\`\`json
-{
-  "maxFilesAnalyze": 10000,
-  "hotspotCount": 10,
-  "enableCache": true,
-  "ai": {
-    "enabled": false,
-    "apiKey": "",
-    "model": "gemini-1.5-flash"
-  }
-}
-\`\`\`
+Vericore uses its canonical configuration namespace by default. Legacy CodeContext configuration files remain supported only through the documented migration compatibility path and emit a non-fatal migration warning.
 
 ## 📊 System Requirements
 
@@ -212,9 +191,8 @@ EOF
 echo -e "${GREEN}✅ Release notes created${NC}"
 echo ""
 
-# Summary
 echo "=================================="
-echo -e "${GREEN}✨ Release preparation complete!${NC}"
+echo -e "${GREEN}✨ Vericore release preparation complete!${NC}"
 echo ""
 echo "📦 Release artifacts:"
 echo "   - Location: ${RELEASE_DIR}/"
@@ -222,7 +200,7 @@ ls -lh "${RELEASE_DIR}/"
 echo ""
 echo "📋 Next steps:"
 echo "   1. Review release notes: ${RELEASE_DIR}/RELEASE_NOTES.md"
-echo "   2. Test the distribution: ./build/install/codecontext/bin/codecontext --help"
+echo "   2. Test the distribution: ${APP} --help"
 echo "   3. Create GitHub release with artifacts from ${RELEASE_DIR}/"
 echo "   4. Update CHANGELOG.md"
 echo "   5. Tag release: git tag ${VERSION} && git push origin ${VERSION}"

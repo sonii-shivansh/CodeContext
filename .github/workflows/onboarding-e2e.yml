@@ -35,7 +35,7 @@ jobs:
       - name: Verify help exposes onboarding commands
         shell: bash
         run: |
-          CLI=./build/install/codecontext/bin/codecontext
+          CLI=./build/install/vericore/bin/vericore
           "$CLI" --help > help.txt
           grep -q "setup" help.txt
           grep -q "doctor" help.txt
@@ -45,9 +45,9 @@ jobs:
       - name: Verify clean checkout diagnostics
         shell: bash
         run: |
-          CLI=./build/install/codecontext/bin/codecontext
+          CLI=./build/install/vericore/bin/vericore
           "$CLI" doctor | tee doctor.txt
-          grep -q "CodeContext doctor" doctor.txt
+          grep -q "Vericore doctor" doctor.txt
           grep -q "Java runtime" doctor.txt
           grep -q "Repository" doctor.txt
           grep -q "AI credentials" doctor.txt
@@ -55,11 +55,11 @@ jobs:
       - name: Create a real Git fixture repository
         shell: bash
         run: |
-          rm -rf "$RUNNER_TEMP/codecontext-fixture"
-          mkdir -p "$RUNNER_TEMP/codecontext-fixture/src/main/java/example"
-          cd "$RUNNER_TEMP/codecontext-fixture"
+          rm -rf "$RUNNER_TEMP/vericore-fixture"
+          mkdir -p "$RUNNER_TEMP/vericore-fixture/src/main/java/example"
+          cd "$RUNNER_TEMP/vericore-fixture"
           git init -q
-          git config user.name "CodeContext E2E"
+          git config user.name "Vericore E2E"
           git config user.email "e2e@example.com"
           cat > src/main/java/example/Service.java <<'JAVA'
           package example;
@@ -68,11 +68,11 @@ jobs:
           }
           JAVA
           cat > README.md <<'MD'
-          # CodeContext E2E Fixture
+          # Vericore E2E Fixture
           MD
           git add .
           git commit -qm "initial fixture"
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" analyze .
           test -s output/index.html
           test -s output/analysis-snapshot.json
@@ -89,16 +89,20 @@ jobs:
       - name: Verify no project secret file is required
         shell: bash
         run: |
-          cd "$RUNNER_TEMP/codecontext-fixture"
-          test ! -f .codecontext.json
-          test ! -f .codecontext.json.template
+          cd "$RUNNER_TEMP/vericore-fixture"
+          test ! -f .vericore.json
+          test ! -f .vericore.json.template
 
       - name: Verify environment-based credential discovery without persisting it
         shell: bash
         env:
-          GEMINI_API_KEY: "e2e-placeholder-key"
+          VERICORE_GEMINI_API_KEY: ${{ secrets.VERICORE_GEMINI_API_KEY || secrets.GEMINI_API_KEY || secrets.VERICORE_GOOGLE_API_KEY || secrets.GOOGLE_API_KEY }}
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          cd "$RUNNER_TEMP/vericore-fixture"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          test -n "$VERICORE_GEMINI_API_KEY"
           "$CLI" doctor | tee env-doctor.txt
-          grep -q "GEMINI_API_KEY environment variable" env-doctor.txt
-          test ! -f .codecontext.json
+          grep -Fq "VERICORE_GEMINI_API_KEY environment variable" env-doctor.txt
+          grep -Fq "Gemini API — reachable and credentials accepted" env-doctor.txt
+          grep -Fq "✓ Vericore is ready to use." env-doctor.txt
+          test ! -f .vericore.json

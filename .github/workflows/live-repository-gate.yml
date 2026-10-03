@@ -48,7 +48,7 @@ jobs:
       HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' && (inputs.run_gemini == true || inputs.run_gemini == '') }}
 
     steps:
-      - name: Checkout CodeContext
+      - name: Checkout Vericore
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -60,7 +60,7 @@ jobs:
           distribution: temurin
           cache: gradle
 
-      - name: Build and test CodeContext
+      - name: Build and test Vericore
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
@@ -77,7 +77,7 @@ jobs:
       - name: Run complete CLI surface
         working-directory: ${{ runner.temp }}/target
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" --version
           "$CLI" doctor
           "$CLI" analyze .
@@ -97,7 +97,7 @@ jobs:
       - name: Grounded intelligence and preparation
         working-directory: ${{ runner.temp }}/target
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json > output/repo-qa.json
           test -s output/repo-qa.json
           test -s output/grounded-evidence.json
@@ -117,7 +117,7 @@ jobs:
       - name: Prove contract tamper detection
         working-directory: ${{ runner.temp }}/target
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           cp output/agent-change-contract.json "$RUNNER_TEMP/contract-original.json"
           python3 - <<'PY'
           import json
@@ -136,8 +136,8 @@ jobs:
       - name: Prove unexpected source change detection
         working-directory: ${{ runner.temp }}/target
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
-          TEST_FILE="src/codecontext-live-gate-safety-check.txt"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          TEST_FILE="src/vericore-live-gate-safety-check.txt"
           printf '%s\n' 'intentional release-gate mutation' > "$TEST_FILE"
           set +e
           "$CLI" verify --output output/unexpected-change-verify.json > "$RUNNER_TEMP/unexpected-change.log" 2>&1
@@ -148,12 +148,12 @@ jobs:
           rm -f "$TEST_FILE"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.codecontext/)')"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)')"
 
       - name: Verify prepared contract remains valid after mutation tests
         working-directory: ${{ runner.temp }}/target
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" verify --output output/final-verify.json
           test -s output/final-verify.json
           grep -q '"valid": true' output/final-verify.json
@@ -161,13 +161,13 @@ jobs:
       - name: MCP protocol and gateway smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           printf '%s\n' \
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"codecontext_get_engineering_reality","arguments":{"repoPath":"."}}}' \
-            '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"codecontext_get_context_snapshot","arguments":{"repoPath":"."}}}' \
-            '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"codecontext_get_change_contract","arguments":{"repoPath":"."}}}' \
+            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"vericore_get_engineering_reality","arguments":{"repoPath":"."}}}' \
+            '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"vericore_get_context_snapshot","arguments":{"repoPath":"."}}}' \
+            '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' \
             | "$CLI" mcp > output/mcp-release-gate.jsonl
           python3 - <<'PY'
           import json
@@ -176,7 +176,8 @@ jobs:
           assert by_id[1].get('result',{}).get('protocolVersion')
           tools=by_id[2].get('result',{}).get('tools',[])
           names={tool.get('name') for tool in tools}
-          assert 'codecontext_get_change_contract' in names
+          assert 'vericore_get_change_contract' in names
+          assert not any(name.startswith('codecontext_') for name in names)
           for request_id in (3,4,5):
               result=by_id[request_id].get('result')
               assert result and result.get('isError') is False, by_id[request_id]
@@ -191,15 +192,17 @@ jobs:
       - name: REST API live repository smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
-          "$CLI" server --host 127.0.0.1 --port 18080 > "$RUNNER_TEMP/codecontext-live-server.log" 2>&1 &
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          "$CLI" server --host 127.0.0.1 --port 18080 > "$RUNNER_TEMP/vericore-live-server.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for attempt in {1..30}; do
             curl --fail --silent http://127.0.0.1:18080/health > output/rest-health.json && break
             sleep 1
           done
           test -s output/rest-health.json
           curl --fail --silent http://127.0.0.1:18080/ > output/rest-root.txt
-          grep -F 'CodeContext API is running' output/rest-root.txt
+          grep -F 'Vericore API is running' output/rest-root.txt
           curl --fail --silent -H 'Content-Type: application/json' -d '{"repoPath":"."}' http://127.0.0.1:18080/architecture > output/rest-architecture.json
           test -s output/rest-architecture.json
           status=$(curl --silent --output /tmp/traversal.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":"/tmp/../etc"}' http://127.0.0.1:18080/analyze)
@@ -209,9 +212,9 @@ jobs:
         if: ${{ env.HAS_GEMINI == 'true' }}
         working-directory: ${{ runner.temp }}/target
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VERICORE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          CLI="$GITHUB_WORKSPACE/build/install/codecontext/bin/codecontext"
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           set +e
           "$CLI" ask "Summarize the architecture using only repository evidence." 2>&1 | tee output/live-gemini.txt
           status=${PIPESTATUS[0]}
@@ -232,14 +235,14 @@ jobs:
           test "$before" = "$after"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.codecontext/)')"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)')"
 
       - name: Upload release-gate evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: codecontext-live-release-gate
+          name: vericore-live-release-gate
           if-no-files-found: ignore
           path: |
             ${{ runner.temp }}/target/output/
-            ${{ runner.temp }}/codecontext-live-server.log
+            ${{ runner.temp }}/vericore-live-server.log

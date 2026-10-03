@@ -1,1 +1,1 @@
-rootProject.name = "codecontext"
+rootProject.name = "vericore"
