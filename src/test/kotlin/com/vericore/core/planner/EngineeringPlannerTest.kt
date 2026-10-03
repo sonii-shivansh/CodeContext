@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import java.nio.file.Files
 
 class EngineeringPlannerTest {
     private val planner = EngineeringPlanner()
@@ -31,6 +32,39 @@ class EngineeringPlannerTest {
         assertEquals(RiskLevel.MEDIUM, first.riskLevel)
         assertEquals(listOf("architecture.summary", "hotspot.1"), first.evidenceIds)
         assertTrue(first.steps.flatMap { it.evidenceIds }.all { it in first.evidenceIds })
+    }
+
+    @Test
+    fun `plan records canonical repository and verification commands`() {
+        val repo = Files.createTempDirectory("vericore-plan-test").toFile()
+        try {
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update payment validation",
+                    changedPaths = listOf("src/PaymentService.kt"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertEquals(repo.canonicalPath, plan.repository)
+            assertTrue(plan.verificationCommands.all { it.contains(repo.canonicalPath) })
+            assertEquals(repo.canonicalPath, com.vericore.core.workflow.AgentChangeContract.fromPlan(plan).repository)
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `unsafe changed paths are rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Unsafe change",
+                    changedPaths = listOf("../outside.kt"),
+                    evidence = GroundedEvidence(citations = emptyList())
+                )
+            )
+        }
     }
 
     @Test
