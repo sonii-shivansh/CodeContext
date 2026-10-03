@@ -24,7 +24,7 @@ $versionOutput = (& $App --version).Trim()
 Write-Host $versionOutput
 if ($versionOutput -notmatch [regex]::Escape($ExpectedVersion)) { throw "Unexpected CLI version: $versionOutput" }
 
-& .\scripts\test-runtime-packaging.ps1 -DistDir .\build\install\vericore
+& .\scripts\prepare-runtime.ps1 -DistDir .\build\install\vericore
 
 Write-Host ""
 Write-Host "Release preparation: PASS" -ForegroundColor Green
