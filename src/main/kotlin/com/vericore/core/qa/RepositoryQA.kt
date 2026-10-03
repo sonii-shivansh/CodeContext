@@ -91,7 +91,12 @@ class RepositoryEvidenceRetriever {
         var score = when (intent) {
             QuestionIntent.RISK -> if (citation.type.contains("hotspot") || citation.type.contains("risk")) 50 else 0
             QuestionIntent.DEPENDENCY -> if (citation.type.contains("file-graph") || citation.type.contains("hotspot")) 45 else 0
-            QuestionIntent.ARCHITECTURE -> if (citation.type.contains("architecture")) 60 else if (citation.type.contains("file-graph")) 15 else 0
+            QuestionIntent.ARCHITECTURE -> when {
+                citation.type.contains("architecture") -> 60
+                citation.type.contains("hotspot") -> 50
+                citation.type.contains("file-graph") -> 15
+                else -> 0
+            }
             QuestionIntent.IMPACT, QuestionIntent.PR_CHANGE -> if (citation.type.contains("file-graph") || citation.type.contains("hotspot")) 30 else 0
             QuestionIntent.TEST -> if (citation.type.contains("file-graph")) 20 else 0
             QuestionIntent.GENERAL -> 10

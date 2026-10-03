@@ -41,6 +41,17 @@ class RepositoryQATest {
     }
 
     @Test
+    fun `architecture hotspot questions retain hotspot evidence`() {
+        val question = RepositoryQuestionClassifier.classify("Which files are the main architectural hotspots?")
+        val result = RepositoryEvidenceRetriever().retrieve(question, evidence)
+
+        assertEquals(QuestionIntent.ARCHITECTURE, result.question.intent)
+        assertTrue(result.evidence.any { it.citation.id == "hotspot.1" })
+        assertTrue(result.evidence.any { it.citation.id == "architecture.summary" })
+        assertTrue(!result.insufficientEvidence)
+    }
+
+    @Test
     fun `returns insufficient evidence when no citation matches intent`() {
         val question = RepositoryQuestionClassifier.classify("Which tests should I run?")
         val result = RepositoryEvidenceRetriever().retrieve(
