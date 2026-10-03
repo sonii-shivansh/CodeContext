@@ -11,7 +11,6 @@ Bring the Vericore repository's open-source presentation, contribution guardrail
 - Preserve the canonical Vericore website icon as the repository brand asset.
 - Keep the repository description aligned with the product positioning: `Evidence-grounded engineering intelligence for your codebase.`
 - Harden contribution metadata and templates where a repository-side file can enforce or guide the desired behavior.
-- Add repository ownership metadata where it is useful and supported by the current single-maintainer structure.
 - Review and improve GitHub Actions/Dependabot/release hygiene without changing the published `0.7.0` release architecture.
 - Document the exact GitHub Settings / Ruleset configuration that must be applied in the GitHub UI for controls unavailable through the connected GitHub integration.
 - Verify the resulting repository configuration and all changed workflows/configuration through GitHub Actions.
@@ -61,7 +60,7 @@ The repository should make the expected contribution contract obvious:
 
 The existing PR template already covers most of this and should be preserved unless a concrete gap is identified during implementation.
 
-A `CODEOWNERS` file may be added under `.github/CODEOWNERS` only if its ownership entries are valid for the current repository owner and do not create an artificial multi-team process. For a single-maintainer repository, the owner may be used as the default owner.
+A `CODEOWNERS` file is intentionally not added while this is a single-maintainer repository. Adding the sole maintainer as a mandatory owner would create review-request noise without providing independent review. If collaborators/maintainers are added later, ownership rules can be introduced as part of that governance change.
 
 ### 3. Issue intake
 
@@ -82,7 +81,8 @@ The desired `main` policy is:
 - force pushes and branch deletion blocked;
 - squash merge is the default/primary merge strategy;
 - automatic deletion of merged head branches enabled;
-- auto-merge may be enabled at repository level but still obey required checks and review requirements.
+- **no mandatory approving review while the repository is single-maintainer**; this can be raised to one or more independent approvals once collaborators are available;
+- auto-merge remains disabled unless deliberately adopted later.
 
 The connected GitHub integration does not expose an administration write operation for repository rulesets/branch protection, so these settings are a manual GitHub UI step rather than a fabricated API change.
 
