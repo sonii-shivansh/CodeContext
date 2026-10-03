@@ -20,10 +20,11 @@ data class AgentChangeContract(
     val fingerprint: String
 ) {
     companion object {
-        fun fromPlan(plan: EngineeringPlan): AgentChangeContract = fromPlan(plan, "", "")
+        fun fromPlan(plan: EngineeringPlan): AgentChangeContract = fromPlan(plan, plan.repository, "")
 
         fun fromPlan(plan: EngineeringPlan, repositoryPath: String, preparedHead: String): AgentChangeContract {
-            val repository = repositoryPath.takeIf { it.isNotBlank() }?.let { File(it).canonicalPath } ?: ""
+            val requestedRepository = repositoryPath.ifBlank { plan.repository }
+            val repository = requestedRepository.takeIf { it.isNotBlank() }?.let { File(it).canonicalPath } ?: ""
             val paths = plan.plannedPaths.map(::normalize).distinct().sorted()
             val components = plan.affectedComponents.map(::normalize).distinct().sorted()
             val commands = plan.verificationCommands.distinct().sorted()
