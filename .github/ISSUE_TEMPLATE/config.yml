@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/sonii-shivansh/Vericore/security/advisories/new
+    about: Privately report a security vulnerability. Do not disclose sensitive details in a public issue.
+  - name: Questions and community discussion
+    url: https://github.com/sonii-shivansh/Vericore/discussions
+    about: Ask questions, share ideas, and discuss Vericore without opening a bug or feature issue.
