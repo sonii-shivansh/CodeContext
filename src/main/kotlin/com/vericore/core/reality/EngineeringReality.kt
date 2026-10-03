@@ -1,5 +1,6 @@
 package com.vericore.core.reality
 
+import com.vericore.core.evidence.SemanticEvidenceGraphBuilder
 import com.vericore.core.intelligence.AnalysisSnapshot
 import com.vericore.core.intelligence.EngineeringContextSnapshot
 import java.nio.charset.StandardCharsets
@@ -11,10 +12,6 @@ const val ENGINEERING_REALITY_SCHEMA_VERSION = "1.0"
 
 /**
  * A deterministic, compact description of the repository's current engineering reality.
- *
- * This composition layer binds existing deterministic artifacts together so downstream
- * tools and AI agents can reason about one explicit repository state without guessing
- * which artifacts belong together.
  */
 @Serializable
 data class EngineeringRealitySnapshot(
@@ -35,7 +32,10 @@ data class EngineeringRealitySnapshot(
     val changedPaths: List<String>,
     val analysisDigest: String,
     val contextDigest: String,
-    val realityDigest: String
+    val realityDigest: String,
+    val evidenceGraphDigest: String = "",
+    val evidenceGraphNodeCount: Int = 0,
+    val evidenceGraphEdgeCount: Int = 0
 )
 
 object EngineeringRealityEngine {
@@ -45,8 +45,6 @@ object EngineeringRealityEngine {
         analysis: AnalysisSnapshot,
         context: EngineeringContextSnapshot
     ): EngineeringRealitySnapshot {
-        // Provenance/state identity is the first boundary: if the analysis is stale,
-        // report that directly before evaluating secondary semantic compatibility.
         require(
             analysis.repository.repositoryCommit == null ||
                 context.repositoryCommit == null ||
@@ -66,8 +64,10 @@ object EngineeringRealityEngine {
             "Analysis/context language sets differ; generate both artifacts from the same repository state."
         }
 
-        // analyzedAtEpochMillis is deliberately excluded from the identity. Re-running
-        // analysis against unchanged repository state must not create a new reality digest.
+        val evidenceGraph = analysis.repository.repositoryCommit?.let {
+            SemanticEvidenceGraphBuilder.build(analysis)
+        }
+
         val analysisDigest = sha256(
             buildString {
                 append(analysis.schemaVersion).append('|')
@@ -89,11 +89,13 @@ object EngineeringRealityEngine {
                 append(context.snapshotDigest)
             }
         )
+        val graphDigest = evidenceGraph?.digest().orEmpty()
         val identity = listOf(
             ENGINEERING_REALITY_SCHEMA_VERSION,
             context.repositoryCommit.orEmpty(),
             analysisDigest,
-            contextDigest
+            contextDigest,
+            graphDigest
         ).joinToString("|")
 
         return EngineeringRealitySnapshot(
@@ -114,7 +116,10 @@ object EngineeringRealityEngine {
             changedPaths = context.changedPaths.sorted(),
             analysisDigest = analysisDigest,
             contextDigest = contextDigest,
-            realityDigest = sha256(identity)
+            realityDigest = sha256(identity),
+            evidenceGraphDigest = graphDigest,
+            evidenceGraphNodeCount = evidenceGraph?.nodes?.size ?: 0,
+            evidenceGraphEdgeCount = evidenceGraph?.edges?.size ?: 0
         )
     }
 

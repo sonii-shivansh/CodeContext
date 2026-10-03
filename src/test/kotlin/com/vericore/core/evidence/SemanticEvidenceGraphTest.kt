@@ -3,6 +3,7 @@ package com.vericore.core.evidence
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
 
 class SemanticEvidenceGraphTest {
     private val repositoryId = "https://github.com/example/repo.git"
@@ -42,6 +43,16 @@ class SemanticEvidenceGraphTest {
             ),
             graph.edges
         )
+    }
+
+    @Test
+    fun `graph digest is deterministic and changes with evidence`() {
+        val first = SemanticEvidenceGraph.build(repositoryId, commit, listOf(node("a")), emptyList())
+        val second = SemanticEvidenceGraph.build(repositoryId, commit, listOf(node("a")), emptyList())
+        val changed = SemanticEvidenceGraph.build(repositoryId, commit, listOf(node("b")), emptyList())
+
+        assertEquals(first.digest(), second.digest())
+        assertNotEquals(first.digest(), changed.digest())
     }
 
     @Test
