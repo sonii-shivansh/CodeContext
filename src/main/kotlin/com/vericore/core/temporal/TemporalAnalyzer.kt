@@ -40,7 +40,11 @@ class TemporalAnalyzer(private val repoPath: String) {
             val headCommit = commits.first()
             val now = Instant.ofEpochSecond(headCommit.commitTime.toLong())
             val cutoff = now.minus(monthsBack.toLong() * 30L, ChronoUnit.DAYS)
-            val sampled = sampleCommits(commits, now, cutoff, intervalDays)
+            val historyWindow = commits.filter { commit ->
+                val timestamp = Instant.ofEpochSecond(commit.commitTime.toLong())
+                !timestamp.isBefore(cutoff) && !timestamp.isAfter(now)
+            }
+            val sampled = sampleCommits(historyWindow, now, cutoff, intervalDays)
             if (sampled.isEmpty()) return emptyList()
 
             val touchCountsByCommit = buildHistoricalTouchCounts(repository, commits)
@@ -56,6 +60,8 @@ class TemporalAnalyzer(private val repoPath: String) {
         cutoff: Instant,
         intervalDays: Int
     ): List<RevCommit> {
+        if (commits.isEmpty()) return emptyList()
+
         val selected = linkedMapOf<String, RevCommit>()
         var target = now
         while (!target.isBefore(cutoff)) {
