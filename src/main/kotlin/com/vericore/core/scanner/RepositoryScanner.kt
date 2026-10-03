@@ -1,11 +1,11 @@
 package com.vericore.core.scanner
 
-import com.vericore.core.config.CodeContextConfig
+import com.vericore.core.config.VericoreConfig
 import com.vericore.core.config.ConfigLoader
 import java.io.File
 
 class RepositoryScanner(
-    private val configuredConfig: CodeContextConfig? = null
+    private val configuredConfig: VericoreConfig? = null
 ) {
     fun scan(rootPath: String): List<File> {
         val root = File(rootPath).canonicalFile
@@ -31,8 +31,7 @@ class RepositoryScanner(
                 val matchesSupportedExtension =
                     name.endsWith(".kt") || name.endsWith(".java")
 
-                // Vericore owns these root-level directories. They must not be
-                // scanned even when the target repository has no configuration.
+                // Vericore-owned generated directories are never analyzed.
                 val isToolGeneratedRootPath = segments.firstOrNull() in setOf(".vericore", ".codecontext", "output")
 
                 val excludedByConfig = segments.any { segment ->

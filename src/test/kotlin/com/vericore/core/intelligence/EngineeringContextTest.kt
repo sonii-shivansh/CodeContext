@@ -66,7 +66,7 @@ class EngineeringContextTest : StringSpec({
             val snapshot = EngineeringContextEngine.snapshot(
                 root,
                 com.vericore.core.scanner.RepositoryScanner(
-                    com.vericore.core.config.CodeContextConfig(excludePaths = emptyList())
+                    com.vericore.core.config.VericoreConfig(excludePaths = emptyList())
                 )
             )
 

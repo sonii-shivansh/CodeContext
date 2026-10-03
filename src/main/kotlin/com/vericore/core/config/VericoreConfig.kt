@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
 @Serializable
-data class CodeContextConfig(
+data class VericoreConfig(
     val excludePaths: List<String> = listOf(
         ".git", ".idea", ".gradle", "build", "target", "node_modules", ".vscode", "out", "dist", ".next"
     ),
@@ -56,29 +56,29 @@ object ConfigLoader {
 
     private val logger = KotlinLogging.logger {}
 
-    fun load(configPath: String = DEFAULT_CONFIG_FILE): CodeContextConfig {
+    fun load(configPath: String = DEFAULT_CONFIG_FILE): VericoreConfig {
         val file = resolveConfigFile(File(configPath))
         return if (file.exists()) {
             try {
-                Json { ignoreUnknownKeys = true }.decodeFromString<CodeContextConfig>(file.readText())
+                Json { ignoreUnknownKeys = true }.decodeFromString<VericoreConfig>(file.readText())
             } catch (e: Exception) {
                 logger.warn(e) { "Failed to parse config at ${file.path}, using defaults" }
                 System.err.println("⚠️ Failed to parse config, using defaults: ${e.message}")
-                CodeContextConfig()
+                VericoreConfig()
             }
         } else {
             logger.debug { "Config file not found at ${file.path}, using defaults" }
-            CodeContextConfig()
+            VericoreConfig()
         }
     }
 
-    fun loadForRepository(repoPath: String): CodeContextConfig =
+    fun loadForRepository(repoPath: String): VericoreConfig =
         load(File(repoPath).canonicalFile.resolve(DEFAULT_CONFIG_FILE).path)
 
     fun loadEffective(
         configPath: String = DEFAULT_CONFIG_FILE,
         environment: Map<String, String> = System.getenv()
-    ): CodeContextConfig {
+    ): VericoreConfig {
         val project = load(configPath)
         val user = UserConfigStore.load()?.ai
         val environmentKey = firstNonBlank(
@@ -100,7 +100,7 @@ object ConfigLoader {
 
     fun createDefault(path: String = DEFAULT_CONFIG_FILE) {
         try {
-            val config = CodeContextConfig()
+            val config = VericoreConfig()
             val json = Json { prettyPrint = true; encodeDefaults = true }
             File(path).writeText(json.encodeToString(config))
             logger.info { "Created default config at $path" }
@@ -114,7 +114,7 @@ object ConfigLoader {
         if (requested.exists() || requested.name != DEFAULT_CONFIG_FILE) return requested
         val legacy = File(requested.parentFile ?: File("."), LEGACY_CONFIG_FILE)
         if (legacy.exists()) {
-            val message = "Deprecated CodeContext configuration detected at ${legacy.path}; migrate to ${requested.path}."
+            val message = "Deprecated legacy configuration detected at ${legacy.path}; migrate to ${requested.path}."
             logger.warn { message }
             System.err.println("⚠️ $message")
             return legacy
