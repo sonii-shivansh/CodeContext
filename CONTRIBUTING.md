@@ -20,12 +20,12 @@ Requirements:
 - Kotlin-capable editor
 
 ```bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
+git clone https://github.com/sonii-shivansh/Vericore.git
+cd Vericore
 ./gradlew --no-daemon clean test
 ```
 
-The repository's GitHub name is currently retained for history continuity; the software and contribution surface are Vericore.
+The project is published and maintained as Vericore. Use the canonical repository URL above for new checkouts.
 
 ## Workflow
 
