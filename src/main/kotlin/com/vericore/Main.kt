@@ -9,6 +9,7 @@ import com.vericore.cli.DoctorCommand
 import com.vericore.cli.EngineeringContextDiffCommand
 import com.vericore.cli.EngineeringContextSnapshotCommand
 import com.vericore.cli.EngineeringPlanCommand
+import com.vericore.cli.EvidenceGraphCommand
 import com.vericore.cli.EvolutionCommand
 import com.vericore.cli.ImprovedAnalyzeCommand
 import com.vericore.cli.ImpactCommand
@@ -35,6 +36,7 @@ fun main(args: Array<String>) {
                 ArchitectureContractCommand(),
                 EngineeringContextSnapshotCommand(),
                 EngineeringContextDiffCommand(),
+                EvidenceGraphCommand(),
                 RealityCommand(),
                 PRIntelligenceCommand(),
                 RepositoryQACommand(),
