@@ -48,6 +48,43 @@ class JavaLanguageLevelDetectorTest {
     }
 
     @Test
+    fun `detects Java 11 from RuneLite style common Gradle settings`() {
+        val root = Files.createTempDirectory("codecontext-runelite-java11-").toFile()
+        try {
+            root.resolve("common.settings.gradle.kts").writeText(
+                """
+                tasks.withType<JavaCompile>().configureEach {
+                    options.release = 11
+                }
+                """.trimIndent()
+            )
+            val source = root.resolve("runelite-client/src/main/java/net/runelite/client/App.java")
+            source.parentFile.mkdirs()
+            source.writeText("package net.runelite.client; class App {}")
+
+            assertEquals(11, JavaLanguageLevelDetector.detectVersion(source))
+            assertEquals(LanguageLevel.JAVA_11, JavaLanguageLevelDetector.detect(source))
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `detects Java 11 from Gradle Property set syntax`() {
+        val root = Files.createTempDirectory("codecontext-gradle-release-property-").toFile()
+        try {
+            root.resolve("common.settings.gradle.kts").writeText("options.release.set(11)")
+            val source = root.resolve("src/main/java/demo/App.java")
+            source.parentFile.mkdirs()
+            source.writeText("package demo; class App {}")
+
+            assertEquals(11, JavaLanguageLevelDetector.detectVersion(source))
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `uses current parser level when repository does not declare a Java version`() {
         val root = Files.createTempDirectory("codecontext-java-default-").toFile()
         try {
