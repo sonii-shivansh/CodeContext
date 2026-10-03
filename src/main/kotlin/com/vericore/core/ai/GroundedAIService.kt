@@ -25,12 +25,16 @@ class GroundedAIService(private val analyzer: AICodeAnalyzer) {
 
         val groundedQuestion = buildPrompt(question, evidence)
         val response = analyzer.askQuestion(groundedQuestion, context)
+        val grounding = GroundingAssessor.assess(response.answer, evidence)
 
         return GroundedAIResponse(
             answer = response.answer,
             suggestedFiles = response.suggestedFiles,
-            confidence = response.confidence,
-            evidence = evidence
+            confidence = minOf(response.confidence.coerceIn(0.0, 1.0), grounding.groundingScore),
+            evidence = evidence,
+            citedEvidenceIds = grounding.citedEvidenceIds,
+            groundingScore = grounding.groundingScore,
+            limitations = grounding.limitations
         )
     }
 
@@ -39,7 +43,8 @@ class GroundedAIService(private val analyzer: AICodeAnalyzer) {
         appendLine("Treat the evidence below as the authoritative repository facts.")
         appendLine("Do not invent files, metrics, dependencies, architecture facts, or history.")
         appendLine("If the evidence is insufficient, explicitly say what is unknown.")
-        appendLine("When making a factual claim, cite one or more evidence IDs like [repo.metrics] or [hotspot.1].")
+        appendLine("Every repository-specific factual claim MUST cite one or more evidence IDs like [repo.metrics] or [hotspot.1].")
+        appendLine("Do not cite an evidence ID that is not present below.")
         appendLine()
         appendLine("DETERMINISTIC EVIDENCE")
         evidence.citations.forEach { citation ->
@@ -62,5 +67,8 @@ data class GroundedAIResponse(
     val answer: String,
     val suggestedFiles: List<String>,
     val confidence: Double,
-    val evidence: GroundedEvidence
+    val evidence: GroundedEvidence,
+    val citedEvidenceIds: List<String> = emptyList(),
+    val groundingScore: Double = 0.0,
+    val limitations: List<String> = emptyList()
 )
