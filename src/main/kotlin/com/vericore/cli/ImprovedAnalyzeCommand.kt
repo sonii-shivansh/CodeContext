@@ -1,33 +1,37 @@
 package com.vericore.cli
 
-import com.vericore.core.ai.AICodeAnalyzer
 import com.vericore.core.cache.CacheManager
-import com.vericore.core.config.ConfigLoader
+import com.vericore.core.generator.LearningPathGenerator
+import com.vericore.core.git.OptimizedGitAnalyzer
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.AnalysisSnapshotBuilder
 import com.vericore.core.intelligence.EngineeringRiskEngine
+import com.vericore.core.parser.CodeParallelParser
 import com.vericore.core.parser.ParsedFile
-import com.vericore.core.scanner.OptimizedGitAnalyzer
 import com.vericore.core.scanner.RepositoryScanner
-import com.vericore.output.ReportGenerator
+import com.vericore.core.config.ConfigLoader
+import com.vericore.core.output.ReportGenerator
+import com.vericore.core.ai.AICodeAnalyzer
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import java.io.File
-import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
+import kotlin.math.min
+import kotlin.system.measureTimeMillis
 
-class ImprovedAnalyzeCommand :
-    CliktCommand(name = "analyze", help = "Analyze a codebase and generate a report") {
-    private val path by argument("path", help = "Path to analyze").default(".")
-    private val noCache by option("--no-cache", help = "Disable caching").flag()
-    private val clearCache by option("--clear-cache", help = "Clear cache before analyzing").flag()
-    private val verbose by option("--verbose", "-v", help = "Enable verbose logging").flag()
-    private val noSnapshot by option("--no-snapshot", help = "Do not write the machine-readable analysis snapshot").flag()
+class ImprovedAnalyzeCommand : CliktCommand(
+    name = "analyze",
+    help = "Analyze a repository and generate engineering intelligence"
+) {
+    private val path by argument("path", help = "Repository path")
+    private val noCache by option("--no-cache").flag()
+    private val clearCache by option("--clear-cache").flag()
+    private val noSnapshot by option("--no-snapshot").flag()
+    private val verbose by option("--verbose", "-v").flag()
 
     override fun run() {
         echo("🚀 Starting Vericore analysis for: $path")
@@ -125,7 +129,7 @@ class ImprovedAnalyzeCommand :
 
                 echo("📊 Generating report...")
                 val reportFile = File(outputDir, "index.html")
-                val learningPath = com.vericore.core.generator.LearningPathGenerator().generate(graph)
+                val learningPath = LearningPathGenerator().generate(graph)
                 ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, learningPath)
                 echo("✅ Report: ${reportFile.absolutePath}")
 
@@ -149,13 +153,13 @@ class ImprovedAnalyzeCommand :
                                 echo("✨ AI Insights saved to: ${aiReportFile.absolutePath}")
                             }
                         } catch (e: Exception) {
-                            echo("   ⚠️  AI analysis failed: ${e.message}")
+                            echo("   ⚠️ AI insights generation failed: ${e.message}")
                             if (verbose) println(e.stackTraceToString())
                         }
                     }
                 }
             } catch (e: Exception) {
-                if (e is IllegalStateException) throw e
+                if (e is IllegalStateException || e is IllegalArgumentException) throw e
                 echo("❌ Analysis failed: ${e.message}")
                 if (verbose) println(e.stackTraceToString())
                 throw e
