@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/vericore-icon.svg" alt="Vericore" width="96" height="96">
+</p>
+
 # Vericore
 
 **Understand. Change. Verify.**
