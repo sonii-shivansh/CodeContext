@@ -101,7 +101,9 @@ jobs:
           import json
           import sys
           snapshot = json.load(open(sys.argv[1]))
-          assert snapshot["metrics"]["parseFailures"] >= 1, snapshot
+          metrics = snapshot["metrics"]
+          assert metrics["totalFiles"] == 2, snapshot
+          assert metrics["parseFailures"] == 1, snapshot
           PY
 
       - name: Test documented evolution repository argument
