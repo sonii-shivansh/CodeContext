@@ -1,144 +1,6 @@
-<p align="center">
-  <img src="docs/images/vericore-icon.svg" alt="Vericore" width="96" height="96">
-</p>
-
 # Vericore
 
-**Understand. Change. Verify.**
-
-**Evidence-grounded engineering intelligence for your codebase.**
-
-Vericore is a Kotlin/JVM CLI and local REST application that analyzes Java and Kotlin source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a deterministic prepare → change → verify safety loop.
-
-> **Core principle:** deterministic evidence first, optional AI reasoning second.
-
-## Current status
-
-Vericore `0.7.0` is the current stable release. The product identity, CLI, package namespace, configuration namespace, distribution name, reports, REST server, MCP tools, and documentation are canonical Vericore surfaces.
-
-## Capabilities
-
-- Java and Kotlin source analysis
-- dependency graph construction
-- PageRank knowledge hotspots
-- cycle and architecture analysis
-- Git authorship, churn, and evolution analysis
-- learning-path generation
-- deterministic change-impact analysis
-- deterministic PR Intelligence
-- Architecture Intelligence, architecture drift, and deterministic architecture contracts
-- versioned analysis/evidence artifacts
-- deterministic engineering-context snapshots and diffs
-- deterministic Engineering Reality identity across analysis and repository state
-- grounded repository Q&A retrieval
-- deterministic, evidence-backed engineering planning
-- evidence-first `prepare` workflow
-- repository-bound **Agent Change Contract** artifacts with SHA-256 fingerprints
-- deterministic `verify` workflow against the persisted contract
-- optional AI assistance over bounded repository-derived context
-- local Ktor REST API
-- local MCP stdio server for AI-agent integration
-- path validation and rate limiting
-- clean-environment end-to-end verification
-- cross-platform distribution smoke verification for Linux x64, Windows x64, macOS x64, and macOS ARM64
-
-## Quick start
-
-**New to Vericore? Start with [Getting Started](docs/GETTING_STARTED.md).**
-
-### Use a released archive
-
-Released platform archives bundle the Java runtime, so a separate Java installation is not required for normal end-user use.
-
-```text
-Windows:      bin\\vericore.bat --version
-Linux/macOS:  ./bin/vericore --version
-```
-
-From the repository you want to analyze:
-
-```text
-vericore analyze .
-vericore reality . --json
-```
-
-The default report is written to `output/index.html`. Machine-readable artifacts are written under the analyzed repository's `output/` directory.
-
-### Build from source
-
-```bash
-git clone https://github.com/sonii-shivansh/Vericore.git
-cd Vericore
-./gradlew --no-daemon clean test
-./gradlew --no-daemon installDist
-./build/install/vericore/bin/vericore --version
-```
-
-## Common workflows
-
-### Analyze a repository
-
-```bash
-vericore analyze /path/to/repository
-vericore reality /path/to/repository --json
-```
-
-### Ask a grounded repository question
-
-```bash
-vericore repo-qa "why is PaymentService risky?" --path /path/to/repository
-```
-
-AI is optional. Deterministic evidence remains the source of repository facts.
-
-### Prepare and verify a change
-
-```bash
-vericore prepare "add payment validation" --path /path/to/repository
-```
-
-Then implement the change and verify the original persisted contract:
-
-```bash
-vericore verify \
-  --path /path/to/repository \
-  --plan output/engineering-plan.json \
-  --contract output/agent-change-contract.json
-```
-
-`prepare` writes:
-
-```text
-output/engineering-context.json
-output/engineering-plan.json
-output/agent-change-contract.json
-```
-
-The persisted Agent Change Contract is the verification boundary. Do not replace it with a newly generated contract after preparation.
-
-See [Change Safety](docs/CHANGE_SAFETY.md).
-
-### Run the local REST server
-
-```bash
-vericore server --host 127.0.0.1 --port 8080
-```
-
-```bash
-curl --fail http://127.0.0.1:8080/health
-```
-
-Keep the server on loopback for local development. The application does not provide deployment-grade authentication, authorization, tenant isolation, or TLS.
-
-See [API](docs/API.md).
-
-### Integrate an AI agent with MCP
-
-```bash
-vericore mcp
-```
-
-See [MCP](docs/MCP.md) for the current tool contract and safety boundary.
+Vericore is a local-first engineering intelligence tool for understanding software repositories, grounding engineering decisions in deterministic evidence, and safely preparing repository changes.
 
 ## CLI reference
 
@@ -152,6 +14,7 @@ vericore architecture-drift /path/to/repository --baseline /path/to/architecture
 vericore architecture-contract /path/to/repository --contract /path/to/.vericore-architecture-contract.json --json
 vericore context-snapshot /path/to/repository --json
 vericore context-diff /path/to/before.json /path/to/after.json --json
+vericore evidence-graph /path/to/repository --json
 vericore reality /path/to/repository --json
 vericore repo-qa "why is PaymentService risky?" --path /path/to/repository
 vericore prepare "add payment validation" --path /path/to/repository
@@ -162,7 +25,17 @@ vericore server --host 127.0.0.1 --port 8080
 vericore mcp
 ```
 
-For the complete developer workflow and implementation guidance, see [Development](docs/DEVELOPMENT.md).
+### Semantic evidence graph
+
+`evidence-graph` materializes the deterministic semantic evidence graph already used by Engineering Reality and grounded intelligence:
+
+```bash
+vericore analyze /path/to/repository
+vericore evidence-graph /path/to/repository --json
+cat /path/to/repository/output/semantic-evidence-graph.json
+```
+
+The artifact is repository- and commit-bound, carries a stable SHA-256 graph digest, and contains deterministic node/edge ordering. It does not invent repository facts; it serializes evidence produced by Vericore's deterministic analysis and grounding layers.
 
 ## Architecture
 
@@ -170,18 +43,22 @@ For the complete developer workflow and implementation guidance, see [Developmen
 flowchart TD
     R[Repository + Git] --> A[Deterministic Analysis]
     A --> C[Engineering Context]
-    A --> E[Engineering Reality]
-    C --> E
+    A --> G[Semantic Evidence Graph]
+    C --> E[Engineering Reality]
+    G --> E
     E --> I[Deterministic Intelligence]
-    I --> G[Grounded Evidence]
-    G --> Q[Q&A / Planner]
-    G --> V[Prepare / Verify]
+    G --> Q[Grounded Evidence]
+    I --> Q
+    Q --> P[Q&A / Planner]
+    Q --> V[Prepare / Verify]
     V --> K[Agent Change Contract]
-    Q --> X[CLI / REST / MCP / CI]
+    P --> X[CLI / REST / MCP / CI]
     K --> X
-    G --> AI[Optional AI]
+    Q --> AI[Optional AI]
     AI --> X
 ```
+
+The semantic evidence graph is a bounded relationship layer over existing deterministic evidence. It is not a replacement for the dependency graph and does not act as an autonomous knowledge store.
 
 See [Architecture](docs/ARCHITECTURE.md) for the detailed system model and package boundaries.
 
@@ -208,31 +85,6 @@ See [Data & Privacy](docs/DATA_PRIVACY.md).
 
 ```bash
 ./gradlew --no-daemon clean test
-./gradlew --no-daemon build installDist
 ```
 
-GitHub Actions is the authoritative clean-environment verification path. It validates compilation, tests, CLI flows, generated artifacts, intelligence flows, architecture governance, prepare/verify contracts, server/API boundaries, cross-platform distribution smoke tests, and live-repository E2E behavior.
-
-For contributor workflow, see [Contributing](CONTRIBUTING.md) and [Development](docs/DEVELOPMENT.md).
-
-## Documentation
-
-| Topic | Document |
-|---|---|
-| Start here | [Getting Started](docs/GETTING_STARTED.md) |
-| Documentation hub | [docs/INDEX.md](docs/INDEX.md) |
-| Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Engineering Reality | [docs/ENGINEERING_REALITY.md](docs/ENGINEERING_REALITY.md) |
-| Change Safety | [docs/CHANGE_SAFETY.md](docs/CHANGE_SAFETY.md) |
-| REST API | [docs/API.md](docs/API.md) |
-| MCP / AI agents | [docs/MCP.md](docs/MCP.md) |
-| PR Intelligence | [docs/PR_INTELLIGENCE.md](docs/PR_INTELLIGENCE.md) |
-| Data & Privacy | [docs/DATA_PRIVACY.md](docs/DATA_PRIVACY.md) |
-| Development | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
-| Implementation Status | [docs/ENTERPRISE_ROADMAP.md](docs/ENTERPRISE_ROADMAP.md) |
-| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Security | [SECURITY.md](SECURITY.md) |
-
-## License
-
-Vericore is released under the MIT License. See [LICENSE](LICENSE).
+GitHub Actions is the authoritative clean-environment execution path for release validation, including Linux, Windows, macOS, live repository tests, and deterministic release-gate checks.
