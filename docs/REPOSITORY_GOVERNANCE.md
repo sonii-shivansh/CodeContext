@@ -65,13 +65,14 @@ Create or update a ruleset for `main` with these requirements:
 
 #### Required status checks
 
-Only require checks that are stable and actually run on pull requests targeting `main`:
+GitHub rulesets require the **job/check names**, not the workflow display names. For the current Vericore workflows, require these four stable PR checks:
 
-1. **CI/CD**
-2. **Verification**
-3. **DCO**
+1. **Test on Windows** — CI/CD test/build job
+2. **Build Distribution** — CI/CD distribution job
+3. **Build, test, and end-to-end verify** — Verification
+4. **Check commit sign-offs** — DCO
 
-Do **not** require manual-only workflows such as `workflow_dispatch`-only integrity checks unless their trigger model is deliberately changed first. Do not require live or quota-sensitive checks merely because they exist; they should remain informative or be made deterministic before becoming merge-blocking.
+Do **not** require CodeQL yet. CodeQL is currently managed by GitHub's dynamic code-scanning workflow and should only become merge-blocking after its configuration is deliberately reviewed and its check is confirmed stable for this repository. Do not require manual-only or quota-sensitive workflows merely because they exist; keep them informative until they are deterministic and appropriate as merge gates.
 
 ### Releases
 
