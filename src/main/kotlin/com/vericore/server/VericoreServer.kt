@@ -64,7 +64,7 @@ fun Application.module() {
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
                 val reportId = UUID.randomUUID().toString()
-                val reportFile = File("output/$reportId.html").apply { parentFile.mkdirs() }
+                val reportFile = File(path, "output/$reportId.html").apply { parentFile.mkdirs() }
                 com.vericore.output.ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, com.vericore.core.generator.LearningPathGenerator().generate(graph))
                 val hotspots = graph.getTopHotspots(5).map { HotspotInfo(File(it.first).name, it.second) }
                 call.respond(AnalysisResponse(parsedFiles.size, hotspots, "/reports/$reportId.html"))
@@ -81,7 +81,7 @@ fun Application.module() {
                 val request = call.receive<ImpactRequest>()
                 require(request.changedPaths.isNotEmpty() && request.changedPaths.size <= MAX_CHANGED_PATHS) { "Between 1 and $MAX_CHANGED_PATHS changed paths are required" }
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
-                val config = ConfigLoader.load()
+                val config = ConfigLoader.loadForRepository(path)
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
                 val pathLookup = enrichedFiles.associateBy { it.file.absolutePath.replace('\\', '/') }
@@ -136,8 +136,8 @@ fun Application.module() {
             try {
                 val request = call.receive<AskRequest>()
                 require(request.question.isNotBlank() && request.question.length <= MAX_QUESTION_LENGTH) { "Question is invalid" }
-                val config = ConfigLoader.load()
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
+                val config = ConfigLoader.loadForRepository(path)
                 if (!config.ai.enabled) return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("AI disabled in config"))
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val context = CodebaseContext(parsedFiles.size, listOf("Kotlin/Java"), graph.getTopHotspots(10).map { it.first }, emptyList())
@@ -155,7 +155,7 @@ fun Application.module() {
                 val paths = call.receive<List<String>>()
                 require(paths.isNotEmpty() && paths.size <= 20) { "At most 20 repositories may be analyzed per request" }
                 paths.forEach { require(sanitizePath(it) != null) { "Invalid or unsafe repository path" } }
-                call.respond(com.vericore.enterprise.OrganizationAnalyzer().analyzeRepositories(paths, ConfigLoader.load()))
+                call.respond(com.vericore.enterprise.OrganizationAnalyzer().analyzeRepositories(paths))
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
@@ -171,7 +171,7 @@ fun validateRevisionPair(baseRevision: String?, headRevision: String?) {
 }
 
 object AnalysisLogic {
-    suspend fun analyze(repoPath: String, config: VericoreConfig = ConfigLoader.load()): Triple<RobustDependencyGraph, List<com.vericore.core.parser.ParsedFile>, CacheManager> {
+    suspend fun analyze(repoPath: String, config: VericoreConfig = ConfigLoader.loadForRepository(repoPath)): Triple<RobustDependencyGraph, List<com.vericore.core.parser.ParsedFile>, CacheManager> {
         val files = RepositoryScanner(config).scan(repoPath)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
         val cacheManager = CacheManager()

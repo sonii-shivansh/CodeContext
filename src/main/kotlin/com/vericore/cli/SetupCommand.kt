@@ -25,7 +25,12 @@ class SetupCommand : CliktCommand(
         }
 
         val existing = UserConfigStore.load()?.ai
-        val environmentKey = System.getenv("GEMINI_API_KEY")?.trim().orEmpty()
+        val environmentKey = sequenceOf(
+            System.getenv("VERICORE_GEMINI_API_KEY"),
+            System.getenv("VERICORE_GOOGLE_API_KEY"),
+            System.getenv("GEMINI_API_KEY"),
+            System.getenv("GOOGLE_API_KEY")
+        ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
         if (!force && existing?.apiKey?.isNotBlank() == true) {
             echo("✓ Gemini is already configured for this user.")

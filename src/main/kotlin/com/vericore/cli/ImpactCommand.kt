@@ -25,9 +25,9 @@ class ImpactCommand : CliktCommand(
     private val jsonOutput by option("--json", help = "Write machine-readable impact JSON").flag()
 
     override fun run() {
-        val root = File(path).absoluteFile.normalize()
+        val root = File(path).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $path" }
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
 
@@ -64,7 +64,7 @@ class ImpactCommand : CliktCommand(
         }
 
         if (jsonOutput) {
-            val output = File("output/change-impact.json")
+            val output = root.resolve("output/change-impact.json")
             output.parentFile.mkdirs()
             output.writeText(Json { prettyPrint = true }.encodeToString(result))
             echo("🧭 Impact report: ${output.absolutePath}")
