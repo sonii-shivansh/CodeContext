@@ -1,3 +1,5 @@
+import org.gradle.jvm.application.tasks.CreateStartScripts
+
 plugins {
     kotlin("jvm") version "2.1.0"
     kotlin("plugin.serialization") version "2.1.0"
@@ -70,5 +72,24 @@ kotlin {
 tasks.jar {
     manifest {
         attributes["Main-Class"] = "com.vericore.MainKt"
+    }
+}
+
+// Gradle expands every runtime dependency into the generated Windows launcher.
+// With enough dependencies this can exceed Windows command-line limits and make
+// vericore.bat fail before the JVM starts. Java 6+ supports a wildcard classpath
+// for JARs in one directory, so keep the generated Windows launcher compact.
+tasks.withType<CreateStartScripts>().configureEach {
+    doLast {
+        val script = windowsScript
+        val text = script.readText()
+        val lines = text.lines()
+        val classpathIndex = lines.indexOfFirst { it.startsWith("set CLASSPATH=") }
+        require(classpathIndex >= 0) {
+            "Expected Gradle Windows start script to contain a CLASSPATH declaration: $script"
+        }
+        val updatedLines = lines.toMutableList()
+        updatedLines[classpathIndex] = "set CLASSPATH=%APP_HOME%\\lib\\*"
+        script.writeText(updatedLines.joinToString(System.lineSeparator()))
     }
 }
