@@ -21,13 +21,54 @@ if [[ ! -x "$JDEPS" || ! -x "$JLINK" ]]; then
 fi
 
 rm -rf "$APP_HOME/jre"
-mapfile -t JARS < <(find "$APP_HOME/lib" -type f -name '*.jar' | sort)
+JARS=()
+while IFS= read -r jar; do
+  JARS+=("$jar")
+done < <(find "$APP_HOME/lib" -type f -name '*.jar' | sort)
 if [[ ${#JARS[@]} -eq 0 ]]; then
   echo "ERROR: no application jars found under $APP_HOME/lib" >&2
   exit 1
 fi
 
-MODULES="$($JDEPS --multi-release 21 --ignore-missing-deps --print-module-deps --recursive "${JARS[@]}" | tail -n 1 | tr -d '[:space:]')"
+APP_JAR=""
+DEPENDENCY_CLASSPATH=""
+for jar in "${JARS[@]}"; do
+  case "$(basename "$jar")" in
+    vericore-*.jar)
+      if [[ -n "$APP_JAR" ]]; then
+        echo "ERROR: multiple Vericore application jars found under $APP_HOME/lib" >&2
+        exit 1
+      fi
+      APP_JAR="$jar"
+      ;;
+  esac
+done
+
+if [[ -z "$APP_JAR" ]]; then
+  echo "ERROR: Vericore application jar not found under $APP_HOME/lib" >&2
+  exit 1
+fi
+
+for jar in "${JARS[@]}"; do
+  if [[ "$jar" == "$APP_JAR" ]]; then
+    continue
+  fi
+  if [[ -z "$DEPENDENCY_CLASSPATH" ]]; then
+    DEPENDENCY_CLASSPATH="$jar"
+  else
+    DEPENDENCY_CLASSPATH="$DEPENDENCY_CLASSPATH:$jar"
+  fi
+done
+
+MODULES="$($JDEPS \
+  --multi-release 21 \
+  --ignore-missing-deps \
+  --print-module-deps \
+  --recursive \
+  --class-path "$DEPENDENCY_CLASSPATH" \
+  "$APP_JAR" \
+  | tail -n 1 \
+  | tr -d '[:space:]')"
 if [[ -z "$MODULES" ]]; then
   echo "ERROR: jdeps returned no runtime modules." >&2
   exit 1
@@ -49,7 +90,20 @@ if [[ ! -f "$SCRIPT" ]]; then
 fi
 
 if ! grep -q 'VERICORE_BUNDLED_JAVA' "$SCRIPT"; then
-  sed -i '/^# Add default JVM options here/i\\# Prefer the runtime bundled with this distribution.\nif [ -x "$APP_HOME/jre/bin/java" ]; then\n    JAVA_HOME="$APP_HOME/jre"\n    export JAVA_HOME\nfi\n# VERICORE_BUNDLED_JAVA' "$SCRIPT"
+  TMP_SCRIPT="$SCRIPT.tmp"
+  awk '
+    /^# Add default JVM options here\./ && !inserted {
+      print "# Prefer the runtime bundled with this distribution."
+      print "if [ -x \"" "$" "APP_HOME/jre/bin/java\" ]; then"
+      print "    JAVA_HOME=\"" "$" "APP_HOME/jre\""
+      print "    export JAVA_HOME"
+      print "fi"
+      print "# VERICORE_BUNDLED_JAVA"
+      inserted = 1
+    }
+    { print }
+  ' "$SCRIPT" > "$TMP_SCRIPT"
+  mv "$TMP_SCRIPT" "$SCRIPT"
 fi
 
 chmod +x "$SCRIPT"
