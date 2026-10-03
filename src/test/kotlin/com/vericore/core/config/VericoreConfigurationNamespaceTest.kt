@@ -55,7 +55,7 @@ class VericoreConfigurationNamespaceTest {
             repository.resolve(".codecontext.json").writeText("{\"maxFilesAnalyze\":17}")
             System.setErr(PrintStream(captured))
             assertEquals(17, ConfigLoader.loadForRepository(repository.path).maxFilesAnalyze)
-            assertTrue(captured.toString().contains("Deprecated CodeContext configuration"))
+            assertTrue(captured.toString().contains("Deprecated legacy configuration"))
             assertTrue(captured.toString().contains(".vericore.json"))
         } finally {
             System.setErr(originalErr)
@@ -118,7 +118,7 @@ class VericoreConfigurationNamespaceTest {
         try {
             System.setErr(PrintStream(captured))
             assertEquals("legacy-key", requireNotNull(UserConfigStore.load()).ai.apiKey)
-            assertTrue(captured.toString().contains("Deprecated CodeContext user configuration"))
+            assertTrue(captured.toString().contains("Deprecated legacy user configuration"))
             assertTrue(captured.toString().contains(canonicalPath))
         } finally {
             System.setErr(originalErr)
