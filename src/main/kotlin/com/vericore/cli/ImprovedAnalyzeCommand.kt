@@ -57,15 +57,16 @@ class ImprovedAnalyzeCommand : CliktCommand(
 
                 echo("🧠 Parsing code...")
                 val cacheManager = if (config.enableCache && !noCache) CacheManager() else null
+                val parser = CodeParallelParser(cacheManager)
                 val parsedFiles: List<ParsedFile> = try {
-                    runBlocking { CodeParallelParser(cacheManager).parseFiles(files) }
+                    runBlocking { parser.parseFiles(files) }
                 } catch (e: Exception) {
                     if (verbose) println(e.stackTraceToString())
                     throw IllegalStateException("Parsing failed: ${e.message}", e)
                 }
                 echo("   Parsed ${parsedFiles.size} files")
-                val failedCount = files.size - parsedFiles.size
-                if (failedCount > 0) echo("   ⚠️  $failedCount files failed to parse")
+                val failedCount = parser.lastWarningCount
+                if (failedCount > 0) echo("   ⚠️  $failedCount files reported parser diagnostics")
 
                 echo("📜 Analyzing Git history...")
                 val enrichedFiles = try {
