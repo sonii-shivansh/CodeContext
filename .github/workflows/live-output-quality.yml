@@ -109,6 +109,7 @@ jobs:
               text=(out/name).read_text().strip()
               assert text, name
               assert 'Exception in thread' not in text, name
+              assert 'CodeContext' not in text, name
           for name in ['architecture.json','change-impact.json','architecture-contract.json','engineering-context.json','engineering-reality.json','engineering-plan.json','final-verify.json']:
               p=Path('output')/name
               assert p.is_file() and p.stat().st_size > 0, name
@@ -159,6 +160,8 @@ jobs:
           p=Path('output/live-command-output')
           health=json.loads((p/'18-rest-health.json').read_text())
           assert health['status']=='healthy' and health['version']=='0.7.0'
+          root=(p/'18-rest-root.txt').read_text()
+          assert 'CodeContext' not in root
           json.loads((p/'18-rest-architecture.json').read_text())
           PY
 
