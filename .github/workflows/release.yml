@@ -63,6 +63,9 @@ jobs:
       - name: Run release test suite
         run: ./gradlew --no-daemon clean test
 
+      - name: Verify runtime packaging script contract
+        run: ./scripts/test-runtime-packaging.sh
+
   package:
     name: Package ${{ matrix.name }}
     needs: resolve-version

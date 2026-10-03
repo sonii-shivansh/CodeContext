@@ -19,10 +19,28 @@ if (-not (Test-Path $Jdeps) -or -not (Test-Path $Jlink)) {
 $Jre = Join-Path $AppHome 'jre'
 if (Test-Path $Jre) { Remove-Item -Recurse -Force $Jre }
 
-$jars = Get-ChildItem (Join-Path $AppHome 'lib') -Filter '*.jar' -File | Sort-Object FullName
+$jars = @(Get-ChildItem (Join-Path $AppHome 'lib') -Filter '*.jar' -File | Sort-Object FullName)
 if ($jars.Count -eq 0) { throw "No application jars found under $AppHome\lib" }
 
-$jdepsArgs = @('--multi-release', '21', '--ignore-missing-deps', '--print-module-deps', '--recursive') + $jars.FullName
+$appJars = @($jars | Where-Object { $_.Name -like 'vericore-*.jar' })
+if ($appJars.Count -eq 0) { throw "Vericore application jar not found under $AppHome\lib" }
+if ($appJars.Count -gt 1) { throw "Multiple Vericore application jars found under $AppHome\lib" }
+$appJar = $appJars[0]
+
+$dependencyJars = @($jars | Where-Object { $_.FullName -ne $appJar.FullName })
+$dependencyClassPath = ($dependencyJars.FullName -join ';')
+if ([string]::IsNullOrWhiteSpace($dependencyClassPath)) {
+    throw 'No dependency jars found to construct the runtime classpath.'
+}
+
+$jdepsArgs = @(
+    '--multi-release', '21',
+    '--ignore-missing-deps',
+    '--print-module-deps',
+    '--recursive',
+    '--class-path', $dependencyClassPath,
+    $appJar.FullName
+)
 $moduleOutput = & $Jdeps @jdepsArgs
 if ($LASTEXITCODE -ne 0) { throw 'jdeps failed while calculating the runtime module set.' }
 $modules = ($moduleOutput | Select-Object -Last 1).Trim()
