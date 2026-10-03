@@ -23,7 +23,7 @@ data class EngineeringPlanStep(
 
 @Serializable
 data class EngineeringPlan(
-    val schemaVersion: String = "1.1",
+    val schemaVersion: String = "1.0",
     val changeSummary: String,
     val repository: String = "",
     val affectedComponents: List<String>,
@@ -79,6 +79,7 @@ class EngineeringPlanner {
             if (citations.isEmpty()) add("No repository evidence was supplied; implementation-specific conclusions cannot be established.")
             if (plannedPaths.isEmpty()) add("No explicit planned paths were supplied; change-scope safety can only evaluate evidence-derived context.")
         }
+        val shellRoot = repository.replace("'", "'\\''")
         val provisional = EngineeringPlan(
             changeSummary = request.changeSummary.trim(),
             repository = repository,
@@ -87,7 +88,7 @@ class EngineeringPlanner {
             concerns = concerns.sorted(),
             riskLevel = risk,
             steps = steps,
-            verificationCommands = listOf("cd '${repository.replace("'", "'\\''")}' && ./gradlew --no-daemon clean test", "cd '${repository.replace("'", "'\\''")}' && ./gradlew --no-daemon build installDist"),
+            verificationCommands = listOf("cd '$shellRoot' && ./gradlew --no-daemon clean test", "cd '$shellRoot' && ./gradlew --no-daemon build installDist"),
             evidenceIds = evidenceIds,
             uncertainties = uncertainties
         )
