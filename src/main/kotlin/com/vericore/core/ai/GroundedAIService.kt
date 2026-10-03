@@ -1,5 +1,6 @@
 package com.vericore.core.ai
 
+import com.vericore.core.evidence.SemanticEvidenceGraphBuilder
 import com.vericore.core.intelligence.AnalysisSnapshot
 import java.io.File
 
@@ -16,6 +17,7 @@ class GroundedAIService(private val analyzer: AICodeAnalyzer) {
         require(question.isNotBlank()) { "question must not be blank" }
 
         val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot, maxCitations)
+        val graph = SemanticEvidenceGraphBuilder.build(snapshot, evidence)
         val context = CodebaseContext(
             totalFiles = snapshot.metrics.totalFiles,
             languages = snapshot.repository.languages,
@@ -23,7 +25,7 @@ class GroundedAIService(private val analyzer: AICodeAnalyzer) {
             recentChanges = emptyList()
         )
 
-        val groundedQuestion = buildPrompt(question, evidence)
+        val groundedQuestion = buildPrompt(question, evidence, graph)
         val response = analyzer.askQuestion(groundedQuestion, context)
         val grounding = GroundingAssessor.assess(response.answer, evidence)
 
@@ -38,13 +40,26 @@ class GroundedAIService(private val analyzer: AICodeAnalyzer) {
         )
     }
 
-    private fun buildPrompt(question: String, evidence: GroundedEvidence): String = buildString {
+    private fun buildPrompt(
+        question: String,
+        evidence: GroundedEvidence,
+        graph: com.vericore.core.evidence.SemanticEvidenceGraph
+    ): String = buildString {
         appendLine("You are answering a repository question using supplied deterministic evidence.")
         appendLine("Treat the evidence below as the authoritative repository facts.")
         appendLine("Do not invent files, metrics, dependencies, architecture facts, or history.")
         appendLine("If the evidence is insufficient, explicitly say what is unknown.")
         appendLine("Every repository-specific factual claim MUST cite one or more evidence IDs like [repo.metrics] or [hotspot.1].")
         appendLine("Do not cite an evidence ID that is not present below.")
+        appendLine()
+        appendLine("SEMANTIC EVIDENCE GRAPH")
+        appendLine("repository=${graph.repositoryId}")
+        appendLine("observedCommit=${graph.observedCommit}")
+        appendLine("graphDigest=${graph.digest()}")
+        appendLine("nodes=${graph.nodes.size}, edges=${graph.edges.size}")
+        graph.edges.forEach { edge ->
+            appendLine("${edge.fromId} -${edge.type.name}-> ${edge.toId}")
+        }
         appendLine()
         appendLine("DETERMINISTIC EVIDENCE")
         evidence.citations.forEach { citation ->

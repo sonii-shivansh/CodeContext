@@ -1,5 +1,8 @@
 package com.vericore.core.evidence
 
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
 /**
  * A bounded, deterministic relationship layer over already-produced evidence.
  *
@@ -21,10 +24,6 @@ class SemanticEvidenceGraph private constructor(
 
     fun incoming(id: String): List<EvidenceEdge> = edges.filter { it.toId == id }
 
-    /**
-     * Resolves evidence produced for the same repository state by a stable source
-     * reference. Results are deterministic and optionally constrained by type.
-     */
     fun resolve(sourceRef: String, types: Set<EvidenceType> = emptySet()): List<EvidenceNode> =
         nodes.asSequence()
             .filter { it.sourceRef == sourceRef }
@@ -32,14 +31,29 @@ class SemanticEvidenceGraph private constructor(
             .sortedBy { it.id }
             .toList()
 
-    /**
-     * Resolves cross-feature evidence related to a node through a shared source
-     * reference. The node itself is excluded from the result.
-     */
     fun related(nodeId: String, types: Set<EvidenceType> = emptySet()): List<EvidenceNode> {
         val sourceRef = node(nodeId)?.sourceRef ?: return emptyList()
         return resolve(sourceRef, types).filter { it.id != nodeId }
     }
+
+    /** Stable identity of the complete graph state. */
+    fun digest(): String = sha256(
+        buildString {
+            append(repositoryId).append('\u001f').append(observedCommit).append('\u001f')
+            nodes.forEach { node ->
+                append(node.id).append('|')
+                    .append(node.type.name).append('|')
+                    .append(node.repositoryId).append('|')
+                    .append(node.observedCommit).append('|')
+                    .append(node.producer).append('|')
+                    .append(node.contentDigest).append('|')
+                    .append(node.sourceRef.orEmpty()).append('\u001e')
+            }
+            edges.forEach { edge ->
+                append(edge.fromId).append('|').append(edge.toId).append('|').append(edge.type.name).append('\u001e')
+            }
+        }
+    )
 
     companion object {
         fun build(
@@ -111,3 +125,8 @@ enum class EvidenceEdgeType {
     DERIVED_FROM,
     SUPPORTS
 }
+
+private fun sha256(value: String): String =
+    MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray(StandardCharsets.UTF_8))
+        .joinToString("") { "%02x".format(it) }

@@ -5,6 +5,7 @@ import com.vericore.core.ai.GroundedEvidence
 import com.vericore.core.ai.GroundedEvidenceBuilder
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.config.ConfigLoader
+import com.vericore.core.evidence.SemanticEvidenceGraphBuilder
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.AnalysisSnapshotBuilder
 import com.vericore.core.intelligence.ChangeSet
@@ -25,7 +26,10 @@ data class EngineeringPreparationResult(
     val evidence: GroundedEvidence,
     val plan: EngineeringPlan,
     val contract: AgentChangeContract,
-    val provenance: DecisionProvenance = DecisionProvenance.create("prepare", null, "1.0", emptyList())
+    val provenance: DecisionProvenance = DecisionProvenance.create("prepare", null, "1.0", emptyList()),
+    val evidenceGraphDigest: String = "",
+    val evidenceGraphNodeCount: Int = 0,
+    val evidenceGraphEdgeCount: Int = 0
 )
 
 /** Builds a reusable evidence snapshot, deterministic plan, and repository-bound change contract before coding. */
@@ -51,6 +55,7 @@ object EngineeringPreparation {
             parseFailures = parseFailures
         )
         val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot)
+        val evidenceGraph = SemanticEvidenceGraphBuilder.build(snapshot, evidence)
         val changeSet = runCatching { com.vericore.core.intelligence.GitChangeSetBuilder.fromWorkingTree(root.path) }
             .getOrElse { ChangeSet(emptyList(), source = "not-a-git-change-set") }
         val initialPlan = EngineeringPlanner().plan(
@@ -75,7 +80,10 @@ object EngineeringPreparation {
             evidence = evidence,
             plan = plan,
             contract = contract,
-            provenance = provenance
+            provenance = provenance,
+            evidenceGraphDigest = evidenceGraph.digest(),
+            evidenceGraphNodeCount = evidenceGraph.nodes.size,
+            evidenceGraphEdgeCount = evidenceGraph.edges.size
         )
     }
 }

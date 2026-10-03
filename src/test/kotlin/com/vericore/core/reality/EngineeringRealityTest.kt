@@ -11,6 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class EngineeringRealityTest {
     @Test
@@ -42,6 +43,18 @@ class EngineeringRealityTest {
             sampleContext().copy(changedPaths = listOf("src/New.kt"))
         )
         assertNotEquals(first.realityDigest, changed.realityDigest)
+    }
+
+    @Test
+    fun `reality binds the semantic evidence graph when commit provenance exists`() {
+        val analysis = sampleAnalysis().copy(
+            repository = sampleAnalysis().repository.copy(repositoryCommit = "abc123")
+        )
+        val reality = EngineeringRealityEngine.build(analysis, sampleContext())
+
+        assertTrue(reality.evidenceGraphDigest.isNotBlank())
+        assertTrue(reality.evidenceGraphNodeCount > 0)
+        assertTrue(reality.evidenceGraphEdgeCount > 0)
     }
 
     @Test
