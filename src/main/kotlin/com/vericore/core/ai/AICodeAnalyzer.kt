@@ -51,9 +51,13 @@ data class CodeSuggestion(
 
 class AICodeAnalyzer(
         private val apiKey: String,
-        private val model: String = "gemini-2.5-flash",
+        private val model: String = DEFAULT_MODEL,
         private val provider: String = "gemini"
 ) {
+        companion object {
+                const val DEFAULT_MODEL = "gemini-3.8-flash"
+        }
+
         private val client =
                 HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(20))
@@ -64,6 +68,9 @@ class AICodeAnalyzer(
         private val isEnabled: Boolean =
                 apiKey.isNotBlank() && apiKey != "heuristic" && !apiKey.startsWith("demo")
 
+        internal val configuredModel: String
+                get() = model
+
         fun isConfigured(): Boolean = isEnabled
 
         /** Analyze a single file and generate comprehensive insights */
@@ -71,7 +78,7 @@ class AICodeAnalyzer(
                 withContext(Dispatchers.IO) {
                         if (!isEnabled) {
                                 throw IllegalStateException(
-                                        "AI analysis is not configured. Please set a valid API key in .codecontext.json"
+                                        "AI analysis is not configured. Please set a valid API key in .vericore.json"
                                 )
                         }
 
@@ -351,26 +358,26 @@ class AICodeAnalyzer(
                 }
         }
 
-        /** Call Google Gemini API */
-        private suspend fun callGemini(prompt: String): String {
-                val requestBody =
-                        json.encodeToString(
-                                mapOf(
-                                        "contents" to listOf(
-                                                mapOf(
-                                                        "parts" to listOf(
-                                                                mapOf("text" to sanitizePromptContent(prompt))
-                                                        )
+        /** Build the Gemini generateContent request body without making a network call. */
+        internal fun buildGeminiRequestBody(prompt: String): String =
+                json.encodeToString(
+                        mapOf(
+                                "contents" to listOf(
+                                        mapOf(
+                                                "parts" to listOf(
+                                                        mapOf("text" to sanitizePromptContent(prompt))
                                                 )
-                                        ),
-                                        "generationConfig" to mapOf(
-                                                "temperature" to 0.7,
-                                                "topK" to 40,
-                                                "topP" to 0.95,
-                                                "maxOutputTokens" to 2048
                                         )
+                                ),
+                                "generationConfig" to mapOf(
+                                        "maxOutputTokens" to 2048
                                 )
                         )
+                )
+
+        /** Call Google Gemini API */
+        private suspend fun callGemini(prompt: String): String {
+                val requestBody = buildGeminiRequestBody(prompt)
 
                 val request =
                         HttpRequest.newBuilder()
