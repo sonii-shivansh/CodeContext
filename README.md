@@ -238,7 +238,7 @@ For contributor workflow, see [Contributing](CONTRIBUTING.md) and [Development](
 | Data & Privacy | [docs/DATA_PRIVACY.md](docs/DATA_PRIVACY.md) |
 | Development | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
 | Implementation Status | [docs/ENTERPRISE_ROADMAP.md](docs/ENTERPRISE_ROADMAP.md) |
-| Contributing | [Contributing](CONTRIBUTING.md) |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Security | [SECURITY.md](SECURITY.md) |
 
 ## License
