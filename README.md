@@ -1,18 +1,20 @@
 # Vericore
 
-**Deterministic engineering intelligence for Java and Kotlin repositories.**
+**Understand. Change. Verify.**
 
-[🌐 Website](https://sonii-shivansh.github.io/CodeContext-Website/) · [📚 Documentation](docs/INDEX.md) · [🚀 Releases](https://github.com/sonii-shivansh/CodeContext/releases)
+**Evidence-grounded engineering intelligence for your codebase.**
 
-Vericore is a Kotlin/JVM CLI and local REST application that analyzes source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a deterministic prepare → change → verify safety loop.
+Vericore is a Kotlin/JVM CLI and local REST application that analyzes Java and Kotlin source code, dependency structure, Git history, and engineering signals to produce reproducible engineering intelligence. It also provides grounded repository Q&A, evidence-backed engineering planning, a local MCP interface for AI agents, and a deterministic prepare → change → verify safety loop.
 
 > **Core principle:** deterministic evidence first, optional AI reasoning second.
 
 ## Current status
 
-**Vericore `feat/vericore-migration` is the v0.7.0 migration line.** The migration preserves the known-good v0.7.0 behavior baseline while moving the canonical product identity from CodeContext to Vericore.
+Vericore `0.7.0` is the current release-candidate line. The product identity, CLI, package namespace, configuration namespace, distribution name, reports, REST server, MCP tools, and documentation are now canonical Vericore surfaces.
 
-Implemented capabilities include:
+The GitHub repository is still named `CodeContext` for repository-history continuity; that external repository identity is separate from the software's canonical product identity.
+
+## Capabilities
 
 - Java and Kotlin source analysis
 - dependency graph construction
@@ -25,7 +27,7 @@ Implemented capabilities include:
 - Architecture Intelligence, architecture drift, and deterministic architecture contracts
 - versioned analysis/evidence artifacts
 - deterministic engineering-context snapshots and diffs
-- deterministic Engineering Reality identity across analysis + repository state
+- deterministic Engineering Reality identity across analysis and repository state
 - grounded repository Q&A retrieval
 - deterministic, evidence-backed engineering planning
 - evidence-first `prepare` workflow
@@ -69,6 +71,8 @@ cd CodeContext
 ./gradlew --no-daemon installDist
 ./build/install/vericore/bin/vericore --version
 ```
+
+> The clone URL follows the repository's current GitHub name. The software itself is Vericore.
 
 ## Common workflows
 
@@ -190,9 +194,11 @@ vericore setup
 vericore doctor
 ```
 
-`VERICORE_GEMINI_API_KEY` and `VERICORE_GOOGLE_API_KEY` are supported for CI and non-interactive environments. Legacy provider variables remain supported only as compatibility paths and emit migration guidance. Never commit API keys.
+`VERICORE_GEMINI_API_KEY` and `VERICORE_GOOGLE_API_KEY` are supported for CI and non-interactive environments. Never commit API keys.
 
-A repository-local `.vericore.json` is the canonical configuration file. Legacy `.codecontext.json` remains readable only as a compatibility fallback and emits a deprecation/migration warning. `VERICORE_ALLOWED_PATHS` controls server workspace boundaries; keep allowed roots as narrow as practical.
+A repository-local `.vericore.json` is the canonical configuration file. `VERICORE_ALLOWED_PATHS` controls server workspace boundaries; keep allowed roots as narrow as practical.
+
+For users migrating from older releases, legacy configuration/environment names are accepted only as explicitly deprecated migration paths and are not part of the canonical Vericore contract.
 
 Vericore is local-first. With AI disabled, deterministic repository analysis does not send repository content to a Vericore telemetry or storage service. AI is opt-in and sends bounded repository-derived context directly to the configured provider when invoked.
 

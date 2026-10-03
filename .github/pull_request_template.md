@@ -1,48 +1,42 @@
-## 📝 Description
+## Summary
 
-<!-- Provide a brief description of the changes in this PR -->
+<!-- What changed, and why? Keep this concise. -->
 
-## 🔗 Related Issues
+## Related Issues
 
-<!-- Link to related issues using #issue_number -->
-Closes #
+<!-- Link related issues, for example: Closes #123 -->
 
-## 🎯 Type of Change
+## Change Type
 
-<!-- Mark the relevant option with an 'x' -->
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation
+- [ ] Refactoring / rename
+- [ ] Performance
+- [ ] Tests / CI
+- [ ] Security
 
-- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
-- [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] 📚 Documentation update
-- [ ] 🎨 Code style update (formatting, renaming)
-- [ ] ♻️ Refactoring (no functional changes)
-- [ ] ⚡ Performance improvement
-- [ ] ✅ Test update
+## Verification
 
-## 🧪 Testing Done
+- [ ] `./gradlew --no-daemon clean test`
+- [ ] `./gradlew --no-daemon build installDist`
+- [ ] Relevant CLI/API/MCP smoke tests
+- [ ] Full GitHub Actions validation completed
 
-<!-- Describe the tests you ran to verify your changes -->
+## Compatibility / Migration
 
-- [ ] All existing tests pass (`./gradlew test`)
-- [ ] Added new tests for new functionality
-- [ ] Tested manually with sample projects
-- [ ] Verified on multiple operating systems (if applicable)
+<!-- Describe public API, configuration, CLI, MCP, REST, or release implications. -->
 
-## 📸 Screenshots/Output
+## Security / Data Handling
 
-<!-- If applicable, add screenshots or sample output -->
+<!-- Mention credentials, external providers, filesystem boundaries, or other security implications. -->
 
-## ✅ Checklist
+## Documentation
 
-- [ ] My code follows the project's code style
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
+- [ ] Documentation updated for changed behavior/contracts
+- [ ] Changelog updated when user-visible
 
-## 📝 Additional Notes
+## Reviewer Notes
 
-<!-- Any additional information that reviewers should know -->
+<!-- Anything reviewers should verify specifically. -->

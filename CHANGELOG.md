@@ -1,8 +1,10 @@
 # Changelog
 
-All notable changes to CodeContext are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and the project uses [Semantic Versioning](https://semver.org/).
+All notable changes to Vericore are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [0.7.0]
+> Releases `0.1.0` through `0.6.0` were published under the project's former name. `0.7.0` is the first release line with Vericore as the canonical product identity.
+
+## [0.7.0] — Unreleased
 
 ### Added
 
@@ -15,7 +17,8 @@ All notable changes to CodeContext are documented here. The format follows [Keep
 
 ### Documentation
 
-- Updated the README, architecture, API, MCP, change-safety, and implementation-status documentation to describe the current engineering-intelligence architecture.
+- Reworked the public documentation around the canonical Vericore product identity and current command surface.
+- Removed completed migration working documents from the active documentation tree.
 
 ### Release engineering
 

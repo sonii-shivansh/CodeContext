@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Create a report to help us improve
+about: Create a report to help us improve Vericore
 title: '[BUG] '
 labels: bug
 assignees: ''
@@ -8,37 +8,37 @@ assignees: ''
 
 ## 🐛 Bug Description
 
-A clear and concise description of what the bug is.
+Provide a clear and concise description of the problem.
 
 ## 📋 Steps to Reproduce
 
-1. Go to '...'
-2. Run command '...'
-3. See error
+1. Describe the repository or fixture used (without private source code).
+2. Run the relevant Vericore command or API request.
+3. Capture the resulting behavior.
 
 ## ✅ Expected Behavior
 
-A clear description of what you expected to happen.
+Describe what Vericore should do.
 
 ## ❌ Actual Behavior
 
-A clear description of what actually happened.
+Describe what Vericore actually did.
 
-## 📸 Screenshots/Logs
+## 📸 Screenshots / Logs
 
-If applicable, add screenshots or error logs to help explain the problem.
+If applicable, include screenshots or sanitized logs. Remove credentials, tokens, private source code, and other sensitive data.
 
-```
-Paste error logs here
+```text
+Paste sanitized output here
 ```
 
 ## 🖥️ Environment
 
-- **OS:** [e.g., Windows 11, macOS 14, Ubuntu 22.04]
-- **JDK Version:** [e.g., JDK 21]
-- **CodeContext Version:** [e.g., 0.6.0]
-- **Repository Size:** [e.g., 100 files, 10k LOC]
+- **Vericore version:** [e.g., 0.7.0]
+- **OS:** [e.g., Windows 11, macOS 14, Ubuntu 24.04]
+- **JDK version:** [e.g., JDK 21]
+- **Repository size:** [e.g., 100 files, 10k LOC]
 
 ## 📝 Additional Context
 
-Add any other context about the problem here.
+Add any other context that could help reproduce or diagnose the issue.
