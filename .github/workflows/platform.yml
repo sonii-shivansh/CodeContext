@@ -71,6 +71,18 @@ jobs:
         shell: pwsh
         run: .\gradlew.bat --no-daemon installDist
 
+      - name: Verify generated Windows launcher classpath
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $script = Get-Content -Raw .\build\install\vericore\bin\vericore.bat
+          $classpathLine = $script -split '\r?\n' | Where-Object { $_ -eq 'set CLASSPATH=%APP_HOME%\lib\*' }
+          if (-not $classpathLine) {
+            Write-Host 'Generated launcher:'
+            Write-Host $script
+            throw 'Windows launcher does not use the compact lib wildcard classpath.'
+          }
+
       - name: Verify CLI on Windows
         if: runner.os == 'Windows'
         shell: pwsh
