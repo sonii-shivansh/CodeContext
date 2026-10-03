@@ -96,16 +96,13 @@ jobs:
       - name: Verify environment-based credential discovery without persisting it
         shell: bash
         env:
-          VERICORE_GEMINI_API_KEY: "e2e-placeholder-key"
+          VERICORE_GEMINI_API_KEY: ${{ secrets.VERICORE_GEMINI_API_KEY || secrets.GEMINI_API_KEY || secrets.VERICORE_GOOGLE_API_KEY || secrets.GOOGLE_API_KEY }}
         run: |
           cd "$RUNNER_TEMP/vericore-fixture"
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
-          set +e
+          test -n "$VERICORE_GEMINI_API_KEY"
           "$CLI" doctor | tee env-doctor.txt
-          status=${PIPESTATUS[0]}
-          set -e
-          test "$status" -ne 0
           grep -Fq "VERICORE_GEMINI_API_KEY environment variable" env-doctor.txt
-          grep -Fq "API key not valid" env-doctor.txt
-          grep -Fq "API_KEY_INVALID" env-doctor.txt
+          grep -Fq "Gemini API — reachable and credentials accepted" env-doctor.txt
+          grep -Fq "✓ Vericore is ready to use." env-doctor.txt
           test ! -f .vericore.json
