@@ -11,9 +11,15 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
 class CodeParallelParser(private val cacheManager: CacheManager? = null) {
+    @Volatile
+    var lastWarningCount: Int = 0
+        private set
 
     suspend fun parseFiles(files: List<File>): List<ParsedFile> = coroutineScope {
-        if (files.isEmpty()) return@coroutineScope emptyList()
+        if (files.isEmpty()) {
+            lastWarningCount = 0
+            return@coroutineScope emptyList()
+        }
 
         val runtime = Runtime.getRuntime()
         val availableMemory = runtime.freeMemory()
@@ -62,8 +68,9 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
             }.awaitAll()
         }.filterNotNull()
 
-        if (warnings.get() > 0) {
-            System.err.println("⚠️  Parser diagnostics: ${warnings.get()} file(s) reported parsing warnings.")
+        lastWarningCount = warnings.get()
+        if (lastWarningCount > 0) {
+            System.err.println("⚠️  Parser diagnostics: $lastWarningCount file(s) reported parsing warnings.")
         }
 
         parsedFiles
