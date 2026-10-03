@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 — baseline and migration contract.
+Migration implementation and validation complete; pending merge of PR #99 and the subsequent Vericore release publication.
 
 ## Goal
 
