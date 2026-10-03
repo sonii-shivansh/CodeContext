@@ -29,7 +29,8 @@ Vericore `0.7.0` is the current stable release. The product identity, CLI, packa
 - Architecture Intelligence, architecture drift, and deterministic architecture contracts
 - versioned analysis/evidence artifacts
 - deterministic engineering-context snapshots and diffs
-- deterministic Engineering Reality identity across analysis and repository state
+- deterministic semantic evidence graph with repository/commit-bound identity
+- deterministic Engineering Reality identity across analysis, repository state, and evidence graph
 - grounded repository Q&A retrieval
 - deterministic, evidence-backed engineering planning
 - evidence-first `prepare` workflow
@@ -60,6 +61,7 @@ From the repository you want to analyze:
 ```text
 vericore analyze .
 vericore reality . --json
+vericore evidence-graph . --json
 ```
 
 The default report is written to `output/index.html`. Machine-readable artifacts are written under the analyzed repository's `output/` directory.
@@ -80,8 +82,11 @@ cd Vericore
 
 ```bash
 vericore analyze /path/to/repository
+vericore evidence-graph /path/to/repository --json
 vericore reality /path/to/repository --json
 ```
+
+The evidence graph is a bounded, deterministic relationship layer over already-produced repository evidence. It is bound to the observed repository commit and exposes a stable SHA-256 digest for downstream identity and provenance.
 
 ### Ask a grounded repository question
 
@@ -152,6 +157,7 @@ vericore architecture-drift /path/to/repository --baseline /path/to/architecture
 vericore architecture-contract /path/to/repository --contract /path/to/.vericore-architecture-contract.json --json
 vericore context-snapshot /path/to/repository --json
 vericore context-diff /path/to/before.json /path/to/after.json --json
+vericore evidence-graph /path/to/repository --json
 vericore reality /path/to/repository --json
 vericore repo-qa "why is PaymentService risky?" --path /path/to/repository
 vericore prepare "add payment validation" --path /path/to/repository
@@ -170,16 +176,18 @@ For the complete developer workflow and implementation guidance, see [Developmen
 flowchart TD
     R[Repository + Git] --> A[Deterministic Analysis]
     A --> C[Engineering Context]
-    A --> E[Engineering Reality]
-    C --> E
+    A --> G[Semantic Evidence Graph]
+    C --> E[Engineering Reality]
+    G --> E
     E --> I[Deterministic Intelligence]
-    I --> G[Grounded Evidence]
-    G --> Q[Q&A / Planner]
-    G --> V[Prepare / Verify]
+    I --> Q[Grounded Evidence]
+    G --> Q
+    Q --> P[Q&A / Planner]
+    Q --> V[Prepare / Verify]
     V --> K[Agent Change Contract]
     Q --> X[CLI / REST / MCP / CI]
     K --> X
-    G --> AI[Optional AI]
+    Q --> AI[Optional AI]
     AI --> X
 ```
 

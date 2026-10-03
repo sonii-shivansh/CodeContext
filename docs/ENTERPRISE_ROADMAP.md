@@ -60,8 +60,23 @@
 - repository commit binding
 - stable analysis/context digests
 - explicit `realityDigest`
+- semantic evidence graph digest and cardinality bound into Engineering Reality
 - protection against analysis wall-clock timestamps changing identity
-- `context-snapshot`, `context-diff`, and `reality` CLI commands
+- `context-snapshot`, `context-diff`, `evidence-graph`, and `reality` CLI commands
+
+### Semantic evidence graph
+
+- bounded deterministic relationship graph over existing evidence
+- repository and observed-commit binding for every evidence node
+- deterministic node and edge ordering
+- duplicate, dangling-edge, self-edge, stale-commit, and cross-repository validation
+- deterministic SHA-256 graph identity
+- cross-feature resolution by repository source reference
+- serializable `semantic-evidence-graph.json` artifact
+- stable graph schema version and cardinality metadata
+- release-gate validation of the materialized graph on a real Git repository
+
+The graph does not invent repository facts and is not a replacement for the dependency graph.
 
 ### Grounded evidence and Q&A
 
@@ -133,6 +148,7 @@ The planner is read-only.
 - canonical Gemini 3.8 request configuration without legacy sampling controls
 - bounded grounded evidence as model context
 - explicit separation between deterministic repository facts and model reasoning
+- semantic evidence graph identity available to grounded Engineering Reality
 
 AI is disabled unless configured.
 
@@ -177,6 +193,7 @@ The clean-environment workflows validate:
 - Architecture Intelligence
 - architecture drift/contracts
 - engineering-context snapshots/diffs
+- semantic evidence graph materialization and invariants
 - prepare/verify contracts
 - REST API behavior
 - Linux x64
@@ -204,8 +221,6 @@ These are known boundaries of the current implementation:
 - autonomous source-code modification is not implemented;
 - production telemetry integrations are not implemented;
 - organization-wide governance and cross-repository intelligence are not implemented;
-- Engineering Reality composes analysis and repository-context artifacts but is not a full semantic evidence graph;
-- context snapshots fingerprint repository-scanned source files rather than the full semantic evidence graph;
 - temporal archaeology provides deterministic source-history metrics but does not reconstruct full semantic dependency graphs for arbitrary historical commits;
 - architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not implemented;
 - the Agent Change Contract is a deterministic verification boundary, not an authorization system or autonomous coding mechanism.

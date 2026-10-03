@@ -1,5 +1,6 @@
 package com.vericore.core.evidence
 
+import kotlinx.serialization.Serializable
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
@@ -86,6 +87,7 @@ class SemanticEvidenceGraph private constructor(
     }
 }
 
+@Serializable
 data class EvidenceNode(
     val id: String,
     val type: EvidenceType,
@@ -104,12 +106,14 @@ data class EvidenceNode(
     }
 }
 
+@Serializable
 data class EvidenceEdge(
     val fromId: String,
     val toId: String,
     val type: EvidenceEdgeType
 )
 
+@Serializable
 enum class EvidenceType {
     REPOSITORY,
     SOURCE,
@@ -121,6 +125,7 @@ enum class EvidenceType {
     GROUNDING
 }
 
+@Serializable
 enum class EvidenceEdgeType {
     DERIVED_FROM,
     SUPPORTS

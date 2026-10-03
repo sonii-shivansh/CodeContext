@@ -91,6 +91,20 @@ jobs:
           "$CLI" context-snapshot . --json
           cp output/engineering-context.json output/engineering-context-baseline.json
           "$CLI" context-diff output/engineering-context-baseline.json output/engineering-context.json --json
+          "$CLI" evidence-graph . --json
+          test -s output/semantic-evidence-graph.json
+          python3 - <<'PY'
+          import json
+          graph=json.load(open('output/semantic-evidence-graph.json'))
+          assert graph['schemaVersion'] == '1.0'
+          assert graph['repositoryId']
+          assert graph['observedCommit']
+          assert graph['digest'] and len(graph['digest']) == 64
+          assert graph['nodeCount'] == len(graph['nodes'])
+          assert graph['edgeCount'] == len(graph['edges'])
+          node_ids={n['id'] for n in graph['nodes']}
+          assert all(e['fromId'] in node_ids and e['toId'] in node_ids for e in graph['edges'])
+          PY
           "$CLI" evolution
           "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
 
