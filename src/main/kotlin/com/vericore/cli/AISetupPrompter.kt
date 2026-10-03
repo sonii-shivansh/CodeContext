@@ -5,8 +5,10 @@ import com.vericore.core.ai.AISetupResult
 import com.vericore.core.config.UserConfigStore
 
 object AISetupPrompter {
-    fun ensureConfigured(model: String = "gemini-2.5-flash"): Boolean {
-        val environmentKey = System.getenv("GEMINI_API_KEY")?.trim().orEmpty()
+    fun ensureConfigured(model: String = AISetup.DEFAULT_GEMINI_MODEL): Boolean {
+        val environmentKey = System.getenv("VERICORE_GEMINI_API_KEY")?.trim().orEmpty()
+            .ifBlank { System.getenv("VERICORE_GOOGLE_API_KEY")?.trim().orEmpty() }
+            .ifBlank { System.getenv("GEMINI_API_KEY")?.trim().orEmpty() }
             .ifBlank { System.getenv("GOOGLE_API_KEY")?.trim().orEmpty() }
         if (environmentKey.isNotBlank()) {
             return when (AISetup.validateGemini(environmentKey, model)) {
@@ -15,7 +17,7 @@ object AISetupPrompter {
             }
         }
 
-        echo("\nCodeContext AI setup required.")
+        echo("\nVericore AI setup required.")
         echo("Gemini is the default AI provider.")
         echo("Add your Gemini API key now? [Y/n]: ", trailingNewline = false)
         val answer = readLine()?.trim().orEmpty().lowercase()
