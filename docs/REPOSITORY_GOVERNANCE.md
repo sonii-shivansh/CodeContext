@@ -56,7 +56,7 @@ Squash merging keeps `main` history focused on reviewable changes while preservi
 Create or update a ruleset for `main` with these requirements:
 
 - Require a pull request before merging.
-- Require at least **1 approving review** when an independent reviewer is available.
+- **Do not require an approving review while this remains a single-maintainer repository.** Revisit this when independent collaborators/maintainers are available.
 - Require conversation resolution.
 - Require branches to be up to date before merging.
 - Block force pushes.
