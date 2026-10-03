@@ -12,6 +12,8 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
+private const val DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+
 @Serializable
 data class AIInsight(
         val file: String,
@@ -51,11 +53,11 @@ data class CodeSuggestion(
 
 class AICodeAnalyzer(
         private val apiKey: String,
-        private val model: String = DEFAULT_MODEL,
+        private val model: String = DEFAULT_GEMINI_MODEL,
         private val provider: String = "gemini"
 ) {
         companion object {
-                const val DEFAULT_MODEL = "gemini-3.8-flash"
+                const val DEFAULT_MODEL = DEFAULT_GEMINI_MODEL
         }
 
         private val client =
