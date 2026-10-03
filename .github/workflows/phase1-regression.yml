@@ -73,10 +73,11 @@ jobs:
           class One {}
           JAVA
 
+          repo="$PWD"
           cd /tmp
           "$CLI" architecture "$fixture" --json
           test -s "$fixture/output/architecture.json"
-          test ! -e "$OLDPWD/output/architecture.json"
+          test ! -e "$repo/output/architecture.json"
 
       - name: Test truthful parse-failure propagation in analyze
         shell: bash
@@ -108,12 +109,6 @@ jobs:
         run: |
           set -euo pipefail
           CLI="$PWD/build/install/vericore/bin/vericore"
-          fixture="$(mktemp -d)"
-          trap 'rm -rf "$fixture"' EXIT
-          git -C "$fixture" init -q
-          git -C "$fixture" config user.email "ci@example.com"
-          git -C "$fixture" config user.name "CI"
-          printf '%s\n' 'class EvolutionFixture {}' > "$fixture/EvolutionFixture.java"
-          git -C "$fixture" add .
-          git -C "$fixture" commit -qm "initial fixture"
-          "$CLI" evolution "$fixture" --months 1 --interval 30
+          repo="$PWD"
+          cd /tmp
+          "$CLI" evolution "$repo" --months 1 --interval 30
