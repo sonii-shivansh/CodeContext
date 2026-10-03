@@ -4,6 +4,7 @@ import com.vericore.core.ai.CodebaseContext
 import com.vericore.core.ai.GeminiQuestionService
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.exceptions.AIProviderException
+import com.vericore.core.exceptions.VericoreException
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
@@ -65,7 +66,7 @@ class AIAssistantCommand :
                 }
                 echo("\n🎯 Confidence: ${(response.confidence * 100).toInt()}%")
             } catch (e: Exception) {
-                if (e is com.vericore.core.exceptions.CodeContextException) throw e
+                if (e is VericoreException) throw e
                 throw AIProviderException(formatProviderFailure(e.message), e)
             }
         }
@@ -78,11 +79,11 @@ class AIAssistantCommand :
                 Regex("quota|rate limit|resource exhausted", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
                 "AI provider quota or rate limit exceeded. Repository analysis completed, but the AI provider could not answer the question. Try again later or configure another supported provider."
             Regex("HTTP\\s+401|HTTP\\s+403", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
-                "AI provider authentication failed. Check the configured API key and run 'codecontext doctor' to validate the setup."
+                "AI provider authentication failed. Check the configured API key and run 'vericore doctor' to validate the setup."
             Regex("unsupported AI provider", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
                 detail
             else ->
-                "AI provider request failed. Repository analysis completed, but the AI provider could not answer the question. Check 'codecontext doctor' and try again."
+                "AI provider request failed. Repository analysis completed, but the AI provider could not answer the question. Check 'vericore doctor' and try again."
         }
     }
 }

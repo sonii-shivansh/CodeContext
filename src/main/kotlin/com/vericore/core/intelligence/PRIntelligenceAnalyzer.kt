@@ -2,7 +2,7 @@ package com.vericore.core.intelligence
 
 import com.vericore.cli.CodeParallelParser
 import com.vericore.core.cache.CacheManager
-import com.vericore.core.config.CodeContextConfig
+import com.vericore.core.config.VericoreConfig
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.scanner.OptimizedGitAnalyzer
@@ -14,7 +14,7 @@ object PRIntelligenceAnalyzer {
     suspend fun analyze(
         repoPath: String,
         changeSet: ChangeSet,
-        config: CodeContextConfig = ConfigLoader.load()
+        config: VericoreConfig = ConfigLoader.load()
     ): PRIntelligenceResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }

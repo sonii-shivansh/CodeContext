@@ -6,7 +6,7 @@
 
 | You are... | Read |
 |---|---|
-| New to CodeContext | [Getting Started](GETTING_STARTED.md) |
+| New to Vericore | [Getting Started](GETTING_STARTED.md) |
 | Learning the architecture | [Architecture](ARCHITECTURE.md) |
 | Building a feature | [Development](DEVELOPMENT.md) |
 | Building an AI-agent integration | [MCP](MCP.md) |
@@ -87,11 +87,11 @@ Use:
 - tables for stable contracts and comparisons;
 - fenced code blocks for copyable commands;
 - `<details>` only for genuinely optional deep dives;
-- explicit **Implemented**, **Design principle**, and **Future direction** labels when status could otherwise be ambiguous.
+- explicit **Implemented**, **Current limitation**, and **Future direction** labels when status could otherwise be ambiguous.
 
 ## Documentation rules
 
-- Document the current repository, not an intended future architecture.
+- Document the current Vericore implementation, not an intended future architecture.
 - Keep examples executable or clearly label them as illustrative.
 - Avoid repeating the same contract in multiple documents; link to the authoritative document instead.
 - Update documentation in the same pull request as behavior or contract changes.

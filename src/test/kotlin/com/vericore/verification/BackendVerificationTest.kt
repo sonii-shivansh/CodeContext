@@ -1,7 +1,7 @@
 package com.vericore.verification
 
 import com.vericore.cli.CodeParallelParser
-import com.vericore.core.config.CodeContextConfig
+import com.vericore.core.config.VericoreConfig
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.scanner.RepositoryScanner
 import java.io.File
@@ -14,7 +14,7 @@ class BackendVerificationTest {
 
     @Test
     fun `verify backend scanner parser and graph on isolated fixture`() {
-        val rootDir = createTempDir(prefix = "codecontext-backend-fixture-")
+        val rootDir = createTempDir(prefix = "vericore-backend-fixture-")
         try {
             val sourceFile = File(rootDir, "Source.kt").apply {
                 writeText(
@@ -39,7 +39,7 @@ class BackendVerificationTest {
                 )
             }
 
-            val scanner = RepositoryScanner(CodeContextConfig(excludePaths = emptyList()))
+            val scanner = RepositoryScanner(VericoreConfig(excludePaths = emptyList()))
             val files = scanner.scan(rootDir.absolutePath)
             assertEquals(setOf(sourceFile.name, targetFile.name), files.map { it.name }.toSet())
 

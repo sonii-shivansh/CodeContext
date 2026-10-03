@@ -36,7 +36,7 @@ object UserConfigStore {
         if (canonical.isFile) return read(canonical)
         val legacy = legacyConfigFile()
         if (legacy.isFile) {
-            val message = "Deprecated CodeContext user configuration detected at ${legacy.path}; migrate to ${canonical.path}."
+            val message = "Deprecated legacy user configuration detected at ${legacy.path}; migrate to ${canonical.path}."
             logger.warn { message }
             System.err.println("⚠️ $message")
             return read(legacy)

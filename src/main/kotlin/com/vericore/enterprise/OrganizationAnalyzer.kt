@@ -2,7 +2,7 @@ package com.vericore.enterprise
 
 import com.vericore.cli.CodeParallelParser
 import com.vericore.core.cache.CacheManager
-import com.vericore.core.config.CodeContextConfig
+import com.vericore.core.config.VericoreConfig
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.scanner.RepositoryScanner
@@ -16,14 +16,14 @@ import kotlinx.coroutines.sync.withPermit
 data class RepoResult(val name: String, val fileCount: Int, val hotspots: List<Pair<String, Double>>, val error: String? = null)
 
 class OrganizationAnalyzer(private val maxConcurrentRepositories: Int = 2) {
-    suspend fun analyzeRepositories(repoPaths: List<String>, config: CodeContextConfig = ConfigLoader.load()): List<RepoResult> = coroutineScope {
+    suspend fun analyzeRepositories(repoPaths: List<String>, config: VericoreConfig = ConfigLoader.load()): List<RepoResult> = coroutineScope {
         require(maxConcurrentRepositories > 0) { "maxConcurrentRepositories must be positive" }
         echo("🏢 Starting Organization Analysis for ${repoPaths.size} repositories...")
         val semaphore = Semaphore(maxConcurrentRepositories)
         repoPaths.map { path -> async { semaphore.withPermit { analyzeSingleRepo(path, config) } } }.awaitAll()
     }
 
-    private suspend fun analyzeSingleRepo(path: String, config: CodeContextConfig): RepoResult {
+    private suspend fun analyzeSingleRepo(path: String, config: VericoreConfig): RepoResult {
         return try {
             val file = File(path)
             if (!file.isDirectory || !file.canRead()) return RepoResult(path, 0, emptyList(), "Path not found or unreadable")

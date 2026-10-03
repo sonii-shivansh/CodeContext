@@ -3,7 +3,7 @@ package com.vericore.mcp
 import com.vericore.core.intelligence.ArchitectureIntelligenceEngine
 import com.vericore.core.intelligence.ArchitectureIntelligenceResult
 import com.vericore.core.scanner.RepositoryScanner
-import com.vericore.core.config.CodeContextConfig
+import com.vericore.core.config.VericoreConfig
 import com.vericore.cli.CodeParallelParser
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.graph.RobustDependencyGraph
@@ -22,7 +22,7 @@ class EngineeringContextGatewayTest {
         val root = Files.createTempDirectory("gateway-drift").toFile()
         try {
             root.resolve("src/App.kt").apply { parentFile.mkdirs(); writeText("class App") }
-            val config = CodeContextConfig(excludePaths = emptyList())
+            val config = VericoreConfig(excludePaths = emptyList())
             val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }
             val graph = RobustDependencyGraph()
             graph.build(parsed).getOrThrow()

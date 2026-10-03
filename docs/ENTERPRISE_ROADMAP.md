@@ -1,6 +1,6 @@
 # Implementation Status & Roadmap
 
-> This document answers one question: **what does CodeContext implement today, and what is explicitly still future work?**
+> This document distinguishes what Vericore implements today from explicit future work.
 
 ## How to read this document
 
@@ -109,7 +109,7 @@ The planner is read-only.
 - stale-HEAD detection
 - live mutation tests for tampering and unexpected source changes
 
-**Authoritative rule:** the persisted contract is the verification boundary. Verification does not silently reconstruct a replacement contract from a mutable plan, and `codecontext_get_change_contract` retrieves the persisted artifact rather than generating a replacement.
+**Authoritative rule:** the persisted contract is the verification boundary. Verification does not silently reconstruct a replacement contract from a mutable plan, and `vericore_get_change_contract` retrieves the persisted artifact rather than generating a replacement.
 
 ### Provenance and temporal intelligence
 
@@ -189,9 +189,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-`main` is the **0.7.0 release candidate line**. The published release remains `v0.6.0` until the 0.7.0 release is created.
-
-The current 0.7.0 line includes the post-v0.6.0 engineering-intelligence, Engineering Reality, Agent Change Contract, and live release-audit work described above.
+`main` is the **0.7.0 Vericore release-candidate line**. Earlier public releases were published under the former project name; `0.7.0` is the first release line whose canonical product identity is Vericore.
 
 ## Current limitations
 
