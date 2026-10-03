@@ -33,10 +33,11 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         require(root.isDirectory) { "Repository path is not a directory: $path" }
         require(maxResults in 1..32) { "--max-results must be between 1 and 32" }
 
+        val files = RepositoryScanner().scan(root.path)
         val parsedFiles: List<ParsedFile> = runBlocking {
-            val files = RepositoryScanner().scan(root.path)
             CodeParallelParser(CacheManager()).parseFiles(files)
         }
+        val parseFailures = files.size - parsedFiles.size
         val enriched = try {
             OptimizedGitAnalyzer().analyze(root.path, parsedFiles)
         } catch (_: Exception) {
@@ -52,7 +53,7 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             graph = graph.graph,
             pageRankScores = graph.pageRankScores,
             hasCycles = graph.hasCycles,
-            parseFailures = 0
+            parseFailures = parseFailures
         )
         val grounded = GroundedEvidenceBuilder.fromSnapshot(snapshot)
         val parsedQuestion = RepositoryQuestionClassifier.classify(question)
