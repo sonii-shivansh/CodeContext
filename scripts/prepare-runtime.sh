@@ -92,16 +92,22 @@ fi
 if ! grep -q 'VERICORE_BUNDLED_JAVA' "$SCRIPT"; then
   TMP_SCRIPT="$SCRIPT.tmp"
   awk '
-    /^# Add default JVM options here\./ && !inserted {
+    /^[[:space:]]*if \[ -n "\$JAVA_HOME" \]/ && !inserted {
       print "# Prefer the runtime bundled with this distribution."
-      print "if [ -x \"" "$" "APP_HOME/jre/bin/java\" ]; then"
-      print "    JAVA_HOME=\"" "$" "APP_HOME/jre\""
+      print "if [ -x \"\$APP_HOME/jre/bin/java\" ]; then"
+      print "    JAVA_HOME=\"\$APP_HOME/jre\""
       print "    export JAVA_HOME"
       print "fi"
       print "# VERICORE_BUNDLED_JAVA"
       inserted = 1
     }
     { print }
+    END {
+      if (!inserted) {
+        print "ERROR: could not find Gradle JAVA_HOME selection block in launcher." > "/dev/stderr"
+        exit 2
+      }
+    }
   ' "$SCRIPT" > "$TMP_SCRIPT"
   mv "$TMP_SCRIPT" "$SCRIPT"
 fi
