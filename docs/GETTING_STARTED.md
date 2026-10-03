@@ -25,8 +25,8 @@ Released platform archives bundle a Java runtime, so a separate JDK is not requi
 ## 1. Build from source
 
 ```bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
+git clone https://github.com/sonii-shivansh/Vericore.git
+cd Vericore
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon installDist
 ```

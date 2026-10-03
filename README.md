@@ -10,9 +10,7 @@ Vericore is a Kotlin/JVM CLI and local REST application that analyzes Java and K
 
 ## Current status
 
-Vericore `0.7.0` is the current release-candidate line. The product identity, CLI, package namespace, configuration namespace, distribution name, reports, REST server, MCP tools, and documentation are now canonical Vericore surfaces.
-
-The GitHub repository is still named `CodeContext` for repository-history continuity; that external repository identity is separate from the software's canonical product identity.
+Vericore `0.7.0` is the current release-candidate line. The product identity, CLI, package namespace, configuration namespace, distribution name, reports, REST server, MCP tools, and documentation are canonical Vericore surfaces.
 
 ## Capabilities
 
@@ -65,14 +63,12 @@ The default report is written to `output/index.html`. Machine-readable artifacts
 ### Build from source
 
 ```bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
+git clone https://github.com/sonii-shivansh/Vericore.git
+cd Vericore
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon installDist
 ./build/install/vericore/bin/vericore --version
 ```
-
-> The clone URL follows the repository's current GitHub name. The software itself is Vericore.
 
 ## Common workflows
 

@@ -115,8 +115,8 @@ vericore --help
 ### From Source
 
 ``````bash
-git clone https://github.com/sonii-shivansh/CodeContext.git
-cd CodeContext
+git clone https://github.com/sonii-shivansh/Vericore.git
+cd Vericore
 .\gradlew.bat installDist
 .\build\install\vericore\bin\vericore.bat --help
 ``````
@@ -133,11 +133,11 @@ start output\index.html
 
 ## 🔧 Configuration
 
-Vericore uses its canonical configuration namespace by default. Legacy CodeContext configuration files remain supported only through the documented migration compatibility path and emit a non-fatal migration warning.
+Vericore uses its canonical configuration namespace by default. Legacy configuration files and environment variables remain supported only through the documented migration compatibility path and emit a non-fatal migration warning.
 
 ## 📊 System Requirements
 
-- **JVM**: Java 11 or higher
+- **JVM**: Java 21 or higher
 - **Memory**: 2GB RAM minimum, 4GB recommended
 - **Disk**: 100MB for installation, additional space for cache
 
@@ -149,9 +149,9 @@ Vericore uses its canonical configuration namespace by default. Legacy CodeConte
 
 ## 📚 Documentation
 
-- [README](https://github.com/sonii-shivansh/CodeContext/blob/main/README.md)
-- [API Documentation](https://github.com/sonii-shivansh/CodeContext/blob/main/docs/API.md)
-- [Contributing Guide](https://github.com/sonii-shivansh/CodeContext/blob/main/CONTRIBUTING.md)
+- [README](https://github.com/sonii-shivansh/Vericore/blob/main/README.md)
+- [API Documentation](https://github.com/sonii-shivansh/Vericore/blob/main/docs/API.md)
+- [Contributing Guide](https://github.com/sonii-shivansh/Vericore/blob/main/CONTRIBUTING.md)
 
 ## 🙏 Acknowledgments
 
@@ -164,9 +164,9 @@ Built with:
 
 ## 📧 Support
 
-- Issues: https://github.com/sonii-shivansh/CodeContext/issues
+- Issues: https://github.com/sonii-shivansh/Vericore/issues
 - Email: shivanshsoni568@gmail.com
-- Discussions: https://github.com/sonii-shivansh/CodeContext/discussions
+- Discussions: https://github.com/sonii-shivansh/Vericore/discussions
 
 ## 📄 License
 

@@ -105,9 +105,9 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 - The server does not provide authentication, tenant isolation, or report retention.
 - AI analysis requires external provider access and explicit configuration.
 
-[Unreleased]: https://github.com/sonii-shivansh/CodeContext/compare/v0.7.0...HEAD
-[0.7.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.7.0
-[0.6.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.6.0
-[0.5.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.5.0
-[0.2.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.2.0
-[0.1.0]: https://github.com/sonii-shivansh/CodeContext/releases/tag/v0.1.0
+[Unreleased]: https://github.com/sonii-shivansh/Vericore/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.7.0
+[0.6.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.6.0
+[0.5.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.5.0
+[0.2.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.2.0
+[0.1.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.1.0
