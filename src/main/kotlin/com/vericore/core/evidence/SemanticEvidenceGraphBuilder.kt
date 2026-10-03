@@ -1,6 +1,7 @@
 package com.vericore.core.evidence
 
 import com.vericore.core.ai.GroundedEvidence
+import com.vericore.core.ai.GroundedEvidenceBuilder
 import com.vericore.core.intelligence.AnalysisSnapshot
 import com.vericore.core.intelligence.ArchitectureIntelligenceResult
 import com.vericore.core.temporal.CodebaseSnapshot
