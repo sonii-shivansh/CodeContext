@@ -21,6 +21,26 @@ class SemanticEvidenceGraph private constructor(
 
     fun incoming(id: String): List<EvidenceEdge> = edges.filter { it.toId == id }
 
+    /**
+     * Resolves evidence produced for the same repository state by a stable source
+     * reference. Results are deterministic and optionally constrained by type.
+     */
+    fun resolve(sourceRef: String, types: Set<EvidenceType> = emptySet()): List<EvidenceNode> =
+        nodes.asSequence()
+            .filter { it.sourceRef == sourceRef }
+            .filter { types.isEmpty() || it.type in types }
+            .sortedBy { it.id }
+            .toList()
+
+    /**
+     * Resolves cross-feature evidence related to a node through a shared source
+     * reference. The node itself is excluded from the result.
+     */
+    fun related(nodeId: String, types: Set<EvidenceType> = emptySet()): List<EvidenceNode> {
+        val sourceRef = node(nodeId)?.sourceRef ?: return emptyList()
+        return resolve(sourceRef, types).filter { it.id != nodeId }
+    }
+
     companion object {
         fun build(
             repositoryId: String,
