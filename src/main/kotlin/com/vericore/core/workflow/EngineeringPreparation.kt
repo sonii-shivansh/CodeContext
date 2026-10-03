@@ -37,6 +37,7 @@ object EngineeringPreparation {
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
         val parsed = CodeParallelParser(CacheManager()).parseFiles(files)
+        val parseFailures = files.size - parsed.size
         val enriched = OptimizedGitAnalyzer().analyze(root.path, parsed)
         val graph = RobustDependencyGraph()
         graph.build(enriched).getOrThrow()
@@ -47,7 +48,7 @@ object EngineeringPreparation {
             graph = graph.graph,
             pageRankScores = graph.pageRankScores,
             hasCycles = graph.hasCycles,
-            parseFailures = 0
+            parseFailures = parseFailures
         )
         val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot)
         val changeSet = runCatching { com.vericore.core.intelligence.GitChangeSetBuilder.fromWorkingTree(root.path) }
