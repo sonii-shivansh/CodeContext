@@ -4,7 +4,11 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 > Releases `0.1.0` through `0.6.0` were published under the project's former name. `0.7.0` is the first release line with Vericore as the canonical product identity.
 
-## [0.7.0] — Unreleased
+## [Unreleased]
+
+Future changes after the published `0.7.0` release are documented here as they are implemented.
+
+## [0.7.0] — 2026-10-03
 
 ### Added
 
