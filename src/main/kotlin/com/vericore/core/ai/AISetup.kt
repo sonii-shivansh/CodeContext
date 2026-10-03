@@ -37,7 +37,7 @@ object AISetup {
                 .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/$model"))
                 .timeout(Duration.ofSeconds(15))
                 .header("x-goog-api-key", apiKey)
-                .header("x-goog-api-client", "codecontext/${Version.current}")
+                .header("x-goog-api-client", "vericore/${Version.current}")
                 .GET()
                 .build()
         }.getOrElse { return AISetupResult.Failure("Could not prepare Gemini validation request: ${it.message}") }
