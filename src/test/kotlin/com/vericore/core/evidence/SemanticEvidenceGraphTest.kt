@@ -8,13 +8,18 @@ class SemanticEvidenceGraphTest {
     private val repositoryId = "https://github.com/example/repo.git"
     private val commit = "abc123"
 
-    private fun node(id: String, type: EvidenceType = EvidenceType.ANALYSIS) = EvidenceNode(
+    private fun node(
+        id: String,
+        type: EvidenceType = EvidenceType.ANALYSIS,
+        sourceRef: String? = null
+    ) = EvidenceNode(
         id = id,
         type = type,
         repositoryId = repositoryId,
         observedCommit = commit,
         producer = "test",
-        contentDigest = "digest-$id"
+        contentDigest = "digest-$id",
+        sourceRef = sourceRef
     )
 
     @Test
@@ -37,6 +42,26 @@ class SemanticEvidenceGraphTest {
             ),
             graph.edges
         )
+    }
+
+    @Test
+    fun `graph resolves cross feature evidence by shared source reference`() {
+        val graph = SemanticEvidenceGraph.build(
+            repositoryId,
+            commit,
+            nodes = listOf(
+                node("architecture.1", EvidenceType.ARCHITECTURE, "src/A.kt"),
+                node("hotspot.1", EvidenceType.HOTSPOT, "src/A.kt"),
+                node("qa.1", EvidenceType.REPO_QA, "src/A.kt"),
+                node("other", EvidenceType.ARCHITECTURE, "src/B.kt")
+            ),
+            edges = emptyList()
+        )
+
+        assertEquals(listOf("architecture.1", "hotspot.1", "qa.1"), graph.resolve("src/A.kt").map { it.id })
+        assertEquals(listOf("hotspot.1", "qa.1"), graph.related("architecture.1").map { it.id })
+        assertEquals(listOf("hotspot.1"), graph.resolve("src/A.kt", setOf(EvidenceType.HOTSPOT)).map { it.id })
+        assertEquals(emptyList(), graph.resolve("src/missing.kt"))
     }
 
     @Test
