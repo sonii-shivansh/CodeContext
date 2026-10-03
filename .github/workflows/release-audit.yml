@@ -91,7 +91,7 @@ jobs:
     with:
       repository: spring-projects/spring-petclinic
       ref: main
-      run_gemini: false
+      run_gemini: true
     secrets: inherit
 
   output-runelite:
