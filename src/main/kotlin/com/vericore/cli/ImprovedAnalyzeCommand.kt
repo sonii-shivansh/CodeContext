@@ -32,16 +32,9 @@ class ImprovedAnalyzeCommand :
     override fun run() {
         echo("🚀 Starting Vericore analysis for: $path")
         val rootDir = File(path).canonicalFile
-        if (!rootDir.exists()) {
-            echo("❌ Error: Path does not exist: $path")
-            return
-        }
-        if (!rootDir.isDirectory) {
-            echo("❌ Error: Path is not a directory: $path")
-            return
-        }
+        require(rootDir.exists()) { "Path does not exist: $path" }
+        require(rootDir.isDirectory) { "Path is not a directory: $path" }
 
-        // Resolve project settings from the repository being analyzed.
         val config = ConfigLoader.loadForRepository(rootDir.path)
         val time = measureTimeMillis {
             try {
@@ -51,20 +44,15 @@ class ImprovedAnalyzeCommand :
                 }
 
                 echo("📂 Scanning repository...")
-                // RepositoryScanner resolves project configuration from rootDir itself.
-                // This avoids accidentally passing configuration from another working directory.
                 val scanner = RepositoryScanner()
                 val files = scanner.scan(rootDir.path)
                 echo("   Found ${files.size} files")
 
-                if (files.isEmpty()) {
-                    echo("❌ No source files found")
-                    echo("   Supported extensions: .kt, .java")
-                    return
+                require(files.isNotEmpty()) {
+                    "No source files found. Supported extensions: .kt, .java"
                 }
-                if (files.size > config.maxFilesAnalyze) {
-                    echo("⚠️  Too many files (${files.size}). Limit: ${config.maxFilesAnalyze}")
-                    return
+                require(files.size <= config.maxFilesAnalyze) {
+                    "Too many files (${files.size}). Limit: ${config.maxFilesAnalyze}"
                 }
 
                 echo("🧠 Parsing code...")
@@ -72,9 +60,8 @@ class ImprovedAnalyzeCommand :
                 val parsedFiles: List<ParsedFile> = try {
                     runBlocking { CodeParallelParser(cacheManager).parseFiles(files) }
                 } catch (e: Exception) {
-                    echo("❌ Parsing failed: ${e.message}")
                     if (verbose) println(e.stackTraceToString())
-                    return
+                    throw IllegalStateException("Parsing failed: ${e.message}", e)
                 }
                 echo("   Parsed ${parsedFiles.size} files")
                 val failedCount = files.size - parsedFiles.size
@@ -93,15 +80,15 @@ class ImprovedAnalyzeCommand :
                 val graph = RobustDependencyGraph()
                 val buildResult = graph.build(enrichedFiles)
                 if (buildResult.isFailure) {
-                    echo("❌ Failed to build graph: ${buildResult.exceptionOrNull()?.message}")
-                    if (verbose) buildResult.exceptionOrNull()?.let { println(it.stackTraceToString()) }
-                    return
+                    val cause = buildResult.exceptionOrNull()
+                    if (verbose) cause?.let { println(it.stackTraceToString()) }
+                    throw IllegalStateException("Failed to build graph: ${cause?.message}", cause)
                 }
                 val analyzeResult = graph.analyze()
                 if (analyzeResult.isFailure) {
-                    echo("❌ Failed to analyze graph: ${analyzeResult.exceptionOrNull()?.message}")
-                    if (verbose) analyzeResult.exceptionOrNull()?.let { println(it.stackTraceToString()) }
-                    return
+                    val cause = analyzeResult.exceptionOrNull()
+                    if (verbose) cause?.let { println(it.stackTraceToString()) }
+                    throw IllegalStateException("Failed to analyze graph: ${cause?.message}", cause)
                 }
 
                 val hotspots = graph.getTopHotspots(config.hotspotCount)
@@ -124,7 +111,6 @@ class ImprovedAnalyzeCommand :
                 val highRiskCount = risks.count { it.level.name == "HIGH" || it.level.name == "CRITICAL" }
                 echo("🛡️  Engineering risk: $highRiskCount high/critical files")
 
-                // Reports belong to the repository being analyzed, not the CLI process cwd.
                 val outputDir = rootDir.resolve("output")
                 if (!outputDir.exists()) outputDir.mkdirs()
                 if (!noSnapshot) {
@@ -169,6 +155,7 @@ class ImprovedAnalyzeCommand :
                     }
                 }
             } catch (e: Exception) {
+                if (e is IllegalStateException) throw e
                 echo("❌ Analysis failed: ${e.message}")
                 if (verbose) println(e.stackTraceToString())
                 throw e
