@@ -26,7 +26,7 @@ class PRIntelligenceCommand : CliktCommand(
         require((base == null) == (head == null)) { "--base and --head must be supplied together" }
         val root = File(path).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $path" }
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(root.path)
         val changeSet = if (base != null && head != null) {
             GitChangeSetBuilder.fromRevisions(root.path, base!!, head!!)
         } else {
@@ -37,10 +37,10 @@ class PRIntelligenceCommand : CliktCommand(
         }
 
         if (jsonOutput) {
-            val output = File("output/pr-intelligence.json")
+            val output = root.resolve("output/pr-intelligence.json")
             output.parentFile.mkdirs()
             output.writeText(Json { prettyPrint = true }.encodeToString(result))
-            echo("🧭 PR Intelligence: ${output.path}")
+            echo("🧭 PR Intelligence: ${output.absolutePath}")
         }
 
         echo("🧭 PR Intelligence")

@@ -19,9 +19,9 @@ class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze 
     private val jsonOutput by option("--json", help = "Write machine-readable architecture JSON").flag()
 
     override fun run() {
-        val root = File(path).absoluteFile.normalize()
+        val root = File(path).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $path" }
-        val config = ConfigLoader.load()
+        val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
         val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(files) }
@@ -30,7 +30,7 @@ class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze 
         graph.analyze().getOrThrow()
         val result = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
         if (jsonOutput) {
-            val output = File("output/architecture.json")
+            val output = root.resolve("output/architecture.json")
             output.parentFile.mkdirs()
             output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(result))
             echo("🏛️ Architecture report: ${output.absolutePath}")

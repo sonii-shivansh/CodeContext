@@ -24,7 +24,7 @@ class OptimizedGitAnalyzer {
                     FileRepositoryBuilder().setGitDir(gitDir).readEnvironment().findGitDir().build()
             val git = Git(repository)
             val fileStats = mutableMapOf<String, FileChangeStats>()
-            val config = ConfigLoader.load()
+            val config = ConfigLoader.loadForRepository(repoPath)
             val commitLimit = config.gitCommitLimit
             val commits = git.log().call().take(commitLimit).toList()
             val totalCommits = commits.size
