@@ -7,8 +7,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 class AgentChangeContractTest {
-    private fun plan(path: String) = EngineeringPlan(
+    private fun plan(path: String, repository: String = "") = EngineeringPlan(
         changeSummary = "Update service behavior",
+        repository = repository,
         affectedComponents = listOf(path),
         plannedPaths = listOf(path),
         concerns = listOf("Review architecture evidence before implementation."),
@@ -31,10 +32,18 @@ class AgentChangeContractTest {
 
     @Test
     fun `contract captures plan scope and verification`() {
-        val contract = AgentChangeContract.fromPlan(plan("src/App.kt"))
+        val contract = AgentChangeContract.fromPlan(plan("src/App.kt", "/tmp/example-repo"))
         assertEquals(listOf("src/App.kt"), contract.plannedPaths)
         assertEquals(listOf("./gradlew test"), contract.verificationCommands)
+        assertEquals(java.io.File("/tmp/example-repo").canonicalPath, contract.repository)
         assertEquals(64, contract.fingerprint.length)
+    }
+
+    @Test
+    fun `repository scope changes fingerprint`() {
+        val first = AgentChangeContract.fromPlan(plan("src/App.kt", "/tmp/repo-one"))
+        val second = AgentChangeContract.fromPlan(plan("src/App.kt", "/tmp/repo-two"))
+        assertNotEquals(first.fingerprint, second.fingerprint)
     }
 
     @Test
