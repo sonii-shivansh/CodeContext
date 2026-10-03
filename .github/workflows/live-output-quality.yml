@@ -154,12 +154,16 @@ jobs:
           curl --fail --silent http://127.0.0.1:18080/ > output/live-command-output/18-rest-root.txt
           curl --fail --silent -H 'Content-Type: application/json' -d '{"repoPath":"."}' http://127.0.0.1:18080/architecture > output/live-command-output/18-rest-architecture.json
           grep -F 'Vericore API is running' output/live-command-output/18-rest-root.txt
-          python3 - <<'PY'
+          EXPECTED_VERSION="$($CLI --version | awk '{print $NF}')"
+          echo "Expected REST API version: $EXPECTED_VERSION"
+          python3 - "$EXPECTED_VERSION" <<'PY'
           import json
+          import sys
           from pathlib import Path
           p=Path('output/live-command-output')
+          expected=sys.argv[1]
           health=json.loads((p/'18-rest-health.json').read_text())
-          assert health['status']=='healthy' and health['version']=='0.7.0'
+          assert health['status']=='healthy' and health['version']==expected
           root=(p/'18-rest-root.txt').read_text()
           assert 'CodeContext' not in root
           json.loads((p/'18-rest-architecture.json').read_text())
