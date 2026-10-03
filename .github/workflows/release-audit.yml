@@ -64,12 +64,42 @@ jobs:
           path: output/
           if-no-files-found: ignore
 
-  live-release-gate:
-    name: Existing live repository gate
+  live-petclinic:
+    name: Live repository gate — Spring Petclinic
     needs: deterministic-audit
     uses: ./.github/workflows/live-repository-gate.yml
     with:
       repository: spring-projects/spring-petclinic
       ref: main
+      run_gemini: false
+    secrets: inherit
+
+  live-runelite:
+    name: Live repository gate — RuneLite
+    needs: deterministic-audit
+    uses: ./.github/workflows/live-repository-gate.yml
+    with:
+      repository: runelite/runelite
+      ref: master
+      run_gemini: false
+    secrets: inherit
+
+  output-petclinic:
+    name: Output quality — Spring Petclinic
+    needs: deterministic-audit
+    uses: ./.github/workflows/live-output-quality.yml
+    with:
+      repository: spring-projects/spring-petclinic
+      ref: main
+      run_gemini: false
+    secrets: inherit
+
+  output-runelite:
+    name: Output quality — RuneLite
+    needs: deterministic-audit
+    uses: ./.github/workflows/live-output-quality.yml
+    with:
+      repository: runelite/runelite
+      ref: master
       run_gemini: false
     secrets: inherit
