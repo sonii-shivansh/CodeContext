@@ -94,8 +94,8 @@ if ! grep -q 'VERICORE_BUNDLED_JAVA' "$SCRIPT"; then
   awk '
     /^[[:space:]]*if \[ -n "\$JAVA_HOME" \]/ && !inserted {
       print "# Prefer the runtime bundled with this distribution."
-      print "if [ -x \"\$APP_HOME/jre/bin/java\" ]; then"
-      print "    JAVA_HOME=\"\$APP_HOME/jre\""
+      print "if [ -x \"$APP_HOME/jre/bin/java\" ]; then"
+      print "    JAVA_HOME=\"$APP_HOME/jre\""
       print "    export JAVA_HOME"
       print "fi"
       print "# VERICORE_BUNDLED_JAVA"
