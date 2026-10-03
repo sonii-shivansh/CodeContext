@@ -15,6 +15,8 @@ object JavaLanguageLevelDetector {
         Regex("(?:sourceCompatibility|targetCompatibility)\\s*=\\s*[\\\"'](?:1\\.)?(\\d+)[\\\"']"),
         Regex("JavaLanguageVersion\\.of\\(\\s*(\\d+)\\s*\\)"),
         Regex("jvmToolchain\\(\\s*(\\d+)\\s*\\)"),
+        Regex("options\\.release\\s*=\\s*(\\d+)"),
+        Regex("options\\.release\\.set\\(\\s*(\\d+)\\s*\\)"),
         Regex("java(?:\\.version)?\\s*=\\s*(?:1\\.)?(\\d+)")
     )
 
@@ -22,6 +24,7 @@ object JavaLanguageLevelDetector {
         "pom.xml",
         "build.gradle",
         "build.gradle.kts",
+        "common.settings.gradle.kts",
         "gradle.properties",
         ".sdkmanrc"
     )
