@@ -11,36 +11,43 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import java.io.File
 import kotlinx.serialization.json.Json
 
-/** Generates a deterministic, evidence-backed engineering plan from repository evidence. */
+/** Generates a deterministic, repository-scoped, evidence-backed engineering plan. */
 class EngineeringPlanCommand : CliktCommand(
     name = "plan",
     help = "Generate an evidence-backed engineering plan for a proposed change"
 ) {
     private val changeSummary by argument("change-summary", help = "Short description of the proposed change")
+    private val repositoryPath by option(
+        "--repository",
+        help = "Repository path containing the evidence artifact and planned change"
+    ).default(".")
     private val changedPaths by option(
         "--changed",
         help = "Repository-relative file path(s) explicitly planned for the change"
     ).multiple()
-    private val evidenceFile by option("--evidence", help = "Path to a grounded evidence JSON artifact")
-        .default("output/grounded-evidence.json")
+    private val evidenceFile by option("--evidence", help = "Path to a grounded evidence JSON artifact; relative paths resolve from the repository")
     private val outputFile by option("--output", help = "Write the plan JSON to this path instead of stdout")
 
     override fun run() {
+        val root = File(repositoryPath).canonicalFile
+        require(root.isDirectory) { "Repository path is not a directory: $repositoryPath" }
+
         val evidence = Json { ignoreUnknownKeys = true }
-            .decodeFromString<GroundedEvidence>(File(evidenceFile).readText())
+            .decodeFromString<GroundedEvidence>(resolveInput(root, evidenceFile ?: "output/grounded-evidence.json").readText())
 
         val plan = EngineeringPlanner().plan(
             EngineeringPlanRequest(
                 changeSummary = changeSummary,
                 changedPaths = changedPaths.toList(),
-                evidence = evidence
+                evidence = evidence,
+                repositoryPath = root.path
             )
         )
         val json = Json { prettyPrint = true; encodeDefaults = true }
             .encodeToString(plan)
 
         if (outputFile != null) {
-            val output = File(outputFile!!)
+            val output = resolveOutput(root, outputFile!!)
             output.parentFile?.mkdirs()
             output.writeText(json)
             echo("🧭 Engineering plan: ${output.path}")
@@ -50,5 +57,18 @@ class EngineeringPlanCommand : CliktCommand(
         } else {
             echo(json)
         }
+    }
+
+    private fun resolveInput(root: File, value: String): File {
+        val candidate = File(value).let { if (it.isAbsolute) it else File(root, value) }.canonicalFile
+        require(candidate.toPath().startsWith(root.toPath())) { "Evidence path must be inside repository: $value" }
+        require(candidate.isFile) { "Evidence file does not exist: ${candidate.path}" }
+        return candidate
+    }
+
+    private fun resolveOutput(root: File, value: String): File {
+        val candidate = File(value).let { if (it.isAbsolute) it else File(root, value) }.canonicalFile
+        require(candidate.toPath().startsWith(root.toPath())) { "Output path must be inside repository: $value" }
+        return candidate
     }
 }
