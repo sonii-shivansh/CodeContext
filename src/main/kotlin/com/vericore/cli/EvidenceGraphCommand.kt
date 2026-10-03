@@ -1,11 +1,9 @@
 package com.vericore.cli
 
-import com.vericore.core.config.ConfigLoader
 import com.vericore.core.evidence.SemanticEvidenceGraphArtifact
 import com.vericore.core.evidence.SemanticEvidenceGraphArtifactCodec
 import com.vericore.core.evidence.SemanticEvidenceGraphBuilder
 import com.vericore.core.intelligence.AnalysisSnapshot
-import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
