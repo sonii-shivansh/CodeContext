@@ -362,20 +362,33 @@ class AICodeAnalyzer(
 
         /** Build the Gemini generateContent request body without making a network call. */
         internal fun buildGeminiRequestBody(prompt: String): String =
-                json.encodeToString(
-                        mapOf(
-                                "contents" to listOf(
-                                        mapOf(
-                                                "parts" to listOf(
-                                                        mapOf("text" to sanitizePromptContent(prompt))
-                                                )
+                buildJsonObject {
+                        put(
+                                "contents",
+                                buildJsonArray {
+                                        add(
+                                                buildJsonObject {
+                                                        put(
+                                                                "parts",
+                                                                buildJsonArray {
+                                                                        add(
+                                                                                buildJsonObject {
+                                                                                        put("text", sanitizePromptContent(prompt))
+                                                                                }
+                                                                        )
+                                                                }
+                                                        )
+                                                }
                                         )
-                                ),
-                                "generationConfig" to mapOf(
-                                        "maxOutputTokens" to 2048
-                                )
+                                }
                         )
-                )
+                        put(
+                                "generationConfig",
+                                buildJsonObject {
+                                        put("maxOutputTokens", 2048)
+                                }
+                        )
+                }.toString()
 
         /** Call Google Gemini API */
         private suspend fun callGemini(prompt: String): String {
